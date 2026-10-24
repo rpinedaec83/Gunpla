@@ -53,7 +53,7 @@ export function createApp() {
       usersCount: db.users.length,
       foundingBuildersCount: db.users.filter((u) => u.isFounder && u.username !== 'rpineda').length,
       seededPhotosCount: db.mediaAssets.length,
-      authModes: ['local-username-password', 'google-oauth-oidc-sso'],
+      authModes: ['local-credentials', 'google-oauth-oidc-sso'],
       emailProvider: 'resend.com',
       lastSeededAt: db.lastSeededAt,
       timestamp: new Date().toISOString()
