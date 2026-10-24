@@ -13,6 +13,7 @@ import {
   ContestEntryRecord,
   MarketplaceListingRecord
 } from '@gunpla/shared';
+import { isPostgresConfigured, syncStateToPostgres } from './postgres';
 
 export interface PlatformDatabaseState {
   tenants: Tenant[];
@@ -87,4 +88,11 @@ export function saveDb(state: PlatformDatabaseState = getDb()): void {
   memoryState = state;
   fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(DB_FILE, JSON.stringify(state, null, 2), 'utf-8');
+
+  // Asynchronously synchronize state into PostgreSQL if configured
+  if (isPostgresConfigured()) {
+    syncStateToPostgres(state).catch((err) => {
+      console.error('[Postgres Sync Background Error]:', err.message);
+    });
+  }
 }

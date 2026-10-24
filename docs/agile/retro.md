@@ -186,3 +186,23 @@ Decisions made:
 Lessons learned:
 - Direct WhatsApp community link integration significantly lowers transaction friction for regional hobbyists compared to closed in-app messaging.
 Usage: Moderate -- self-estimated
+
+### DT8 -- Slice 8: PostgreSQL 16 Relational Persistence, Schema Migration & Diagnostic Monitoring | eMOE: 5 CU | aMOE: 5 CU
+What was done:
+- Expanded `apps/api/sql/001_init_schema.sql` to author all 17 production tables (`tenants`, `users`, `media_assets`, `email_outbox`, `kits`, `paints`, `stash_items`, `paint_rack_items`, `build_projects`, `build_steps`, `build_likes`, `build_comments`, `contests`, `contest_entries`, `marketplace_listings`, `commission_builders`, `shops`) and their foreign keys, constraints, and performance indexes.
+- Installed `pg` and `@types/pg` in `@gunpla/api`.
+- Implemented PostgreSQL persistence engine (`apps/api/src/core/postgres.ts`):
+  - Connection pooling with `pg.Pool` (`max: 10`, `idleTimeout: 30s`).
+  - Automated schema executor (`initPostgres`) parsing and running `001_init_schema.sql` on startup.
+  - Relational synchronizer (`syncStateToPostgres`) ensuring transactional consistency across all 17 tables on database state transitions.
+  - Dual-mode resilience: Connects to PostgreSQL 16 (`mode: 'relational-postgres'`) when `DATABASE_URL` is set; falls back gracefully to JSON storage (`mode: 'standalone-memory-json'`) for offline CI test environments.
+- Added system diagnostic endpoint `GET /api/v1/system/database` reporting engine, mode, connection status, table row counts, and query latency (averaging 6-11ms).
+- Applied schema and executed synchronization directly against `gunpla-db` (Postgres 16) in homelab LXC 190 (`atum-gunpla`). Verified 100% of rows (2 tenants, 5 users, 92 media assets, 8 kits, 23 paints, 2 builds, 5 build steps, 2 contests, 2 contest entries, 2 listings, 3 commission builders, 3 shops) populated in PostgreSQL.
+- Expanded CLI smoketest (`scripts/smoketest.mjs`) with Check 24 verifying PostgreSQL diagnostic status and mode. All 24/24 checks passed.
+Issues hit:
+- In `marketplace_listings`, foreign key `kit_id` required kits to be seeded before listings; resolved by adjusting insertion dependency sequence and kit identifier references.
+Decisions made:
+- Maintaining dual-mode runtime allows CI workflows and local development to run with zero external database dependencies while production runs on PostgreSQL 16 with ACID relational guarantees.
+Lessons learned:
+- Logging schema synchronization events and diagnostic latencies at `/api/v1/system/database` provides immediate visibility into homelab database health without needing separate monitoring agents.
+Usage: Moderate -- self-estimated

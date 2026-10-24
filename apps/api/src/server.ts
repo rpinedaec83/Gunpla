@@ -18,6 +18,7 @@ import { buildsRouter, mediaRouter } from './slices/build-logs/builds.slice';
 import { communityRouter } from './slices/community/community.slice';
 import { marketplaceRouter, commissionsRouter } from './slices/marketplace/marketplace.slice';
 import { openApiSpec } from './openapi/openapi-spec';
+import { initPostgres, getPostgresStats, isPostgresConfigured } from './core/postgres';
 
 dotenv.config();
 
@@ -92,6 +93,18 @@ export function createApp() {
   app.use('/api/v1/commissions', commissionsRouter);
   app.use('/api/v1', communityRouter);
 
+  // PostgreSQL Diagnostic & Status Endpoint
+  app.get('/api/v1/system/database', async (_req: Request, res: Response) => {
+    const isConfigured = isPostgresConfigured();
+    const stats = await getPostgresStats();
+    return res.json({
+      engine: 'PostgreSQL 16',
+      mode: isConfigured ? (stats.connected ? 'relational-postgres' : 'postgres-offline-fallback') : 'standalone-memory-json',
+      configured: isConfigured,
+      ...stats
+    });
+  });
+
   // RFC 7807 Error Handler (handles body-parser entity.too.large, JSON syntax errors, etc.)
   app.use((err: any, req: Request, res: Response, _next: any) => {
     if (err.type === 'entity.too.large' || err.status === 413) {
@@ -142,6 +155,17 @@ export function createApp() {
 if (require.main === module) {
   const port = Number(process.env.PORT || 8080);
   const app = createApp();
+  
+  if (isPostgresConfigured()) {
+    initPostgres(getDb()).then((connected) => {
+      if (connected) {
+        console.log('[Postgres] Connected and schema synchronized with gunpla-db.');
+      } else {
+        console.warn('[Postgres] Could not connect to PostgreSQL; using offline JSON fallback.');
+      }
+    });
+  }
+
   app.listen(port, () => {
     console.log(`Central Multi-Tenant API running on http://localhost:${port} (Swagger UI at http://localhost:${port}/doc)`);
   });

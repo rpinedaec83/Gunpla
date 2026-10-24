@@ -4,12 +4,12 @@ Active tasks only. This is a burn-down list, not a history log.
 
 ## Current Phase
 
-Name: Phase 2 (DVT) — Pilot Community Engagement, Interactive Contests & Stash Marketplace
-Goal: Deliver interactive group builds & contest submissions with community voting (Slice 6), and the personal Stash Marketplace & Custom Commissions directory (Slice 7).
+Name: Phase 3 (PVT) — Production Hardening, Relational PostgreSQL Persistence & Resilience
+Goal: Transition persistence to PostgreSQL 16 (`gunpla-db`), ensuring ACID relational integrity, automated schema migration, and seed synchronization across all slices (DT1 through DT7).
 
 ## Active Tasks
 
-(No active dev tasks pending in this devcycle. Phase 2 / DVT Slices 6 and 7 are complete.)
+(No active dev tasks pending in this devcycle. DT8 — PostgreSQL 16 Relational Persistence is complete and active in production.)
 
 ## Reset
 

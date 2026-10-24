@@ -17,7 +17,7 @@ export const commissionsRouter = Router();
 export const INITIAL_LISTINGS: MarketplaceListingRecord[] = [
   {
     id: 'listing-sazabi-verka',
-    kitId: 'kit-mg-sazabi-verka',
+    kitId: 'kit-mg-barbatos',
     userId: 'user-dcampos',
     username: 'dcampos',
     userDisplayName: 'Daniel Campos',
@@ -35,7 +35,7 @@ export const INITIAL_LISTINGS: MarketplaceListingRecord[] = [
   },
   {
     id: 'listing-tiger1-kursk',
-    kitId: 'kit-tamiya-tiger1-mid',
+    kitId: 'kit-tamiya-tiger1',
     userId: 'user-fog1labs1',
     username: 'fog1labs1',
     userDisplayName: 'Fog1 Labs',

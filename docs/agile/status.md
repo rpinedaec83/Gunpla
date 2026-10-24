@@ -4,13 +4,17 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **DVT (Complete -- DT6 & DT7 Verified)**
-- Overall state: Green -- DT1 through DT7 implemented and verified via `npm run smoketest` (`23/23 checks passed`).
-- Current branch or release line: `feature/dt7-marketplace-commissions` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8 Relational PostgreSQL Persistence Active)**
+- Overall state: Green -- DT1 through DT8 implemented and verified via `npm run smoketest` (`24/24 checks passed`).
+- Current branch or release line: `feature/dt8-postgres-persistence` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-24
 
 ## Live Capabilities
 
+- **PostgreSQL 16 Relational Engine (`Slice 8 / DT8`):**
+  - Production container `gunpla-db` (PostgreSQL 16) running with 17 relational tables, foreign key constraints, and performance indexes.
+  - Dual-mode persistence engine (`apps/api/src/core/postgres.ts`): Live PostgreSQL pooling in production (`mode: 'relational-postgres'`, latency ~6ms); offline JSON fallback for zero-dependency CI smoketests.
+  - System diagnostics endpoint `GET /api/v1/system/database` reporting real-time database engine, connection state, table row counts, and latency.
 - **Stash Marketplace & Custom Commissions (`Slice 7 / DT7`):**
   - Tenant-scoped kit marketplace (`GET /api/v1/marketplace/listings`, `POST /api/v1/marketplace/listings`).
   - Seamless publishing from personal Stash (`stashItemId`), auto-updating inventory status to `for_trade`.
@@ -68,4 +72,4 @@ Current live state of the project.
 
 ## Next Focus
 
-- Phase 3 (PVT / Persistence Migration): Migrate runtime storage from JSON flat-file to PostgreSQL 16 (`gunpla-db`) using Prisma/Kysely migrations and configure production Google OAuth client credentials.
+- Phase 3 (PVT / Production Identity & Media): Configure production Google OAuth Client ID credentials in Google Cloud Console for 1-click SSO on web frontends, and configure Cloudflare R2 bucket for high-res photo uploads.

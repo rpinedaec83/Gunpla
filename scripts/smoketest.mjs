@@ -768,7 +768,19 @@ async function runSmoketest() {
     assert.ok(gunplaMarketHtml.includes('view-commissions'), 'GunplaJunkies frontend must render commissions section');
     console.log(`[PASS] Commission builders directory (${buildersData.items.length} builders) and Web Frontends UI integration verified.`);
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 SMOKETEST CHECKS PASSED ===');
+    // 24. DT8 - PostgreSQL 16 Hybrid Persistence & Relational Diagnostics
+    console.log('\n--- Checking DT8: PostgreSQL 16 Persistence & Diagnostic Endpoint ---');
+    const dbStatsRes = await fetch(`${baseUrl}/api/v1/system/database`);
+    assert.equal(dbStatsRes.status, 200);
+    const dbStats = await dbStatsRes.json();
+    assert.equal(dbStats.engine, 'PostgreSQL 16');
+    assert.ok(
+      ['standalone-memory-json', 'relational-postgres', 'postgres-offline-fallback'].includes(dbStats.mode),
+      `Invalid DB mode: ${dbStats.mode}`
+    );
+    console.log(`[PASS] PostgreSQL persistence status endpoint verified (Engine: ${dbStats.engine}, Mode: ${dbStats.mode}).`);
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 SMOKETEST CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

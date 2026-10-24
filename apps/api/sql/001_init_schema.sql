@@ -159,6 +159,88 @@ CREATE TABLE IF NOT EXISTS build_comments (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS contests (
+    id VARCHAR(64) PRIMARY KEY,
+    slug VARCHAR(120) UNIQUE NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    tenant_slug VARCHAR(64) NOT NULL REFERENCES tenants(slug),
+    category VARCHAR(64) NOT NULL,
+    banner_url TEXT,
+    start_date TIMESTAMPTZ NOT NULL,
+    end_date TIMESTAMPTZ NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'active',
+    rules JSONB NOT NULL DEFAULT '[]'::jsonb,
+    prizes JSONB NOT NULL DEFAULT '[]'::jsonb,
+    participants_count INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS contest_entries (
+    id VARCHAR(64) PRIMARY KEY,
+    contest_id VARCHAR(64) NOT NULL REFERENCES contests(id) ON DELETE CASCADE,
+    build_id VARCHAR(64) NOT NULL REFERENCES build_projects(id) ON DELETE CASCADE,
+    user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    username VARCHAR(64) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    cover_image_url TEXT,
+    vote_count INT NOT NULL DEFAULT 0,
+    voted_by_user_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+    status VARCHAR(32) NOT NULL DEFAULT 'approved',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT unq_contest_build UNIQUE (contest_id, build_id)
+);
+
+CREATE TABLE IF NOT EXISTS marketplace_listings (
+    id VARCHAR(64) PRIMARY KEY,
+    stash_item_id VARCHAR(64) REFERENCES stash_items(id) ON DELETE SET NULL,
+    kit_id VARCHAR(64) NOT NULL REFERENCES kits(id) ON DELETE CASCADE,
+    user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    username VARCHAR(64) NOT NULL,
+    user_display_name VARCHAR(120) NOT NULL,
+    type VARCHAR(32) NOT NULL DEFAULT 'both',
+    price NUMERIC(10, 2),
+    currency VARCHAR(8) NOT NULL DEFAULT 'PEN',
+    box_condition VARCHAR(32) NOT NULL DEFAULT 'mint_sealed',
+    notes TEXT NOT NULL,
+    contact_whatsapp TEXT,
+    contact_location VARCHAR(255),
+    category VARCHAR(64) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS commission_builders (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    username VARCHAR(64) NOT NULL,
+    display_name VARCHAR(120) NOT NULL,
+    bio TEXT NOT NULL,
+    specialties JSONB NOT NULL DEFAULT '[]'::jsonb,
+    accepting_commissions BOOLEAN NOT NULL DEFAULT TRUE,
+    starting_price_pen NUMERIC(10, 2),
+    portfolio_sample_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+    whatsapp_url TEXT,
+    instagram_url TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS shops (
+    id VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    country VARCHAR(64) NOT NULL,
+    city VARCHAR(64) NOT NULL,
+    catalog_url TEXT,
+    whatsapp_url TEXT,
+    website_url TEXT,
+    instagram_url TEXT,
+    specialties JSONB NOT NULL DEFAULT '[]'::jsonb,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_media_assets_builder ON media_assets(builder_username);
 CREATE INDEX IF NOT EXISTS idx_media_assets_category ON media_assets(category);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -178,3 +260,9 @@ CREATE INDEX IF NOT EXISTS idx_builds_kit_id ON build_projects(kit_id);
 CREATE INDEX IF NOT EXISTS idx_builds_category ON build_projects(category);
 CREATE INDEX IF NOT EXISTS idx_builds_slug ON build_projects(slug);
 CREATE INDEX IF NOT EXISTS idx_build_steps_build_id ON build_steps(build_id);
+CREATE INDEX IF NOT EXISTS idx_contests_tenant_slug ON contests(tenant_slug);
+CREATE INDEX IF NOT EXISTS idx_contests_slug ON contests(slug);
+CREATE INDEX IF NOT EXISTS idx_contest_entries_contest ON contest_entries(contest_id);
+CREATE INDEX IF NOT EXISTS idx_marketplace_category ON marketplace_listings(category);
+CREATE INDEX IF NOT EXISTS idx_marketplace_status ON marketplace_listings(status);
+CREATE INDEX IF NOT EXISTS idx_marketplace_user ON marketplace_listings(user_id);
