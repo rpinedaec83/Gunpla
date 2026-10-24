@@ -42,6 +42,9 @@ export interface AppShellData {
 
 export function renderAppShell(config: AppShellConfig, data: AppShellData): string {
   const isGunpla = config.tenantSlug === 'gunplajunkies';
+  const birthYearOptions = Array.from({ length: 87 }, (_, i) => 2026 - i)
+    .map(y => `<option value="${y}">${y}</option>`)
+    .join('');
 
   const categoryPills = isGunpla
     ? [
@@ -1404,11 +1407,25 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
 
     <!-- Google Tab -->
     <div id="tab-auth-google" class="auth-tab-content">
-      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 1.5rem 0;">
-        <div id="g_id_signin"></div>
-        <p style="font-size: 0.8rem; color: #64748b; text-align: center;">
-          Inicia sesión en 1 clic con tu cuenta de Google. Tu perfil se vinculará automáticamente.
-        </p>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem; padding: 0.75rem 0;">
+        <div class="auth-input-group" style="margin-bottom: 0.25rem;">
+          <label class="auth-label" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>Año de Nacimiento (Filtro Legal Ley N° 29733):</span>
+            <span id="google-age-status" style="font-size: 0.75rem; color: #94a3b8;">Verificación requerida</span>
+          </label>
+          <select id="google-birthyear" class="auth-input" onchange="onGoogleAgeChange(this.value)">
+            <option value="">Selecciona tu año de nacimiento...</option>
+            ${birthYearOptions}
+          </select>
+        </div>
+        <div id="google-age-alert" style="display: none; font-size: 0.8rem; border-radius: 6px; padding: 0.6rem; line-height: 1.4;"></div>
+        
+        <div id="google-signin-wrapper" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 0.5rem;">
+          <div id="g_id_signin"></div>
+          <p style="font-size: 0.78rem; color: #64748b; text-align: center;">
+            Inicia sesión en 1 clic con tu cuenta de Google. Tu perfil se vinculará automáticamente.
+          </p>
+        </div>
       </div>
     </div>
 
@@ -1460,7 +1477,15 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
           <label class="auth-label">Contraseña</label>
           <input type="password" id="reg-password" class="auth-input" placeholder="Mínimo 8 caracteres" required>
         </div>
-        <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 1rem; padding: 0.65rem;">
+        <div class="auth-input-group">
+          <label class="auth-label">Año de Nacimiento (Filtro Legal Ley N° 29733)</label>
+          <select id="reg-birthyear" class="auth-input" required onchange="onRegAgeChange(this.value)">
+            <option value="">Selecciona tu año de nacimiento...</option>
+            ${birthYearOptions}
+          </select>
+        </div>
+        <div id="reg-age-alert" style="display: none; font-size: 0.8rem; margin-top: -0.5rem; margin-bottom: 0.75rem; border-radius: 6px; padding: 0.6rem; line-height: 1.4;"></div>
+        <button type="submit" id="reg-submit-btn" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 1rem; padding: 0.65rem;">
           Crear Cuenta de Modelista
         </button>
       </form>
@@ -1700,17 +1725,109 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     }
   }
 
+  function onGoogleAgeChange(yearStr) {
+    const alertBox = document.getElementById('google-age-alert');
+    const wrapper = document.getElementById('google-signin-wrapper');
+    const status = document.getElementById('google-age-status');
+    if (!yearStr) {
+      alertBox.style.display = 'none';
+      wrapper.style.opacity = '1';
+      wrapper.style.pointerEvents = 'auto';
+      status.innerText = 'Verificación requerida';
+      status.style.color = '#94a3b8';
+      return;
+    }
+    const age = 2026 - Number(yearStr);
+    if (age < 14) {
+      alertBox.style.display = 'block';
+      alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+      alertBox.style.border = '1px solid #ef4444';
+      alertBox.style.color = '#fca5a5';
+      alertBox.innerHTML = '<strong>⛔ Acceso Denegado:</strong> De conformidad con el Art. 27 del Reglamento de la Ley N° 29733 (Protección de Datos Personales de Perú), los menores de 14 años no pueden acceder a esta plataforma.';
+      wrapper.style.opacity = '0.2';
+      wrapper.style.pointerEvents = 'none';
+      status.innerText = 'Menor de 14 años (Bloqueado)';
+      status.style.color = '#ef4444';
+    } else if (age < 18) {
+      alertBox.style.display = 'block';
+      alertBox.style.background = 'rgba(6, 182, 212, 0.12)';
+      alertBox.style.border = '1px solid #06b6d4';
+      alertBox.style.color = '#67e8f9';
+      alertBox.innerHTML = '<strong>ℹ️ Menor de Edad (14-17 años):</strong> Acceso permitido a Workbench y Stash bajo supervisión parental. Conforme a la Ley 29571 / INDECOPI, las funciones de compraventa en el Bazar quedan restringidas.';
+      wrapper.style.opacity = '1';
+      wrapper.style.pointerEvents = 'auto';
+      status.innerText = '14-17 años (Acceso Parcial)';
+      status.style.color = '#06b6d4';
+    } else {
+      alertBox.style.display = 'block';
+      alertBox.style.background = 'rgba(34, 197, 94, 0.12)';
+      alertBox.style.border = '1px solid #22c55e';
+      alertBox.style.color = '#86efac';
+      alertBox.innerHTML = '<strong>✅ Mayor de Edad (18+ años):</strong> Verificado con capacidad plena para todas las funciones (Workbench, Stash, Concursos y Bazar de compraventa).';
+      wrapper.style.opacity = '1';
+      wrapper.style.pointerEvents = 'auto';
+      status.innerText = 'Mayor de Edad (18+)';
+      status.style.color = '#22c55e';
+    }
+  }
+
+  function onRegAgeChange(yearStr) {
+    const alertBox = document.getElementById('reg-age-alert');
+    const submitBtn = document.getElementById('reg-submit-btn');
+    if (!yearStr) {
+      alertBox.style.display = 'none';
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.style.cursor = 'pointer';
+      return;
+    }
+    const age = 2026 - Number(yearStr);
+    if (age < 14) {
+      alertBox.style.display = 'block';
+      alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+      alertBox.style.border = '1px solid #ef4444';
+      alertBox.style.color = '#fca5a5';
+      alertBox.innerHTML = '<strong>⛔ Acceso Denegado:</strong> Según la Ley N° 29733 de Protección de Datos Personales, los menores de 14 años no pueden registrarse ni utilizar la plataforma.';
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.4';
+      submitBtn.style.cursor = 'not-allowed';
+    } else if (age < 18) {
+      alertBox.style.display = 'block';
+      alertBox.style.background = 'rgba(6, 182, 212, 0.12)';
+      alertBox.style.border = '1px solid #06b6d4';
+      alertBox.style.color = '#67e8f9';
+      alertBox.innerHTML = '<strong>ℹ️ Menor de Edad (14-17 años):</strong> Registro autorizado para gestión de Stash y Bitácoras. Acceso comercial al Bazar restringido.';
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.style.cursor = 'pointer';
+    } else {
+      alertBox.style.display = 'block';
+      alertBox.style.background = 'rgba(34, 197, 94, 0.12)';
+      alertBox.style.border = '1px solid #22c55e';
+      alertBox.style.color = '#86efac';
+      alertBox.innerHTML = '<strong>✅ Mayor de Edad (18+ años):</strong> Capacidad plena autorizada.';
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.style.cursor = 'pointer';
+    }
+  }
+
   async function handleGoogleCredentialResponse(response) {
     const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    const birthYearInput = document.getElementById('google-birthyear');
+    const birthYear = birthYearInput ? birthYearInput.value : '';
 
     try {
       const idToken = response.credential;
       const res = await fetch(apiBase + '/api/v1/auth/google-sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': '${config.tenantSlug}' },
-        body: JSON.stringify({ idToken })
+        body: JSON.stringify({ idToken, birthYear })
       });
-      if (!res.ok) throw new Error('Error al autenticar con Google');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Error al autenticar con Google');
+      }
       const data = await res.json();
       localStorage.setItem('plamo_sso_token', data.token);
       localStorage.setItem('plamo_sso_user', JSON.stringify(data.user));
@@ -1718,13 +1835,16 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       currentToken = data.token;
       renderAuthUI();
       closeAuthModal();
-      alert('¡Bienvenido, ' + data.user.displayName + '!');
+      const ageMsg = data.user.isAdult ? ' (Acceso Mayor de Edad)' : ' (Acceso Menor de Edad 14-17)';
+      alert('¡Bienvenido, ' + data.user.displayName + ageMsg + '!');
     } catch (err) {
       alert('Error en Google Sign-In: ' + err.message);
     }
   }
 
   async function demoGoogleLogin() {
+    const birthYearInput = document.getElementById('google-birthyear');
+    const birthYear = birthYearInput && birthYearInput.value ? birthYearInput.value : '1995';
     const demoPayload = {
       sub: 'google-pilot-user-123',
       email: 'builder.pilot@plamoscale.com',
@@ -1776,13 +1896,15 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     const displayName = document.getElementById('reg-display').value.trim();
     const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value;
+    const birthYearInput = document.getElementById('reg-birthyear');
+    const birthYear = birthYearInput ? birthYearInput.value : '';
 
     const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
     try {
       const res = await fetch(apiBase + '/api/v1/auth/registrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': '${config.tenantSlug}' },
-        body: JSON.stringify({ username, displayName, email, password })
+        body: JSON.stringify({ username, displayName, email, password, birthYear })
       });
       if (!res.ok) {
         const err = await res.json();
@@ -1795,7 +1917,8 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       currentToken = data.token;
       renderAuthUI();
       closeAuthModal();
-      alert('¡Cuenta creada con éxito! Bienvenido ' + data.user.displayName);
+      const ageMsg = data.user.isAdult ? ' (Acceso Mayor de Edad)' : ' (Acceso Menor de Edad 14-17)';
+      alert('¡Cuenta creada con éxito para @' + data.user.username + ageMsg + '!');
     } catch (err) {
       alert('Error al registrar: ' + err.message);
     }

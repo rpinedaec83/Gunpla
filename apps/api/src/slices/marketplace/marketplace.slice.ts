@@ -172,6 +172,18 @@ marketplaceRouter.get('/listings', (req: Request, res: Response) => {
  */
 marketplaceRouter.post('/listings', requireAuth, (req: Request, res: Response) => {
   const user = req.user!;
+
+  if (user.isAdult === false) {
+    return sendProblem(
+      req,
+      res,
+      403,
+      'Restricción de Mayoría de Edad',
+      'De conformidad con la Ley N° 29571 (Código de Protección y Defensa del Consumidor de Perú) y los Términos del Servicio, debes ser mayor de edad (18+ años) con plena capacidad civil para publicar kits en el Bazar de compraventa.',
+      'adult-required'
+    );
+  }
+
   const {
     stashItemId,
     kitId,

@@ -69,6 +69,9 @@ export interface UserRecord {
   avatarUrl?: string;
   socialLinks: string[];
   isFounder: boolean;
+  birthYear?: number;
+  isAdult?: boolean;
+  ageBracket?: 'under_14' | 'minor_14_17' | 'adult_18_plus';
   createdAt: string;
 }
 
@@ -80,6 +83,7 @@ export interface PublicBuilderProfile {
   primaryTenantSlug: string;
   socialLinks: string[];
   isFounder: boolean;
+  isAdult?: boolean;
   photoCount: number;
   photos: MediaAsset[];
   createdAt: string;

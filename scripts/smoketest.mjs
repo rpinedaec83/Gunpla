@@ -825,6 +825,103 @@ async function runSmoketest() {
     assert.equal(mediaProxyRes.status, 200, 'Frontend proxy must stream /legacy-media/* without redirecting');
     assert.equal(mediaProxyRes.headers.get('content-type'), 'image/jpeg');
 
+    // 25. DT9/Legal - Age Gate & Minor Protection (Ley N° 29733 / INDECOPI)
+    console.log('\n--- Checking Legal Age Gate & Underage Protection (Ley N° 29733 / INDECOPI) ---');
+    
+    // Check A: Registration with age < 14 (Birth year 2015) must be rejected with 403
+    const underageRegRes = await fetch(`${baseUrl}/api/v1/auth/registrations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'gunplajunkies' },
+      body: JSON.stringify({
+        username: 'kid_builder_12',
+        displayName: 'Kid Builder',
+        email: 'kid.builder@test.com',
+        password: 'Password123!',
+        birthYear: 2015
+      })
+    });
+    assert.equal(underageRegRes.status, 403, 'Under 14 registration must return 403 Forbidden');
+    const underageRegData = await underageRegRes.json();
+    assert.ok(underageRegData.type.includes('underage-restriction'));
+
+    // Check B: Registration for adolescent 14-17 (Birth year 2010, age 16) must succeed with isAdult: false
+    const teenRegRes = await fetch(`${baseUrl}/api/v1/auth/registrations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'gunplajunkies' },
+      body: JSON.stringify({
+        username: 'teen_builder_16',
+        displayName: 'Teen Builder',
+        email: 'teen.builder@test.com',
+        password: 'Password123!',
+        birthYear: 2010
+      })
+    });
+    assert.equal(teenRegRes.status, 201, 'Teen 14-17 registration must succeed with 201');
+    const teenRegData = await teenRegRes.json();
+    assert.equal(teenRegData.user.isAdult, false, 'Teen must have isAdult: false');
+    assert.equal(teenRegData.user.ageBracket, 'minor_14_17');
+
+    // Check C: Teen builder (isAdult: false) must be blocked from posting in Bazar / Marketplace
+    const teenMarketRes = await fetch(`${baseUrl}/api/v1/marketplace/listings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Tenant-Slug': 'gunplajunkies',
+        'Authorization': `Bearer ${teenRegData.token}`
+      },
+      body: JSON.stringify({
+        kitId: 'kit-rg-rx78-2',
+        type: 'sale',
+        price: 150,
+        currency: 'PEN',
+        boxCondition: 'sealed'
+      })
+    });
+    assert.equal(teenMarketRes.status, 403, 'Teen must be forbidden from marketplace listings (403)');
+    const teenMarketData = await teenMarketRes.json();
+    assert.ok(teenMarketData.type.includes('adult-required'));
+
+    // Check D: Google SSO with age < 14 (Birth year 2014) must be rejected with 403
+    const googleUnderagePayload = {
+      sub: 'google-kid-999',
+      email: 'kid.google@plamoscale.com',
+      name: 'Kid Google',
+      email_verified: true
+    };
+    const googleUnderageToken = 'google-test-token:' + Buffer.from(JSON.stringify(googleUnderagePayload)).toString('base64');
+    const googleUnderageRes = await fetch(`${baseUrl}/api/v1/auth/google-sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'plamoscale' },
+      body: JSON.stringify({
+        idToken: googleUnderageToken,
+        birthYear: 2014
+      })
+    });
+    assert.equal(googleUnderageRes.status, 403, 'Google SSO with age < 14 must return 403 Forbidden');
+    const googleUnderageData = await googleUnderageRes.json();
+    assert.ok(googleUnderageData.type.includes('underage-restriction'));
+
+    // Check E: Google SSO with adult age 25 (Birth year 2001) succeeds with isAdult: true
+    const googleAdultPayload = {
+      sub: 'google-adult-888',
+      email: 'adult.google@plamoscale.com',
+      name: 'Adult Google Builder',
+      email_verified: true
+    };
+    const googleAdultToken = 'google-test-token:' + Buffer.from(JSON.stringify(googleAdultPayload)).toString('base64');
+    const googleAdultRes = await fetch(`${baseUrl}/api/v1/auth/google-sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'plamoscale' },
+      body: JSON.stringify({
+        idToken: googleAdultToken,
+        birthYear: 2001
+      })
+    });
+    assert.equal(googleAdultRes.status, 200, 'Adult Google SSO must return 200 OK');
+    const googleAdultData = await googleAdultRes.json();
+    assert.equal(googleAdultData.user.isAdult, true, 'Adult must have isAdult: true');
+
+    console.log('[PASS] Legal Age Gate (Ley 29733 / INDECOPI) verified: <14 blocked (403), 14-17 allowed with Bazar restricted, 18+ full access.');
     console.log('[PASS] Google OAuth 2.0 / OIDC Identity Services, Auth Modal & Transparent API/Media Reverse Proxy verified.');
 
     console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 SMOKETEST CHECKS PASSED ===');

@@ -13,6 +13,8 @@ declare global {
         email: string;
         roles: string[];
         tenantSlug: string;
+        isAdult?: boolean;
+        ageBracket?: string;
       };
     }
   }
