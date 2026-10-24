@@ -1411,20 +1411,25 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       <div id="workbench-auth-view" style="display: none;">
         <!-- Header Banner with Metrics & Quick Actions -->
         <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.75rem; margin-bottom: 1.75rem;">
-          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.25rem;">
-            <div style="display: flex; align-items: center; gap: 1rem;">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; align-items: flex-start; gap: 1rem; max-width: 600px;">
               <div id="wb-user-avatar-slot"></div>
               <div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                   <h2 id="wb-user-title" style="font-size: 1.4rem; font-weight: 700; color: #fff;">Mi Taller</h2>
                   <span id="wb-age-badge" class="status-badge">Verificado</span>
                 </div>
                 <div id="wb-user-subtitle" style="font-size: 0.82rem; color: #94a3b8;">Inventario personal de modelismo</div>
+                <div id="wb-user-bio" style="font-size: 0.82rem; color: #cbd5e1; margin-top: 0.4rem; line-height: 1.4; display: none;"></div>
+                <div id="wb-user-specialties" style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem;"></div>
               </div>
             </div>
 
             <!-- Quick Action Buttons -->
             <div style="display: flex; flex-wrap: wrap; gap: 0.6rem;">
+              <button class="filter-pill" onclick="openEditProfileModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <span>✏️</span> Editar Perfil
+              </button>
               <button class="btn-primary" onclick="openAddStashModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem;">
                 + Agregar Kit al Stash
               </button>
@@ -2274,6 +2279,90 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
   </div>
 </div>
 
+<!-- Edit Builder Profile Modal -->
+<div id="modal-edit-profile" class="custom-modal" onclick="closeEditProfileModal(event)">
+  <div class="auth-box" style="max-width: 560px; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeEditProfileModal()">&times;</span>
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+      <span style="font-size: 1.4rem;">👤</span>
+      <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff;">Editar Perfil de Modelista</h3>
+    </div>
+    <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
+      Personaliza tu nombre público, foto de perfil, biografía y especialidades técnicas para la comunidad.
+    </p>
+
+    <form id="profile-edit-form" onsubmit="saveProfileChanges(event)">
+      <!-- Avatar Section -->
+      <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.25rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+        <div id="profile-avatar-preview-slot" style="width: 72px; height: 72px; border-radius: 50%; overflow: hidden; background: #1e293b; border: 2px solid var(--accent-color); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 700; color: #fff; flex-shrink: 0;">
+          U
+        </div>
+        <div style="flex: 1;">
+          <label class="auth-label" style="margin-bottom: 0.3rem;">Foto de Perfil / Avatar</label>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.4rem;">
+            <input type="url" id="profile-avatar-input" class="auth-input" style="font-size: 0.82rem; padding: 0.45rem 0.65rem;" placeholder="https://ejemplo.com/mi-avatar.jpg" oninput="updateProfileAvatarPreview()">
+            <input type="file" id="profile-avatar-file-input" accept="image/*" style="display: none;" onchange="handleProfileAvatarUpload(event)">
+            <button type="button" class="filter-pill" style="white-space: nowrap; font-size: 0.78rem;" onclick="document.getElementById('profile-avatar-file-input').click()">
+              📷 Subir Foto
+            </button>
+          </div>
+          <div style="font-size: 0.72rem; color: #64748b;">JPG, PNG o WebP. Se almacena permanentemente.</div>
+        </div>
+      </div>
+
+      <!-- Display Name -->
+      <div class="auth-input-group">
+        <label class="auth-label">Nombre Público / Alias de Modelista</label>
+        <input type="text" id="profile-display-name-input" class="auth-input" required maxlength="80" placeholder="ej. Aldo Perich / Char Custom Works">
+      </div>
+
+      <!-- Bio -->
+      <div class="auth-input-group">
+        <label class="auth-label">Biografía / Acerca de ti</label>
+        <textarea id="profile-bio-input" class="auth-input" rows="3" maxlength="500" style="resize: vertical;" placeholder="Cuéntale a la comunidad sobre tu experiencia, marcas de pintura favoritas, técnicas o estilo de armado..."></textarea>
+      </div>
+
+      <!-- Specialties with Clickable Quick Tags -->
+      <div class="auth-input-group">
+        <label class="auth-label">Especialidades de Modelismo (separadas por comas)</label>
+        <input type="text" id="profile-specialties-input" class="auth-input" placeholder="ej. Gunpla MG, Custom Paint, Pátinas & Weathering, Aerografía">
+        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem;">
+          <span style="font-size: 0.72rem; color: #64748b; align-self: center;">Sugerencias:</span>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;" onclick="addSpecialtyTag('Gunpla MG')">+ Gunpla MG</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;" onclick="addSpecialtyTag('Gunpla RG')">+ Gunpla RG</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;" onclick="addSpecialtyTag('Militar 1/35')">+ Militar 1/35</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;" onclick="addSpecialtyTag('Aviación 1/48')">+ Aviación 1/48</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;" onclick="addSpecialtyTag('Custom Paint')">+ Custom Paint</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;" onclick="addSpecialtyTag('Aerografía Laca')">+ Aerografía Laca</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;" onclick="addSpecialtyTag('Pátinas & Weathering')">+ Pátinas & Weathering</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;" onclick="addSpecialtyTag('Dioramas')">+ Dioramas</button>
+        </div>
+      </div>
+
+      <!-- Contact / Social Links -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="auth-input-group">
+          <label class="auth-label">WhatsApp de Contacto (Comisiones)</label>
+          <input type="text" id="profile-whatsapp-input" class="auth-input" placeholder="ej. +51 987 654 321">
+        </div>
+        <div class="auth-input-group">
+          <label class="auth-label">Enlace de Red Social / Canal</label>
+          <input type="url" id="profile-social-input" class="auth-input" placeholder="https://instagram.com/mi_perfil">
+        </div>
+      </div>
+
+      <div id="profile-edit-error-msg" style="display: none; color: #ef4444; font-size: 0.8rem; margin-bottom: 0.75rem;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+        <button type="button" class="filter-pill" onclick="closeEditProfileModal()">Cancelar</button>
+        <button type="submit" id="btn-save-profile" class="btn-primary" style="padding: 0.65rem 1.25rem;">
+          💾 Guardar Cambios
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   function escapeHtml(str) {
     if (!str) return '';
@@ -3049,6 +3138,189 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     });
   }
 
+  // --- Builder Profile Editor Engine ---
+  function openEditProfileModal() {
+    if (!currentUser || !currentToken) {
+      alert('Debes iniciar sesión para editar tu perfil de modelista.');
+      openAuthModal();
+      return;
+    }
+
+    const modal = document.getElementById('modal-edit-profile');
+    const nameInput = document.getElementById('profile-display-name-input');
+    const bioInput = document.getElementById('profile-bio-input');
+    const avatarInput = document.getElementById('profile-avatar-input');
+    const specialtiesInput = document.getElementById('profile-specialties-input');
+    const whatsappInput = document.getElementById('profile-whatsapp-input');
+    const socialInput = document.getElementById('profile-social-input');
+    const errorMsg = document.getElementById('profile-edit-error-msg');
+
+    if (errorMsg) errorMsg.style.display = 'none';
+
+    if (nameInput) nameInput.value = currentUser.displayName || currentUser.username || '';
+    if (bioInput) bioInput.value = currentUser.bio || '';
+    if (avatarInput) avatarInput.value = currentUser.avatarUrl || '';
+    if (specialtiesInput) {
+      const specs = Array.isArray(currentUser.specialties) ? currentUser.specialties.join(', ') : '';
+      specialtiesInput.value = specs;
+    }
+    if (whatsappInput) whatsappInput.value = currentUser.whatsapp || '';
+    if (socialInput) {
+      const links = Array.isArray(currentUser.socialLinks) ? currentUser.socialLinks[0] || '' : '';
+      socialInput.value = links;
+    }
+
+    updateProfileAvatarPreview();
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeEditProfileModal(e) {
+    if (!e || e.target.id === 'modal-edit-profile' || e.target.classList.contains('auth-close')) {
+      const modal = document.getElementById('modal-edit-profile');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  function updateProfileAvatarPreview() {
+    const input = document.getElementById('profile-avatar-input');
+    const slot = document.getElementById('profile-avatar-preview-slot');
+    if (!slot) return;
+
+    const url = input ? input.value.trim() : '';
+    if (url) {
+      slot.innerHTML = '<img src="' + url + '" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML=&quot;👤&quot;">';
+    } else {
+      const initials = (currentUser?.displayName || currentUser?.username || 'U').slice(0, 2).toUpperCase();
+      slot.innerHTML = initials;
+    }
+  }
+
+  async function handleProfileAvatarUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      alert('La imagen seleccionada supera el límite de 15 MB.');
+      return;
+    }
+
+    const slot = document.getElementById('profile-avatar-preview-slot');
+    if (slot) slot.innerHTML = '⏳';
+
+    const reader = new FileReader();
+    reader.onload = async function() {
+      const base64Data = reader.result;
+
+      try {
+        const res = await fetch('/api/v1/media/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + currentToken
+          },
+          body: JSON.stringify({
+            fileName: 'avatar-' + (currentUser.username || 'user') + '.jpg',
+            dataBase64: base64Data,
+            category: 'general',
+            title: 'Avatar de ' + (currentUser.displayName || currentUser.username)
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Error al subir la imagen');
+        }
+
+        const data = await res.json();
+        const avatarUrl = data.thumbUrl || data.fullUrl;
+        const input = document.getElementById('profile-avatar-input');
+        if (input) input.value = avatarUrl;
+        updateProfileAvatarPreview();
+      } catch (err) {
+        alert('Error al subir el avatar: ' + err.message);
+        updateProfileAvatarPreview();
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function addSpecialtyTag(tag) {
+    const input = document.getElementById('profile-specialties-input');
+    if (!input) return;
+    const current = input.value.split(',').map(s => s.trim()).filter(Boolean);
+    if (!current.includes(tag)) {
+      current.push(tag);
+      input.value = current.join(', ');
+    }
+  }
+
+  async function saveProfileChanges(e) {
+    if (e) e.preventDefault();
+    if (!currentToken) return;
+
+    const btn = document.getElementById('btn-save-profile');
+    const errorMsg = document.getElementById('profile-edit-error-msg');
+    const displayName = document.getElementById('profile-display-name-input')?.value.trim();
+    const bio = document.getElementById('profile-bio-input')?.value.trim();
+    const avatarUrl = document.getElementById('profile-avatar-input')?.value.trim();
+    const specialtiesRaw = document.getElementById('profile-specialties-input')?.value;
+    const whatsapp = document.getElementById('profile-whatsapp-input')?.value.trim();
+    const socialUrl = document.getElementById('profile-social-input')?.value.trim();
+
+    const specialties = specialtiesRaw ? specialtiesRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const socialLinks = socialUrl ? [socialUrl] : [];
+
+    if (errorMsg) errorMsg.style.display = 'none';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ Guardando...';
+    }
+
+    try {
+      const res = await fetch('/api/v1/auth/me', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken
+        },
+        body: JSON.stringify({
+          displayName,
+          bio,
+          avatarUrl: avatarUrl || undefined,
+          specialties,
+          whatsapp: whatsapp || undefined,
+          socialLinks
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || data.title || 'Error al actualizar el perfil');
+      }
+
+      // Update local storage with updated user
+      currentUser = { ...currentUser, ...data.user };
+      localStorage.setItem('plamo_sso_user', JSON.stringify(currentUser));
+
+      renderAuthUI();
+      loadWorkbenchData();
+      closeEditProfileModal();
+      alert('✨ ¡Perfil de modelista actualizado exitosamente!');
+    } catch (err) {
+      if (errorMsg) {
+        errorMsg.textContent = err.message;
+        errorMsg.style.display = 'block';
+      } else {
+        alert(err.message);
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '💾 Guardar Cambios';
+      }
+    }
+  }
+
   // Load and Render Workbench Data
   async function loadWorkbenchData() {
     const unauthView = document.getElementById('workbench-unauth-view');
@@ -3069,8 +3341,8 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     if (avatarSlot) {
       const initials = (currentUser.displayName || currentUser.username || 'U').slice(0, 2).toUpperCase();
       avatarSlot.innerHTML = currentUser.avatarUrl 
-        ? '<img src="' + currentUser.avatarUrl + '" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);">'
-        : '<div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1.1rem;">' + initials + '</div>';
+        ? '<img src="' + currentUser.avatarUrl + '" style="width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color);">'
+        : '<div style="width: 52px; height: 52px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1.15rem;">' + initials + '</div>';
     }
     const titleSlot = document.getElementById('wb-user-title');
     if (titleSlot) titleSlot.textContent = 'Taller de ' + (currentUser.displayName || '@' + currentUser.username);
@@ -3078,6 +3350,29 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     if (ageBadge) {
       ageBadge.textContent = currentUser.isAdult ? 'Mayor de Edad (18+)' : 'Adolescente (14-17)';
       ageBadge.style.color = currentUser.isAdult ? '#4ade80' : '#38bdf8';
+    }
+
+    const bioSlot = document.getElementById('wb-user-bio');
+    if (bioSlot) {
+      if (currentUser.bio && currentUser.bio.trim().length > 0) {
+        bioSlot.textContent = currentUser.bio;
+        bioSlot.style.display = 'block';
+      } else {
+        bioSlot.style.display = 'none';
+      }
+    }
+
+    const specsSlot = document.getElementById('wb-user-specialties');
+    if (specsSlot) {
+      const specs = Array.isArray(currentUser.specialties) ? currentUser.specialties : [];
+      if (specs.length > 0) {
+        specsSlot.innerHTML = specs.map(s => 
+          '<span class="filter-pill" style="font-size: 0.72rem; padding: 0.15rem 0.5rem; background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); color: #38bdf8;">' + escapeHtml(s) + '</span>'
+        ).join('');
+        specsSlot.style.display = 'flex';
+      } else {
+        specsSlot.style.display = 'none';
+      }
     }
 
     const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';

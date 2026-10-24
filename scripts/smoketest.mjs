@@ -168,7 +168,52 @@ async function runSmoketest() {
     const meData = await meRes.json();
     assert.equal(meData.activeTenant, 'gunplajunkies');
     assert.equal(meData.user.username, 'amuroray');
-    console.log('[PASS] Dual Auth (Username/Password + Google SSO + Automatic Account Linking) verified.');
+
+    // Test Builder Profile Editor (PATCH /api/v1/auth/me)
+    const updateProfileRes = await fetch(`${baseUrl}/api/v1/auth/me`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        displayName: 'Amuro Ray - White Devil Custom',
+        bio: 'Modelista experto en la Federación Terrestre. Armado Gunpla RG/MG y pintura personalizada.',
+        avatarUrl: 'https://media.gunplajunkies.com/uploads/general/avatar-amuro.jpg',
+        specialties: ['Gunpla RG', 'Master Grade', 'Aerografía Laca'],
+        whatsapp: '+51 987 654 321',
+        socialLinks: ['https://instagram.com/amuro_gunpla']
+      })
+    });
+    assert.equal(updateProfileRes.status, 200);
+    const updatedProfileData = await updateProfileRes.json();
+    assert.equal(updatedProfileData.user.displayName, 'Amuro Ray - White Devil Custom');
+    assert.equal(updatedProfileData.user.bio, 'Modelista experto en la Federación Terrestre. Armado Gunpla RG/MG y pintura personalizada.');
+    assert.equal(updatedProfileData.user.avatarUrl, 'https://media.gunplajunkies.com/uploads/general/avatar-amuro.jpg');
+    assert.deepEqual(updatedProfileData.user.specialties, ['Gunpla RG', 'Master Grade', 'Aerografía Laca']);
+    assert.equal(updatedProfileData.user.whatsapp, '+51 987 654 321');
+
+    // Verify GET /api/v1/builders/amuroray reflects the updated profile
+    const builderGetRes = await fetch(`${baseUrl}/api/v1/builders/amuroray`, {
+      headers: { 'X-Tenant-Slug': 'gunplajunkies' }
+    });
+    assert.equal(builderGetRes.status, 200);
+    const builderGetData = await builderGetRes.json();
+    assert.equal(builderGetData.displayName, 'Amuro Ray - White Devil Custom');
+    assert.equal(builderGetData.avatarUrl, 'https://media.gunplajunkies.com/uploads/general/avatar-amuro.jpg');
+    assert.deepEqual(builderGetData.specialties, ['Gunpla RG', 'Master Grade', 'Aerografía Laca']);
+
+    // Validation: empty display name should return 400
+    const invalidProfileRes = await fetch(`${baseUrl}/api/v1/auth/me`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({ displayName: '' })
+    });
+    assert.equal(invalidProfileRes.status, 400);
+    console.log('[PASS] Dual Auth & Builder Profile Editor (PATCH /api/v1/auth/me & Validation) verified.');
 
     // 6. Verify Resend.com Multi-Domain Email Dispatch (plamoscale.com vs gunplajunkies.com)
     const contactPsRes = await fetch(`${baseUrl}/api/v1/notifications/contact-messages`, {
@@ -619,7 +664,9 @@ async function runSmoketest() {
     assert.ok(gunplaHtml.includes('modal-contest-entry'), 'Should contain Contest Entry Modal');
     assert.ok(gunplaHtml.includes('openContestEntryModal'), 'Should contain openContestEntryModal handler');
     assert.ok(gunplaHtml.includes('voteEntry'), 'Should contain voteEntry handler');
-    console.log('[PASS] GunplaJunkies Web Frontend (UXP-01 Shell & Contest UI) verified successfully.');
+    assert.ok(gunplaHtml.includes('modal-edit-profile'), 'Should contain Profile Editor Modal');
+    assert.ok(gunplaHtml.includes('openEditProfileModal'), 'Should contain openEditProfileModal handler');
+    console.log('[PASS] GunplaJunkies Web Frontend (UXP-01 Shell, Contest UI & Profile Editor) verified successfully.');
 
     // 20. DT6 - Contest Entry Submission & Duplicate Prevention
     console.log('\n--- Checking DT6: Contest Entry Submission ---');

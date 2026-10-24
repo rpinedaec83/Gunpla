@@ -68,6 +68,8 @@ export interface UserRecord {
   bio: string;
   avatarUrl?: string;
   socialLinks: string[];
+  specialties?: string[];
+  whatsapp?: string;
   isFounder: boolean;
   birthYear?: number;
   isAdult?: boolean;
@@ -80,13 +82,25 @@ export interface PublicBuilderProfile {
   username: string;
   displayName: string;
   bio: string;
+  avatarUrl?: string;
   primaryTenantSlug: string;
   socialLinks: string[];
+  specialties?: string[];
+  whatsapp?: string;
   isFounder: boolean;
   isAdult?: boolean;
   photoCount: number;
   photos: MediaAsset[];
   createdAt: string;
+}
+
+export interface UpdateUserProfileRequest {
+  displayName?: string;
+  bio?: string;
+  avatarUrl?: string;
+  socialLinks?: string[];
+  specialties?: string[];
+  whatsapp?: string;
 }
 
 export interface EmailOutboxItem {

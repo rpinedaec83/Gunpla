@@ -51,7 +51,10 @@ export function toPublicUser(user: UserRecord) {
     authProviders: user.authProviders,
     primaryTenantSlug: user.primaryTenantSlug,
     bio: user.bio,
+    avatarUrl: user.avatarUrl,
     socialLinks: user.socialLinks,
+    specialties: user.specialties || [],
+    whatsapp: user.whatsapp,
     isFounder: user.isFounder,
     isAdult: user.isAdult !== false,
     ageBracket: user.ageBracket || 'adult_18_plus',
@@ -573,3 +576,73 @@ authRouter.get('/me', requireAuth, (req: Request, res: Response) => {
     user: toPublicUser(user)
   });
 });
+
+function handleUpdateProfile(req: Request, res: Response) {
+  const db = getDb();
+  const user = db.users.find((u) => u.id === req.user!.id);
+  if (!user) {
+    sendProblem(req, res, 404, 'Usuario No Encontrado', 'El usuario autenticado no existe.', 'user-not-found');
+    return;
+  }
+
+  const { displayName, bio, avatarUrl, socialLinks, specialties, whatsapp } = req.body;
+
+  if (displayName !== undefined) {
+    if (typeof displayName !== 'string' || displayName.trim().length === 0) {
+      sendProblem(req, res, 400, 'Nombre Inválido', 'El nombre para mostrar no puede estar vacío.', 'validation-error');
+      return;
+    }
+    user.displayName = displayName.trim().slice(0, 80);
+  }
+
+  if (bio !== undefined) {
+    if (typeof bio !== 'string') {
+      sendProblem(req, res, 400, 'Biografía Inválida', 'La biografía debe ser un texto.', 'validation-error');
+      return;
+    }
+    user.bio = bio.trim().slice(0, 500);
+  }
+
+  if (avatarUrl !== undefined) {
+    if (avatarUrl && typeof avatarUrl !== 'string') {
+      sendProblem(req, res, 400, 'Avatar Inválido', 'La URL del avatar debe ser un texto.', 'validation-error');
+      return;
+    }
+    user.avatarUrl = avatarUrl ? avatarUrl.trim() : undefined;
+  }
+
+  if (socialLinks !== undefined) {
+    if (!Array.isArray(socialLinks)) {
+      sendProblem(req, res, 400, 'Enlaces Inválidos', 'Los enlaces sociales deben ser una lista de URLs.', 'validation-error');
+      return;
+    }
+    user.socialLinks = socialLinks.map((l) => String(l).trim()).filter(Boolean);
+  }
+
+  if (specialties !== undefined) {
+    if (!Array.isArray(specialties)) {
+      sendProblem(req, res, 400, 'Especialidades Inválidas', 'Las especialidades deben ser una lista de textos.', 'validation-error');
+      return;
+    }
+    user.specialties = specialties.map((s) => String(s).trim()).filter(Boolean);
+  }
+
+  if (whatsapp !== undefined) {
+    if (whatsapp && typeof whatsapp !== 'string') {
+      sendProblem(req, res, 400, 'WhatsApp Inválido', 'El número de WhatsApp debe ser un texto.', 'validation-error');
+      return;
+    }
+    user.whatsapp = whatsapp ? whatsapp.trim().slice(0, 30) : undefined;
+  }
+
+  saveDb(db);
+
+  return res.status(200).json({
+    message: 'Perfil actualizado exitosamente',
+    user: toPublicUser(user)
+  });
+}
+
+authRouter.patch('/me', requireAuth, handleUpdateProfile);
+authRouter.put('/me', requireAuth, handleUpdateProfile);
+authRouter.patch('/profile', requireAuth, handleUpdateProfile);

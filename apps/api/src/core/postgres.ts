@@ -144,6 +144,7 @@ async function syncStateToPostgresInternal(client: any, state: PlatformDatabaseS
          auth_providers = EXCLUDED.auth_providers,
          roles = EXCLUDED.roles,
          bio = EXCLUDED.bio,
+         avatar_url = EXCLUDED.avatar_url,
          social_links = EXCLUDED.social_links`,
       [
         u.id,

@@ -31,6 +31,10 @@ Current live state of the project.
   - **Estilos & Opciones:** Modo ahorro de tinta (*Light Ink-Saver*) para impresoras de concurso o modo *Mecha Dark*, foto de miniatura, desglose de químicas de pintura usadas y casillero de puntuación para jueces (Montaje / Pintura / Acabado / Creatividad).
 - **Interactive Personal Workbench & Workshop (`Mi Taller`):**
   - Integrated personal dashboard with live metric counters: Total Stash, Backlog (unbuilt), WIP (in progress), Built (completed), and Paint Rack inventory.
+  - **Editor de Perfil de Modelista (`PATCH /api/v1/auth/me`, `#modal-edit-profile`):**
+    - Personalización de nombre público / alias, biografía extendida (hasta 500 caracteres), especialidades técnicas con selector de etiquetas rápidas (*Gunpla MG, RG, Custom Paint, Aerografía Laca, Pátinas & Weathering, Dioramas*), número de WhatsApp para contacto/comisiones y enlaces sociales.
+    - Subida directa de foto de perfil / avatar integrada con la pipeline de Cloudflare R2 / S3 con vista previa circular en vivo.
+    - Sincronización inmediata con el encabezado del Workbench, badge superior del navbar y directorio público de modelistas.
   - **Stash Management:** Add kits from master catalog, track box status (`unbuilt`, `in_progress`, `built`, `for_trade`, `wishlist`), star ratings, acquisition prices, and notes.
   - **Step-by-Step Build Logs:** Create build projects linked to kits, upload progress photos directly from browser/camera via `/api/v1/media/upload`, and add chronological stages (`unboxing`, `assembly`, `priming`, `painting`, `weathering`, `final_reveal`).
   - **Paint Rack:** Inventory control with hex color swatches and instant quantity adjustment (`+` / `-`).
