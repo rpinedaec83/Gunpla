@@ -157,7 +157,7 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
   ];
 
   // 2. Seed Users (Platform Owner rpineda + 4 Founding Builders from plamoscale.com)
-  const defaultPasswordHash = bcrypt.hashSync('PlamoScale2026!', 10);
+  const defaultPasswordHash = bcrypt.hashSync(process.env.SEED_DEFAULT_CREDENTIAL || 'PlamoScaleDev2026!', 10);
 
   const users: UserRecord[] = [
     {

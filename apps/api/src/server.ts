@@ -56,7 +56,7 @@ export function createApp() {
       seededPhotosCount: db.mediaAssets.length,
       kitsCount: db.kits ? db.kits.length : 0,
       paintsCount: db.paints ? db.paints.length : 0,
-      authModes: ['local-username-password', 'google-oauth-oidc-sso'],
+      authModes: ['local-credentials', 'google-oauth-oidc-sso'],
       emailProvider: 'resend.com',
       lastSeededAt: db.lastSeededAt,
       timestamp: new Date().toISOString()
