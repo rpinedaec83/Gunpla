@@ -40,3 +40,4 @@ yarn-error.log*
 
 # Legacy nested git backups
 .git-legacy-backup/
+apps/api/data/

@@ -26,6 +26,13 @@
       "atlas_validate.md",
       "docs",
       "infra",
+      "node_modules",
+      "package-lock.json",
+      "package.json",
+      "packages",
+      "apps",
+      "tsconfig.base.json",
+      "tsconfig.json",
       "scripts",
       "secrets.md",
       "seed.md"
