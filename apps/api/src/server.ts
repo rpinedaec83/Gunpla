@@ -16,6 +16,7 @@ import { catalogRouter } from './slices/catalog-scalemates/catalog.slice';
 import { workbenchRouter } from './slices/workbench-stash/workbench.slice';
 import { buildsRouter, mediaRouter } from './slices/build-logs/builds.slice';
 import { communityRouter } from './slices/community/community.slice';
+import { marketplaceRouter, commissionsRouter } from './slices/marketplace/marketplace.slice';
 import { openApiSpec } from './openapi/openapi-spec';
 
 dotenv.config();
@@ -87,6 +88,8 @@ export function createApp() {
   app.use('/api/v1/workbench', workbenchRouter);
   app.use('/api/v1/builds', buildsRouter);
   app.use('/api/v1/media', mediaRouter);
+  app.use('/api/v1/marketplace', marketplaceRouter);
+  app.use('/api/v1/commissions', commissionsRouter);
   app.use('/api/v1', communityRouter);
 
   // RFC 7807 Error Handler (handles body-parser entity.too.large, JSON syntax errors, etc.)

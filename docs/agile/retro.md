@@ -162,3 +162,27 @@ Decisions made:
 Lessons learned:
 - Displaying participating builds directly inside each contest card creates an immediate competitive leaderboard experience that drives community engagement and inspires other builders to submit their own WIPs.
 Usage: Moderate -- self-estimated
+
+### DT7 -- Slice 7: Stash Marketplace (Bazar) & Custom Commissions Directory | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Designed Marketplace & Commissions data contracts in `@gunpla/shared` (`packages/shared/src/index.ts`):
+  - `MarketplaceListingRecord`, `CreateMarketplaceListingRequest`, `UpdateMarketplaceListingRequest`, `BoxCondition`, `MarketplaceType`, `MarketplaceStatus`, `CommissionBuilderRecord`.
+- Implemented Marketplace & Commissions slice (`apps/api/src/slices/marketplace/marketplace.slice.ts`):
+  - `GET /api/v1/marketplace/listings`: Tenant-scoped kit listings (GunplaJunkies filters to mecha/scifi/figures; PlamoScale displays all disciplines), filterable by status (`active`), type (`sale`, `trade`, `both`), and keyword search. Automatically joins kit master details.
+  - `POST /api/v1/marketplace/listings`: Authenticated builders publish kits. When linked to `stashItemId`, verifies ownership and automatically updates the builder's personal stash item status to `for_trade`.
+  - `PATCH /api/v1/marketplace/listings/:id` & `DELETE /api/v1/marketplace/listings/:id`: Listing modifications and removals with strict ownership verification (`403 Forbidden` if not owner).
+  - `GET /api/v1/commissions/builders`: Featured commission directory highlighting specialized builders (`aperich` for Master/Perfect Grade custom airbrushing, `fog1labs1` for military weathering/dioramas, `dcampos` for resin conversions/scribing) with direct WhatsApp consultation links and portfolios.
+- Seeded starter marketplace listings and commission builder profiles in `seed-legacy.ts` and `apps/api/src/core/db.ts`.
+- Updated UXP-01 App Shell template (`packages/shared/src/ui-shell/app-shell.ts`):
+  - Added "Bazar & Venta de Kits" (`#view-marketplace`) and "Comisiones de Pintura" (`#view-commissions`) navigation items and interactive views to both `plamoscale-web` and `gunplajunkies-web`.
+  - Embedded direct WhatsApp chat buttons (`contactWhatsapp`), price tags (`S/. 380 PEN`), box condition badges (`Mint / Sealed`), and commission status indicators (`Disponible para Proyectos`).
+- Updated `apps/plamoscale-web/src/server.ts` and `apps/gunplajunkies-web/src/server.ts` to fetch listings and builders in parallel (`Promise.allSettled`).
+- Documented OpenAPI 3.1 endpoints in `apps/api/src/openapi/openapi-spec.ts`.
+- Expanded CLI smoketest (`scripts/smoketest.mjs`) with Checks 22 and 23. Verified end-to-end listing creation from stash, auto-status update to `for_trade`, 403 Forbidden protection, tenant category isolation, commission directory lookup, and frontend HTML rendering. All 23/23 checks passed.
+Issues hit:
+- When running forced seed (`npm run db:seed`), listings defaulted to empty array unless explicitly populated with `INITIAL_LISTINGS`; wired `INITIAL_LISTINGS` and `INITIAL_CONTEST_ENTRIES` directly into `seed-legacy.ts`.
+Decisions made:
+- Publishing from a user's Stash seamlessly links the physical kit in their inventory with the marketplace, removing manual duplicate entry and keeping workbench metrics synchronized.
+Lessons learned:
+- Direct WhatsApp community link integration significantly lowers transaction friction for regional hobbyists compared to closed in-app messaging.
+Usage: Moderate -- self-estimated

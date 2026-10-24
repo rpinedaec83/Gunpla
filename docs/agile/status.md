@@ -4,13 +4,19 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **DVT (In Progress -- DT6 Completed, DT7 Next)**
-- Overall state: Green -- DT1, DT2, DT3, DT4, DT5 & DT6 implemented and verified via `npm run smoketest` (`21/21 checks passed`).
-- Current branch or release line: `feature/dt6-contests-voting` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
-- Last meaningful update: 2026-10-23
+- Stage: **DVT (Complete -- DT6 & DT7 Verified)**
+- Overall state: Green -- DT1 through DT7 implemented and verified via `npm run smoketest` (`23/23 checks passed`).
+- Current branch or release line: `feature/dt7-marketplace-commissions` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Last meaningful update: 2026-10-24
 
 ## Live Capabilities
 
+- **Stash Marketplace & Custom Commissions (`Slice 7 / DT7`):**
+  - Tenant-scoped kit marketplace (`GET /api/v1/marketplace/listings`, `POST /api/v1/marketplace/listings`).
+  - Seamless publishing from personal Stash (`stashItemId`), auto-updating inventory status to `for_trade`.
+  - Ownership protection on listing edits/deletes (`403 Forbidden`).
+  - Featured commission builders directory (`GET /api/v1/commissions/builders`) highlighting top painters (`aperich`, `fog1labs1`, `dcampos`) with direct WhatsApp consultation buttons and portfolios.
+  - Interactive "Bazar & Venta de Kits" (`#view-marketplace`) and "Comisiones de Pintura" (`#view-commissions`) views integrated in both web frontends.
 - **Group Builds, Contests & Community Voting (`Slice 6 / DT6`):**
   - Interactive contest system (`GET /api/v1/contests`, `GET /api/v1/contests/:slugOrId`).
   - Personal build project submission (`POST /api/v1/contests/:id/entries`) with ownership check (`403`) and duplicate protection (`409`).
@@ -59,4 +65,4 @@ Current live state of the project.
 
 ## Next Focus
 
-- Execute **DT5** (`Slice 5: Dual Multi-Tenant Frontends (plamoscale.com & gunplajunkies.com) with UXP-01 App Shell`) in [`docs/agile/devcycle.md`](file:///Users/rpineda/Sources/Gunpla/docs/agile/devcycle.md).
+- Phase 3 (PVT / Release Hardening): Root domain Cloudflare DNS CNAME routing (`@` record), production Google OAuth credentials, and automated backup schedules.

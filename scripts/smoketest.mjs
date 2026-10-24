@@ -677,7 +677,98 @@ async function runSmoketest() {
     assert.ok(detailedContest.entries.some((e) => e.id === entryData.id));
     console.log(`[PASS] Community voting verified (Contest: ${detailedContest.title}, Entries: ${detailedContest.entries.length}).`);
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 SMOKETEST CHECKS PASSED ===');
+    // 22. DT7 - Stash Marketplace (Publish from Stash, Scoping, Ownership Protection)
+    console.log('\n--- Checking DT7: Stash Marketplace Listings & Stash Integration ---');
+    const createListingRes = await fetch(`${baseUrl}/api/v1/marketplace/listings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        stashItemId: stashItem.id,
+        kitId: stashItem.kitId,
+        type: 'both',
+        price: 280,
+        currency: 'PEN',
+        boxCondition: 'mint_sealed',
+        notes: 'Kit en caja sellada sin abrir, disponible para venta o intercambio.',
+        contactWhatsapp: 'https://chat.whatsapp.com/GJsVix10Hqy2ywwYmh8EYx',
+        contactLocation: 'Lima (Miraflores)'
+      })
+    });
+    assert.equal(createListingRes.status, 201);
+    const listingData = await createListingRes.json();
+    assert.ok(listingData.id);
+    assert.equal(listingData.stashItemId, stashItem.id);
+    assert.equal(listingData.price, 280);
+    assert.equal(listingData.type, 'both');
+    assert.equal(listingData.boxCondition, 'mint_sealed');
+
+    // Verify stash item status was automatically updated to 'for_trade'
+    const verifyStashRes = await fetch(`${baseUrl}/api/v1/workbench/stash`, {
+      headers: { Authorization: `Bearer ${googleSsoData.token}` }
+    });
+    assert.equal(verifyStashRes.status, 200);
+    const userStashList = await verifyStashRes.json();
+    const updatedStashItem = userStashList.items.find((s) => s.id === stashItem.id);
+    assert.ok(updatedStashItem);
+    assert.equal(updatedStashItem.status, 'for_trade', 'Stash item status must transition to for_trade');
+
+    // Verify unauthorized deletion attempt by quattro returns 403 Forbidden
+    const unauthDelRes = await fetch(`${baseUrl}/api/v1/marketplace/listings/${listingData.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${quattroData.token}` }
+    });
+    assert.equal(unauthDelRes.status, 403, 'Deleting another user listing must return 403 Forbidden');
+
+    // Verify tenant-scoped marketplace listing retrieval
+    const gjListingsRes = await fetch(`${baseUrl}/api/v1/marketplace/listings`, {
+      headers: { 'X-Tenant-Slug': 'gunplajunkies' }
+    });
+    assert.equal(gjListingsRes.status, 200);
+    const gjListings = await gjListingsRes.json();
+    assert.ok(
+      gjListings.items.every((l) => ['gunpla-mecha', 'scifi', 'figures'].includes(l.category)),
+      'GunplaJunkies marketplace must only show mecha/scifi/figures kits'
+    );
+
+    const plamoListingsRes = await fetch(`${baseUrl}/api/v1/marketplace/listings`, {
+      headers: { 'X-Tenant-Slug': 'plamoscale' }
+    });
+    assert.equal(plamoListingsRes.status, 200);
+    const plamoListings = await plamoListingsRes.json();
+    assert.ok(plamoListings.items.some((l) => l.category === 'military'), 'PlamoScale marketplace must include military kits');
+    console.log(`[PASS] Marketplace listing created from stash, auto-status update, 403 ownership & tenant scoping verified.`);
+
+    // 23. DT7 - Custom Commissions Directory & Web UI Sections
+    console.log('\n--- Checking DT7: Custom Commissions Directory & Web Shell Sections ---');
+    const buildersRes = await fetch(`${baseUrl}/api/v1/commissions/builders`);
+    assert.equal(buildersRes.status, 200);
+    const buildersData = await buildersRes.json();
+    assert.ok(buildersData.items.length >= 3, 'Must have at least 3 featured commission builders');
+    const builderUsernames = buildersData.items.map((b) => b.username);
+    assert.ok(builderUsernames.includes('aperich'), 'aperich must be in commission builders');
+    assert.ok(builderUsernames.includes('fog1labs1'), 'fog1labs1 must be in commission builders');
+    assert.ok(builderUsernames.includes('dcampos'), 'dcampos must be in commission builders');
+
+    // Verify Web Frontends contain the new sections in their rendered HTML
+    const plamoMarketRes = await fetch(`${plamoUrl}/`);
+    const plamoMarketHtml = await plamoMarketRes.text();
+    assert.ok(plamoMarketHtml.includes('Bazar & Venta de Kits'), 'PlamoScale frontend must contain Bazar in navigation');
+    assert.ok(plamoMarketHtml.includes('Comisiones de Pintura'), 'PlamoScale frontend must contain Commissions in navigation');
+    assert.ok(plamoMarketHtml.includes('view-marketplace'), 'PlamoScale frontend must render marketplace section');
+    assert.ok(plamoMarketHtml.includes('view-commissions'), 'PlamoScale frontend must render commissions section');
+
+    const gunplaMarketRes = await fetch(`${gunplaUrl}/`);
+    const gunplaMarketHtml = await gunplaMarketRes.text();
+    assert.ok(gunplaMarketHtml.includes('Bazar & Venta de Kits'), 'GunplaJunkies frontend must contain Bazar in navigation');
+    assert.ok(gunplaMarketHtml.includes('Comisiones de Pintura'), 'GunplaJunkies frontend must contain Commissions in navigation');
+    assert.ok(gunplaMarketHtml.includes('view-marketplace'), 'GunplaJunkies frontend must render marketplace section');
+    assert.ok(gunplaMarketHtml.includes('view-commissions'), 'GunplaJunkies frontend must render commissions section');
+    console.log(`[PASS] Commission builders directory (${buildersData.items.length} builders) and Web Frontends UI integration verified.`);
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 SMOKETEST CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

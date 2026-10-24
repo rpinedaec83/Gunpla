@@ -44,13 +44,15 @@ async function fetchTenantData(): Promise<AppShellData> {
   try {
     const headers = { 'X-Tenant-Slug': 'gunplajunkies' };
 
-    const [buildersRes, buildsRes, kitsRes, paintsRes, contestsRes, shopsRes] = await Promise.allSettled([
+    const [buildersRes, buildsRes, kitsRes, paintsRes, contestsRes, shopsRes, listingsRes, commissionsRes] = await Promise.allSettled([
       fetch(`${API_URL}/api/v1/builders`, { headers }).then(r => r.json()),
       fetch(`${API_URL}/api/v1/builds`, { headers }).then(r => r.json()),
       fetch(`${API_URL}/api/v1/catalog/kits`, { headers }).then(r => r.json()),
       fetch(`${API_URL}/api/v1/catalog/paints`, { headers }).then(r => r.json()),
       fetch(`${API_URL}/api/v1/contests`, { headers }).then(r => r.json()),
-      fetch(`${API_URL}/api/v1/shops`, { headers }).then(r => r.json())
+      fetch(`${API_URL}/api/v1/shops`, { headers }).then(r => r.json()),
+      fetch(`${API_URL}/api/v1/marketplace/listings`, { headers }).then(r => r.json()),
+      fetch(`${API_URL}/api/v1/commissions/builders`, { headers }).then(r => r.json())
     ]);
 
     const buildersData: any = buildersRes.status === 'fulfilled' ? buildersRes.value : { items: [] };
@@ -59,6 +61,8 @@ async function fetchTenantData(): Promise<AppShellData> {
     const paintsData: any = paintsRes.status === 'fulfilled' ? paintsRes.value : { items: [] };
     const contestsData: any = contestsRes.status === 'fulfilled' ? contestsRes.value : { items: [] };
     const shopsData: any = shopsRes.status === 'fulfilled' ? shopsRes.value : { items: [] };
+    const listingsData: any = listingsRes.status === 'fulfilled' ? listingsRes.value : { items: [] };
+    const commissionsData: any = commissionsRes.status === 'fulfilled' ? commissionsRes.value : { items: [] };
 
     // Flatten mediaAssets from builders that have Gunpla/Mecha photos
     const builders: UserRecord[] = buildersData.items || [];
@@ -76,7 +80,9 @@ async function fetchTenantData(): Promise<AppShellData> {
       paints: paintsData.items || [],
       builds: buildsData.items || [],
       contests: contestsData.items || [],
-      shops: shopsData.items || []
+      shops: shopsData.items || [],
+      listings: listingsData.items || [],
+      commissionBuilders: commissionsData.items || []
     };
   } catch (err) {
     console.error('[GunplaJunkies] Error fetching live API data:', err);

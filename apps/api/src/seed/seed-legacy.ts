@@ -5,6 +5,8 @@ import { Tenant, UserRecord, MediaAsset, ScaleCategory } from '@gunpla/shared';
 import { getDb, saveDb, PlatformDatabaseState } from '../core/db';
 import { INITIAL_KITS, INITIAL_PAINTS } from './seed-catalog';
 import { INITIAL_BUILDS } from './seed-builds';
+import { INITIAL_CONTEST_ENTRIES } from '../slices/community/community.slice';
+import { INITIAL_LISTINGS } from '../slices/marketplace/marketplace.slice';
 
 const ALL_CATEGORIES: ScaleCategory[] = [
   'gunpla-mecha',
@@ -240,6 +242,8 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
   const kits = !forceReset && db.kits && db.kits.length > 0 ? db.kits : INITIAL_KITS;
   const paints = !forceReset && db.paints && db.paints.length > 0 ? db.paints : INITIAL_PAINTS;
   const builds = !forceReset && db.builds && db.builds.length > 0 ? db.builds : INITIAL_BUILDS;
+  const contestEntries = !forceReset && db.contestEntries && db.contestEntries.length > 0 ? db.contestEntries : INITIAL_CONTEST_ENTRIES;
+  const marketplaceListings = !forceReset && db.marketplaceListings && db.marketplaceListings.length > 0 ? db.marketplaceListings : INITIAL_LISTINGS;
 
   const nextState: PlatformDatabaseState = {
     tenants,
@@ -251,7 +255,8 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
     stashItems: db.stashItems || [],
     paintRackItems: db.paintRackItems || [],
     builds,
-    contestEntries: db.contestEntries || [],
+    contestEntries,
+    marketplaceListings,
     lastSeededAt: now
   };
 

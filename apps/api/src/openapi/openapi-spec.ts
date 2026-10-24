@@ -445,6 +445,61 @@ export const openApiSpec = {
         summary: 'List trusted hobby shops directory with WhatsApp and product catalog links',
         responses: { '200': { description: 'Shops list' } }
       }
+    },
+    '/api/v1/marketplace/listings': {
+      get: {
+        tags: ['Marketplace'],
+        summary: 'List kits for sale or trade scoped by tenant allowed categories',
+        parameters: [
+          { name: 'category', in: 'query', schema: { type: 'string' } },
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['active', 'reserved', 'completed', 'cancelled'] } },
+          { name: 'type', in: 'query', schema: { type: 'string', enum: ['sale', 'trade', 'both'] } },
+          { name: 'search', in: 'query', schema: { type: 'string' } }
+        ],
+        responses: { '200': { description: 'List of marketplace kit listings' } }
+      },
+      post: {
+        tags: ['Marketplace'],
+        summary: 'Post a kit for sale or trade (optionally linking an item from personal Stash)',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '201': { description: 'Listing created' },
+          '400': { description: 'Validation error' },
+          '403': { description: 'Forbidden (not stash owner)' },
+          '404': { description: 'Kit or stash item not found' }
+        }
+      }
+    },
+    '/api/v1/marketplace/listings/{id}': {
+      patch: {
+        tags: ['Marketplace'],
+        summary: 'Update listing status or price',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Listing updated' },
+          '403': { description: 'Forbidden' },
+          '404': { description: 'Listing not found' }
+        }
+      },
+      delete: {
+        tags: ['Marketplace'],
+        summary: 'Delete listing',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Listing deleted' },
+          '403': { description: 'Forbidden' },
+          '404': { description: 'Listing not found' }
+        }
+      }
+    },
+    '/api/v1/commissions/builders': {
+      get: {
+        tags: ['Marketplace'],
+        summary: 'List verified modelers accepting custom painting and building commissions',
+        responses: { '200': { description: 'List of commission builders' } }
+      }
     }
   }
 };

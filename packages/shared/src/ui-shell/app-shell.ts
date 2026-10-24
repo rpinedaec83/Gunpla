@@ -6,7 +6,9 @@ import {
   PaintRecord,
   BuildProjectRecord,
   ContestRecord,
-  ShopRecord
+  ShopRecord,
+  MarketplaceListingRecord,
+  CommissionBuilderRecord
 } from '../index';
 
 export interface AppShellConfig {
@@ -33,6 +35,8 @@ export interface AppShellData {
   builds: BuildProjectRecord[];
   contests: ContestRecord[];
   shops: ShopRecord[];
+  listings?: MarketplaceListingRecord[];
+  commissionBuilders?: CommissionBuilderRecord[];
 }
 
 export function renderAppShell(config: AppShellConfig, data: AppShellData): string {
@@ -705,6 +709,10 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       <a class="nav-item" onclick="switchTab('workbench')">
         <span>Banco de Trabajo & Stash</span>
       </a>
+      <a class="nav-item" onclick="switchTab('marketplace')">
+        <span>Bazar & Venta de Kits</span>
+        <span class="nav-badge">${(data.listings || []).length}</span>
+      </a>
 
       <div class="nav-group-title">Comunidad & Eventos</div>
       <a class="nav-item" onclick="switchTab('builders')">
@@ -714,6 +722,10 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       <a class="nav-item" onclick="switchTab('contests')">
         <span>Concursos & Group Builds</span>
         <span class="nav-badge">${data.contests.length}</span>
+      </a>
+      <a class="nav-item" onclick="switchTab('commissions')">
+        <span>Comisiones de Pintura</span>
+        <span class="nav-badge">${(data.commissionBuilders || []).length}</span>
       </a>
       <a class="nav-item" onclick="switchTab('shops')">
         <span>Tiendas de Confianza</span>
@@ -1094,6 +1106,98 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
           .join('')}
       </div>
     </section>
+
+    <!-- 9. MARKETPLACE TAB -->
+    <section id="view-marketplace" class="view-section">
+      <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <p style="color: #94a3b8; font-size: 0.9rem;">
+          Maquetas y kits publicados por la comunidad para venta directa o intercambio seguro entre modelistas.
+        </p>
+        <button class="btn-primary" onclick="openNewListingModal()">
+          + Publicar Maqueta para Venta/Canje
+        </button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;">
+        ${(data.listings || [])
+          .map(
+            (l) => `
+          <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.5rem; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+              <span class="status-badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);">
+                ${l.type === 'both' ? 'VENTA O CANJE' : l.type === 'sale' ? 'VENTA' : 'INTERCAMBIO'}
+              </span>
+              <span style="font-size: 1.15rem; font-weight: 800; color: #4ade80;">
+                ${l.price ? l.currency + ' ' + l.price : 'A convenir'}
+              </span>
+            </div>
+            
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem;">
+              ${l.kit ? l.kit.name : 'Kit a Escala'}
+            </h3>
+            <div style="font-size: 0.78rem; color: var(--accent); margin-bottom: 0.65rem;">
+              ${l.kit ? l.kit.brand + ' • ' + l.kit.scale : l.category} • Estado: <strong>${l.boxCondition.replace('_', ' ')}</strong>
+            </div>
+
+            <p style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 1rem; flex: 1;">
+              ${l.notes}
+            </p>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 0.85rem; font-size: 0.8rem; color: #94a3b8; display: flex; justify-content: space-between; align-items: center;">
+              <div>Vendedor: <strong>@${l.username}</strong><br><span style="font-size: 0.75rem; color: #64748b;">📍 ${l.contactLocation}</span></div>
+              <a href="${l.contactWhatsapp}" target="_blank" rel="noopener" class="filter-pill" style="color: #22c55e; border-color: rgba(34, 197, 94, 0.3); text-decoration: none; font-weight: 600;">
+                Contactar 💬
+              </a>
+            </div>
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+    </section>
+
+    <!-- 10. COMMISSIONS TAB -->
+    <section id="view-commissions" class="view-section">
+      <div style="margin-bottom: 1.5rem;">
+        <p style="color: #94a3b8; font-size: 0.9rem;">
+          Contrata a modelistas certificados para armar, detallar y pintar tus maquetas con técnicas profesionales de aerografía.
+        </p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem;">
+        ${(data.commissionBuilders || [])
+          .map(
+            (cb) => `
+          <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.5rem; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">${cb.displayName}</h3>
+              <span class="status-badge">DISPONIBLE</span>
+            </div>
+            
+            <p style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 0.75rem;">
+              ${cb.bio}
+            </p>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1rem;">
+              ${cb.specialties.map((sp) => `<span style="font-size: 0.72rem; background: rgba(255,255,255,0.06); padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">${sp}</span>`).join('')}
+            </div>
+
+            <div style="font-size: 0.85rem; color: #e2e8f0; margin-bottom: 1rem;">
+              Tarifa estimada: <strong style="color: #4ade80;">Desde PEN ${cb.startingPricePEN}</strong>
+            </div>
+
+            <div style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+              ${cb.instagramUrl ? `<a href="${cb.instagramUrl}" target="_blank" rel="noopener" style="font-size: 0.8rem; color: var(--accent); text-decoration: none;">Instagram ➔</a>` : '<span></span>'}
+              <a href="${cb.whatsappUrl}" target="_blank" rel="noopener" class="btn-primary" style="padding: 0.35rem 0.85rem; font-size: 0.82rem; text-decoration: none;">
+                Cotizar Proyecto 💬
+              </a>
+            </div>
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+    </section>
   </main>
 </div>
 
@@ -1122,8 +1226,10 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       kits: 'Catálogo de Kits',
       paints: 'Pinturas & Suministros',
       workbench: 'Banco de Trabajo & Stash',
+      marketplace: 'Bazar & Venta de Kits',
       builders: 'Modelistas Fundadores',
       contests: 'Concursos & Group Builds',
+      commissions: 'Comisiones de Armado & Pintura',
       shops: 'Tiendas de Confianza'
     };
 
@@ -1205,6 +1311,10 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
 
   function voteEntry(contestId, entryId) {
     alert('Voto registrado para la obra participante ' + entryId + ' en ' + contestId + '. (POST /api/v1/contests/' + contestId + '/entries/' + entryId + '/vote)');
+  }
+
+  function openNewListingModal() {
+    alert('Para publicar un kit de tu Stash en el Bazar/Marketplace, utiliza el endpoint POST /api/v1/marketplace/listings con tu token de sesión.');
   }
 </script>
 

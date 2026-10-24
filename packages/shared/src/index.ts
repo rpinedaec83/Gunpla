@@ -402,6 +402,66 @@ export interface ShopRecord {
   isVerified: boolean;
 }
 
+export type BoxCondition = 'mint_sealed' | 'opened_complete' | 'started' | 'damaged_box';
+export type MarketplaceType = 'sale' | 'trade' | 'both';
+export type MarketplaceStatus = 'active' | 'reserved' | 'completed' | 'cancelled';
+
+export interface MarketplaceListingRecord {
+  id: string;
+  stashItemId?: string;
+  kitId: string;
+  kit?: KitRecord;
+  userId: string;
+  username: string;
+  userDisplayName: string;
+  type: MarketplaceType;
+  price?: number;
+  currency?: string;
+  boxCondition: BoxCondition;
+  notes: string;
+  contactWhatsapp?: string;
+  contactLocation: string;
+  category: ScaleCategory;
+  status: MarketplaceStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateMarketplaceListingRequest {
+  stashItemId?: string;
+  kitId: string;
+  type?: MarketplaceType;
+  price?: number;
+  currency?: string;
+  boxCondition?: BoxCondition;
+  notes?: string;
+  contactWhatsapp?: string;
+  contactLocation?: string;
+}
+
+export interface UpdateMarketplaceListingRequest {
+  price?: number;
+  currency?: string;
+  status?: MarketplaceStatus;
+  notes?: string;
+  contactWhatsapp?: string;
+  contactLocation?: string;
+}
+
+export interface CommissionBuilderRecord {
+  id: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  bio: string;
+  specialties: string[];
+  acceptingCommissions: boolean;
+  startingPricePEN?: number;
+  portfolioSampleUrls: string[];
+  whatsappUrl?: string;
+  instagramUrl?: string;
+}
+
 export interface PaginatedResult<T> {
   items: T[];
   nextCursor: string | null;
