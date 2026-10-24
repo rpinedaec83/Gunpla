@@ -109,7 +109,12 @@ async function handleUpload(req: Request, res: Response) {
     media: mediaAsset,
     thumbUrl: uploadResult.thumbUrl,
     fullUrl: uploadResult.publicUrl,
-    storageProvider: uploadResult.provider
+    storageProvider: uploadResult.provider,
+    format: uploadResult.format,
+    compressionRatio: uploadResult.compressionRatio,
+    originalSizeBytes: uploadResult.originalSizeBytes,
+    optimizedSizeBytes: uploadResult.sizeBytes,
+    dimensions: uploadResult.dimensions
   });
 }
 

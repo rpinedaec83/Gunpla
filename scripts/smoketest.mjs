@@ -542,16 +542,19 @@ async function runSmoketest() {
     assert.equal(detailedBuild.comments.length, 1);
     console.log(`[PASS] Build project lifecycle verified (Slug: ${detailedBuild.slug}, Steps: 1, Likes: 1, Comments: 1).`);
 
-    // 16. DT4 - Media Upload Pipeline (Cloudflare R2 / Local Disk & 15MB Size Guardrail)
+    // 16. DT4 - Media Upload Pipeline (Sharp WebP Optimization, Cloudflare R2 / Local Disk & 15MB Size Guardrail)
     console.log('\n--- Checking DT4: Media Upload Pipeline & Storage Diagnostics ---');
     // Storage diagnostics endpoint check
     const diagRes = await fetch(`${baseUrl}/api/v1/media/storage-diagnostics`);
     assert.equal(diagRes.status, 200, 'GET /api/v1/media/storage-diagnostics must return 200');
     const diagData = await diagRes.json();
     assert.ok(['local-disk', 'cloudflare-r2'].includes(diagData.provider), 'Storage provider must be local-disk or cloudflare-r2');
-    console.log(`[PASS] Storage Diagnostics verified (Current engine: ${diagData.provider}, Bucket: ${diagData.bucket}).`);
+    assert.equal(diagData.optimizer, 'sharp-webp-pipeline', 'Storage optimizer must be sharp-webp-pipeline');
+    assert.equal(diagData.maxFullDimension, 1920);
+    assert.equal(diagData.maxThumbDimension, 480);
+    console.log(`[PASS] Storage Diagnostics verified (Current engine: ${diagData.provider}, Bucket: ${diagData.bucket}, Optimizer: ${diagData.optimizer}).`);
 
-    // Valid small 1x1 transparent PNG upload
+    // Valid small 1x1 transparent PNG upload (converted to WebP)
     const samplePngBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
     const uploadRes = await fetch(`${baseUrl}/api/v1/media/upload`, {
       method: 'POST',
@@ -571,13 +574,20 @@ async function runSmoketest() {
     const uploadData = await uploadRes.json();
     assert.ok(uploadData.thumbUrl);
     assert.ok(uploadData.fullUrl);
+    assert.ok(uploadData.fullUrl.endsWith('.webp'), 'Full image must have .webp extension');
+    assert.ok(uploadData.thumbUrl.includes('-thumb.webp'), 'Thumb image must include -thumb.webp');
+    assert.equal(uploadData.format, 'webp', 'Image format should be webp');
+    assert.ok(typeof uploadData.compressionRatio === 'string', 'Should include compressionRatio string');
+    assert.ok(uploadData.originalSizeBytes > 0, 'Should include originalSizeBytes');
+    assert.ok(uploadData.optimizedSizeBytes > 0, 'Should include optimizedSizeBytes');
     assert.ok(['local-disk', 'cloudflare-r2'].includes(uploadData.storageProvider));
+    console.log(`[PASS] Sharp WebP Compression verified (Original: ${uploadData.originalSizeBytes}B, Optimized: ${uploadData.optimizedSizeBytes}B, Ratio: ${uploadData.compressionRatio}).`);
 
     // Verify static serving of uploaded image if on local-disk
     if (uploadData.storageProvider === 'local-disk') {
       const staticServeRes = await fetch(`${baseUrl}${uploadData.fullUrl}`);
       assert.equal(staticServeRes.status, 200);
-      assert.equal(staticServeRes.headers.get('content-type'), 'image/png');
+      assert.equal(staticServeRes.headers.get('content-type'), 'image/webp');
     }
 
     // Test rejection of payload exceeding 15MB

@@ -13,8 +13,15 @@ Current live state of the project.
 
 - **Cloudflare R2 / S3 Object Storage & Media Engine (`POST /api/v1/media/upload`, `GET /api/v1/media/storage-diagnostics`):**
   - **Dual-Engine Architecture:** High-resolution photo upload pipeline powered by Cloudflare R2 (S3 API via `@aws-sdk/client-s3`) for zero-egress permanent cloud storage; graceful automatic fallback to local disk (`data/uploads/`) for development and smoketests when credentials are absent.
+  - **Optimización y Compresión Automática de Imágenes (WebP & Dual-Tier):**
+    - Pipeline de procesamiento y compresión automática en servidor mediante `sharp`.
+    - Corrección automática de orientación EXIF (`.rotate()`).
+    - Conversión a formato moderno **WebP** de alta eficiencia.
+    - Generación en dos niveles (*Dual-Tier*): Nivel de visualización full (máx. 1920x1920px, `fit: 'inside'`, calidad 82) y nivel de miniatura ligera (máx. 480x480px, `fit: 'inside'`, calidad 80 con sufijo `-thumb.webp`).
+    - Cálculo de métricas de compresión transparentes (`originalSizeBytes`, `optimizedSizeBytes`, `compressionRatio` ej. 70-85% de ahorro de ancho de banda).
+    - Subida simultánea a Cloudflare R2 o almacenamiento local de ambos niveles.
   - **Security & Integrity:** 15MB file size cap guardrail, MIME type validation, SHA/UUID clean key generation, immutable HTTP cache headers (`max-age=31536000`), and public CDN URL prefixing.
-  - **Diagnostic Endpoint:** `GET /api/v1/media/storage-diagnostics` reporting active storage engine (`cloudflare-r2` vs `local-disk`), bucket name, obfuscated account ID, and public CDN base URL.
+  - **Diagnostic Endpoint:** `GET /api/v1/media/storage-diagnostics` reporting active storage engine (`cloudflare-r2` vs `local-disk`), bucket name, obfuscated account ID, public CDN base URL, y estado del optimizador (`sharp-webp-pipeline`, 1920px máx full, 480px máx thumb, calidad 82).
 - **AI Paint Assistant & Formulation Engine (`/api/v1/paints/ai/*`):**
   - **4-Way Chemical Medium Division:** Interactive medium selector allowing modelers to choose between **Laca** (*Mr. Color, Gaia Notes*), **Acrílico** (*Tamiya X/XF*), **Poliuretano** (*Vallejo Mecha/Model Color*), and **Montana Colors** (*MTN 94, MTN Water Based, MTN PRO* - https://www.montanacolors.com/graffiti/spray/).
   - **Cross-Brand & Spray Conversion:** Instant color matching across all 4 chemical mediums with hex swatches, line details, finish type, user Paint Rack cross-referencing (`ownedInRack`), and prioritization of the user's selected medium.
