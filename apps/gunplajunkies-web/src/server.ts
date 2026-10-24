@@ -37,7 +37,8 @@ const config: AppShellConfig = {
   },
   apiUrl: API_URL,
   otherTenantUrl: OTHER_TENANT_URL,
-  otherTenantName: 'PlamoScale'
+  otherTenantName: 'PlamoScale',
+  googleClientId: process.env.GOOGLE_CLIENT_ID || ''
 };
 
 async function fetchTenantData(): Promise<AppShellData> {

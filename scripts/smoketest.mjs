@@ -780,7 +780,24 @@ async function runSmoketest() {
     );
     console.log(`[PASS] PostgreSQL persistence status endpoint verified (Engine: ${dbStats.engine}, Mode: ${dbStats.mode}).`);
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 SMOKETEST CHECKS PASSED ===');
+    // 25. DT9 - Google OAuth SSO & Interactive Auth Modal on Web Frontends
+    console.log('\n--- Checking DT9: Google OAuth SSO Integration & Web Auth Modals ---');
+    const plamoAuthHtml = await (await fetch(`${plamoUrl}/`)).text();
+    assert.ok(plamoAuthHtml.includes('accounts.google.com/gsi/client'), 'PlamoScale must include Google Identity Services script');
+    assert.ok(plamoAuthHtml.includes('auth-user-container'), 'PlamoScale must render auth user container');
+    assert.ok(plamoAuthHtml.includes('auth-modal'), 'PlamoScale must render auth modal');
+    assert.ok(plamoAuthHtml.includes('g_id_signin'), 'PlamoScale must render Google sign-in container');
+    assert.ok(plamoAuthHtml.includes('quickLoginFounder'), 'PlamoScale must support 1-click founder test login');
+
+    const gunplaAuthHtml = await (await fetch(`${gunplaUrl}/`)).text();
+    assert.ok(gunplaAuthHtml.includes('accounts.google.com/gsi/client'), 'GunplaJunkies must include Google Identity Services script');
+    assert.ok(gunplaAuthHtml.includes('auth-user-container'), 'GunplaJunkies must render auth user container');
+    assert.ok(gunplaAuthHtml.includes('auth-modal'), 'GunplaJunkies must render auth modal');
+    assert.ok(gunplaAuthHtml.includes('g_id_signin'), 'GunplaJunkies must render Google sign-in container');
+
+    console.log('[PASS] Google OAuth 2.0 / OIDC Identity Services & interactive Auth Modal verified on both frontends.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 SMOKETEST CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

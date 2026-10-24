@@ -25,6 +25,7 @@ export interface AppShellConfig {
   apiUrl: string;
   otherTenantUrl: string;
   otherTenantName: string;
+  googleClientId?: string;
 }
 
 export interface AppShellData {
@@ -76,6 +77,7 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     :root {
       --primary: ${config.theme.primaryColor};
@@ -294,6 +296,155 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     }
 
     .btn-primary:hover { opacity: 0.9; }
+
+    /* Auth & User Profile */
+    .btn-auth {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 0.42rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-auth:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--primary);
+    }
+    .user-profile-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.35rem 0.75rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      cursor: pointer;
+      position: relative;
+    }
+    .user-avatar-img {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      object-fit: cover;
+    }
+    .user-dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 0.5rem;
+      background: #111827;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.5rem;
+      min-width: 190px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 100;
+    }
+    .user-dropdown-menu.show { display: block; }
+    .user-dropdown-item {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .user-dropdown-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    /* Auth Modal */
+    #auth-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    #auth-modal.active { display: flex; animation: fadeIn 0.2s ease; }
+    .auth-box {
+      background: #111827;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 440px;
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      position: relative;
+    }
+    .auth-close {
+      position: absolute;
+      top: 1rem;
+      right: 1.25rem;
+      font-size: 1.5rem;
+      color: #94a3b8;
+      cursor: pointer;
+    }
+    .auth-close:hover { color: #fff; }
+    .auth-tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+    .auth-tab-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+    .auth-tab-btn.active {
+      color: #fff;
+      border-bottom-color: var(--primary);
+    }
+    .auth-input-group {
+      margin-bottom: 1rem;
+    }
+    .auth-label {
+      display: block;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-bottom: 0.35rem;
+    }
+    .auth-input {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.9rem;
+    }
+    .auth-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
 
     /* Main Content Area */
     #main-content {
@@ -755,9 +906,17 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
         <span>+ Nueva Bitácora</span>
       </button>
 
+      <!-- Authentication Section -->
+      <div id="auth-user-container" style="position: relative;">
+        <button id="btn-open-login" class="btn-auth" onclick="openAuthModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15.2s.7 5.5 1.9 7.9l3.7-2.9z"/><path fill="#34A853" d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2-6.4-4.8L1.9 17C3.7 20.7 7.5 23.5 12 23.5z"/></svg>
+          <span>Iniciar Sesión</span>
+        </button>
+      </div>
+
       <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #94a3b8; padding-left: 0.5rem; border-left: 1px solid var(--border-color);">
         <span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span>
-        <span>API Live</span>
+        <span>Live</span>
       </div>
     </div>
   </header>
@@ -1211,6 +1370,87 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
   </div>
 </div>
 
+<!-- Auth Modal (Google SSO & Founders Login) -->
+<div id="auth-modal" onclick="closeAuthModal(event)">
+  <div class="auth-box" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeAuthModal()">&times;</span>
+    <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem;">Iniciar Sesión</h3>
+    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.25rem;">
+      Accede a tu Stash personal, participa en concursos y comparte bitácoras paso a paso.
+    </p>
+
+    <div class="auth-tabs">
+      <button class="auth-tab-btn active" onclick="switchAuthTab('google')">Google SSO</button>
+      <button class="auth-tab-btn" onclick="switchAuthTab('credentials')">Modelistas / Clave</button>
+      <button class="auth-tab-btn" onclick="switchAuthTab('register')">Nuevo Registro</button>
+    </div>
+
+    <!-- Google Tab -->
+    <div id="tab-auth-google" class="auth-tab-content">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 1.5rem 0;">
+        <div id="g_id_signin"></div>
+        <p style="font-size: 0.8rem; color: #64748b; text-align: center;">
+          Inicia sesión en 1 clic con tu cuenta de Google. Tu perfil se vinculará automáticamente.
+        </p>
+      </div>
+    </div>
+
+    <!-- Credentials Tab -->
+    <div id="tab-auth-credentials" class="auth-tab-content" style="display: none;">
+      <form onsubmit="handleLocalLogin(event)">
+        <div class="auth-input-group">
+          <label class="auth-label">Usuario o Email</label>
+          <input type="text" id="login-username" class="auth-input" placeholder="ej. aperich o email@plamoscale.com" required>
+        </div>
+        <div class="auth-input-group">
+          <label class="auth-label">Contraseña</label>
+          <input type="password" id="login-password" class="auth-input" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 1rem; padding: 0.65rem;">
+          Ingresar al Taller
+        </button>
+      </form>
+
+      <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+        <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; display: block; margin-bottom: 0.5rem;">
+          Acceso Rápido Fundadores (Demo):
+        </span>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+          <button type="button" class="filter-pill" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="quickLoginFounder('aperich')">Aldo Perich</button>
+          <button type="button" class="filter-pill" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="quickLoginFounder('fog1labs1')">Fog1 Labs</button>
+          <button type="button" class="filter-pill" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="quickLoginFounder('dcampos')">Daniel Campos</button>
+          <button type="button" class="filter-pill" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="quickLoginFounder('cluna')">Cristhian Luna</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Register Tab -->
+    <div id="tab-auth-register" class="auth-tab-content" style="display: none;">
+      <form onsubmit="handleRegister(event)">
+        <div class="auth-input-group">
+          <label class="auth-label">Nombre de Usuario</label>
+          <input type="text" id="reg-username" class="auth-input" placeholder="ej. char_custom" required>
+        </div>
+        <div class="auth-input-group">
+          <label class="auth-label">Nombre para Mostrar</label>
+          <input type="text" id="reg-display" class="auth-input" placeholder="ej. Char Aznable" required>
+        </div>
+        <div class="auth-input-group">
+          <label class="auth-label">Correo Electrónico</label>
+          <input type="email" id="reg-email" class="auth-input" placeholder="tu@email.com" required>
+        </div>
+        <div class="auth-input-group">
+          <label class="auth-label">Contraseña</label>
+          <input type="password" id="reg-password" class="auth-input" placeholder="Mínimo 8 caracteres" required>
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 1rem; padding: 0.65rem;">
+          Crear Cuenta de Modelista
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
   function switchTab(tabId) {
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -1316,6 +1556,238 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
   function openNewListingModal() {
     alert('Para publicar un kit de tu Stash en el Bazar/Marketplace, utiliza el endpoint POST /api/v1/marketplace/listings con tu token de sesión.');
   }
+
+  // --- Client-Side Authentication & Session Management ---
+  let currentUser = null;
+  let currentToken = null;
+
+  function checkAuth() {
+    const storedUser = localStorage.getItem('plamo_sso_user');
+    const storedToken = localStorage.getItem('plamo_sso_token');
+    if (storedUser && storedToken) {
+      try {
+        currentUser = JSON.parse(storedUser);
+        currentToken = storedToken;
+        renderAuthUI();
+      } catch (e) {
+        logout();
+      }
+    } else {
+      renderAuthUI();
+    }
+  }
+
+  function renderAuthUI() {
+    const container = document.getElementById('auth-user-container');
+    if (!container) return;
+    if (currentUser) {
+      const initials = (currentUser.displayName || currentUser.username || 'U').slice(0, 2).toUpperCase();
+      const avatarHtml = currentUser.avatarUrl 
+        ? '<img class="user-avatar-img" src="' + currentUser.avatarUrl + '" alt="' + currentUser.displayName + '">'
+        : '<div class="user-avatar-img">' + initials + '</div>';
+
+      container.innerHTML = 
+        '<div class="user-profile-badge" onclick="toggleUserDropdown(event)">' +
+          avatarHtml +
+          '<span style="font-size: 0.82rem; font-weight: 600; color: #fff;">' + (currentUser.displayName || currentUser.username) + '</span>' +
+          '<span style="font-size: 0.65rem; color: #94a3b8;">▼</span>' +
+          '<div id="user-dropdown" class="user-dropdown-menu">' +
+            '<div style="padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border-color); margin-bottom: 0.25rem;">' +
+              '<div style="font-size: 0.8rem; font-weight: 700; color: #fff;">' + (currentUser.displayName || currentUser.username) + '</div>' +
+              '<div style="font-size: 0.72rem; color: #94a3b8;">' + (currentUser.email || '') + '</div>' +
+            '</div>' +
+            '<a class="user-dropdown-item" onclick="switchTab(\'workbench\')">🛠️ Mi Workbench & Stash</a>' +
+            '<a class="user-dropdown-item" style="color: #ef4444;" onclick="logout()">🚪 Cerrar Sesión</a>' +
+          '</div>' +
+        '</div>';
+    } else {
+      container.innerHTML =
+        '<button id="btn-open-login" class="btn-auth" onclick="openAuthModal()">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15.2s.7 5.5 1.9 7.9l3.7-2.9z"/><path fill="#34A853" d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2-6.4-4.8L1.9 17C3.7 20.7 7.5 23.5 12 23.5z"/></svg>' +
+          '<span>Iniciar Sesión</span>' +
+        '</button>';
+    }
+  }
+
+  function toggleUserDropdown(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('user-dropdown');
+    if (menu) menu.classList.toggle('show');
+  }
+
+  window.addEventListener('click', () => {
+    const menu = document.getElementById('user-dropdown');
+    if (menu) menu.classList.remove('show');
+  });
+
+  function openAuthModal() {
+    const modal = document.getElementById('auth-modal');
+    if (modal) modal.classList.add('active');
+    initGoogleAuth();
+  }
+
+  function closeAuthModal(e) {
+    if (!e || e.target.id === 'auth-modal' || e.target.classList.contains('auth-close')) {
+      const modal = document.getElementById('auth-modal');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  function switchAuthTab(tab) {
+    document.querySelectorAll('.auth-tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.auth-tab-content').forEach(c => c.style.display = 'none');
+    
+    event.currentTarget.classList.add('active');
+    const target = document.getElementById('tab-auth-' + tab);
+    if (target) target.style.display = 'block';
+
+    if (tab === 'google') initGoogleAuth();
+  }
+
+  function initGoogleAuth() {
+    const clientId = '${config.googleClientId || ''}';
+    if (window.google && clientId) {
+      try {
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleCredentialResponse
+        });
+        const container = document.getElementById('g_id_signin');
+        if (container) {
+          google.accounts.id.renderButton(container, {
+            theme: 'filled_blue',
+            size: 'large',
+            text: 'continue_with',
+            shape: 'rectangular',
+            width: 280
+          });
+        }
+      } catch (err) {
+        console.warn('[Google Identity]:', err);
+      }
+    } else {
+      const container = document.getElementById('g_id_signin');
+      if (container && !clientId) {
+        container.innerHTML = 
+          '<div style="background: rgba(255,255,255,0.05); border: 1px dashed var(--border-color); padding: 1rem; border-radius: 8px; text-align: center; max-width: 320px;">' +
+            '<p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.75rem;">Google Client ID pendiente de configuración en Google Console.</p>' +
+            '<button type="button" class="btn-primary" style="font-size: 0.82rem; margin: 0 auto;" onclick="demoGoogleLogin()">' +
+              '⚡ Simular Acceso Google Demo' +
+            '</button>' +
+          '</div>';
+      }
+    }
+  }
+
+  async function handleGoogleCredentialResponse(response) {
+    try {
+      const idToken = response.credential;
+      const res = await fetch('${config.apiUrl}/api/v1/auth/google-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': '${config.tenantSlug}' },
+        body: JSON.stringify({ idToken })
+      });
+      if (!res.ok) throw new Error('Error al autenticar con Google');
+      const data = await res.json();
+      localStorage.setItem('plamo_sso_token', data.token);
+      localStorage.setItem('plamo_sso_user', JSON.stringify(data.user));
+      currentUser = data.user;
+      currentToken = data.token;
+      renderAuthUI();
+      closeAuthModal();
+      alert('¡Bienvenido, ' + data.user.displayName + '!');
+    } catch (err) {
+      alert('Error en Google Sign-In: ' + err.message);
+    }
+  }
+
+  async function demoGoogleLogin() {
+    const demoPayload = {
+      sub: 'google-pilot-user-123',
+      email: 'builder.pilot@plamoscale.com',
+      name: 'Modelista Piloto',
+      email_verified: true
+    };
+    const demoToken = 'google-test-token:' + btoa(JSON.stringify(demoPayload));
+    await handleGoogleCredentialResponse({ credential: demoToken });
+  }
+
+  async function handleLocalLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    try {
+      const res = await fetch('${config.apiUrl}/api/v1/auth/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': '${config.tenantSlug}' },
+        body: JSON.stringify({ username, password })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Credenciales incorrectas');
+      }
+      const data = await res.json();
+      localStorage.setItem('plamo_sso_token', data.token);
+      localStorage.setItem('plamo_sso_user', JSON.stringify(data.user));
+      currentUser = data.user;
+      currentToken = data.token;
+      renderAuthUI();
+      closeAuthModal();
+      alert('Sesión iniciada como ' + data.user.displayName);
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+
+  async function quickLoginFounder(username) {
+    document.getElementById('login-username').value = username;
+    document.getElementById('login-password').value = 'PlamoScale-Founder-2026!';
+    const form = document.querySelector('#tab-auth-credentials form');
+    if (form) form.dispatchEvent(new Event('submit', { cancelable: true }));
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    const username = document.getElementById('reg-username').value.trim();
+    const displayName = document.getElementById('reg-display').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+
+    try {
+      const res = await fetch('${config.apiUrl}/api/v1/auth/registrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': '${config.tenantSlug}' },
+        body: JSON.stringify({ username, displayName, email, password })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Error al registrar cuenta');
+      }
+      const data = await res.json();
+      localStorage.setItem('plamo_sso_token', data.token);
+      localStorage.setItem('plamo_sso_user', JSON.stringify(data.user));
+      currentUser = data.user;
+      currentToken = data.token;
+      renderAuthUI();
+      closeAuthModal();
+      alert('¡Cuenta creada con éxito! Bienvenido ' + data.user.displayName);
+    } catch (err) {
+      alert('Error al registrar: ' + err.message);
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem('plamo_sso_token');
+    localStorage.removeItem('plamo_sso_user');
+    currentUser = null;
+    currentToken = null;
+    renderAuthUI();
+  }
+
+  // Initialize auth state and Google One-Tap on page load
+  window.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+  });
 </script>
 
 </body>

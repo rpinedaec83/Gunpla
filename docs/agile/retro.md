@@ -206,3 +206,23 @@ Decisions made:
 Lessons learned:
 - Logging schema synchronization events and diagnostic latencies at `/api/v1/system/database` provides immediate visibility into homelab database health without needing separate monitoring agents.
 Usage: Moderate -- self-estimated
+
+### DT9 -- Slice 9: Google OAuth 2.0 / OIDC Identity Services & Interactive SSO Modal | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Integrated Google Identity Services (`https://accounts.google.com/gsi/client`) into the UXP-01 App Shell (`packages/shared/src/ui-shell/app-shell.ts`).
+- Authored the interactive multi-tab Auth Modal (`#auth-modal`):
+  - Tab 1: **Google SSO** with 1-click Google Sign-In button container (`#g_id_signin`) and demo fallback.
+  - Tab 2: **Credenciales de Modelistas** with email/password authentication and 1-click quick-login buttons for founding builders (`aperich`, `fog1labs1`, `dcampos`, `cluna`).
+  - Tab 3: **Nuevo Registro** allowing prospective community builders to register with automatic tenant binding.
+- Implemented client-side session management:
+  - Persistent state in `localStorage` (`plamo_sso_token`, `plamo_sso_user`).
+  - Dynamic topbar header: switches between "Iniciar Sesión" and authenticated builder profile badge (avatar image / initials, display name, dropdown with Workbench & Logout actions).
+  - Configurable `googleClientId` parameter passed through `AppShellConfig` in both `plamoscale-web` and `gunplajunkies-web`.
+- Expanded CLI smoketest (`scripts/smoketest.mjs`) with Check 25 verifying Google Identity script inclusion, auth container rendering, and modal tabs on both web frontends. All 25/25 checks passed.
+Issues hit:
+- Handled empty Google Client ID gracefully in local/development mode with an interactive demo login trigger so UI flows can be demonstrated before obtaining production OAuth consent screen verification.
+Decisions made:
+- Providing both Google SSO and quick-login buttons for the 4 founders in the same modal ensures frictionless access for existing community builders while onboarding new users via Google with 1 click.
+Lessons learned:
+- Combining Google One-Tap prompt on DOM load with an explicit modal button maximizes login conversion without intruding on casual visitors browsing the photo gallery.
+Usage: Moderate -- self-estimated

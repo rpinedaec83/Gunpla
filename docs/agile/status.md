@@ -4,13 +4,17 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8 Relational PostgreSQL Persistence Active)**
-- Overall state: Green -- DT1 through DT8 implemented and verified via `npm run smoketest` (`24/24 checks passed`).
-- Current branch or release line: `feature/dt8-postgres-persistence` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8 & DT9 Verified)**
+- Overall state: Green -- DT1 through DT9 implemented and verified via `npm run smoketest` (`25/25 checks passed`).
+- Current branch or release line: `feature/dt9-google-oauth-sso` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-24
 
 ## Live Capabilities
 
+- **Google OAuth 2.0 SSO & Interactive Identity Modal (`Slice 9 / DT9`):**
+  - Integrated Google Identity Services (`gsi/client`) across `plamoscale.com` and `gunplajunkies.com`.
+  - Interactive multi-tab Auth Modal (`#auth-modal`): 1-click Google Sign-In, credentials login with quick-login buttons for the 4 founding builders, and new account registration.
+  - Client-side session management: Persistent state in `localStorage` (`plamo_sso_token`, `plamo_sso_user`), topbar profile badge with avatar and dropdown (Workbench link + Logout).
 - **PostgreSQL 16 Relational Engine (`Slice 8 / DT8`):**
   - Production container `gunpla-db` (PostgreSQL 16) running with 17 relational tables, foreign key constraints, and performance indexes.
   - Dual-mode persistence engine (`apps/api/src/core/postgres.ts`): Live PostgreSQL pooling in production (`mode: 'relational-postgres'`, latency ~6ms); offline JSON fallback for zero-dependency CI smoketests.
