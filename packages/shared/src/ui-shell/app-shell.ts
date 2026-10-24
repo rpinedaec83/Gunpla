@@ -1596,7 +1596,7 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
               '<div style="font-size: 0.8rem; font-weight: 700; color: #fff;">' + (currentUser.displayName || currentUser.username) + '</div>' +
               '<div style="font-size: 0.72rem; color: #94a3b8;">' + (currentUser.email || '') + '</div>' +
             '</div>' +
-            '<a class="user-dropdown-item" onclick="switchTab(\'workbench\')">🛠️ Mi Workbench & Stash</a>' +
+            '<a class="user-dropdown-item" onclick="goToWorkbench()">🛠️ Mi Workbench & Stash</a>' +
             '<a class="user-dropdown-item" style="color: #ef4444;" onclick="logout()">🚪 Cerrar Sesión</a>' +
           '</div>' +
         '</div>';
@@ -1607,6 +1607,10 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
           '<span>Iniciar Sesión</span>' +
         '</button>';
     }
+  }
+
+  function goToWorkbench() {
+    switchTab('workbench');
   }
 
   function toggleUserDropdown(e) {

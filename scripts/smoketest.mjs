@@ -17,6 +17,7 @@
 
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import vm from 'node:vm';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -795,7 +796,13 @@ async function runSmoketest() {
     assert.ok(gunplaAuthHtml.includes('auth-modal'), 'GunplaJunkies must render auth modal');
     assert.ok(gunplaAuthHtml.includes('g_id_signin'), 'GunplaJunkies must render Google sign-in container');
 
-    console.log('[PASS] Google OAuth 2.0 / OIDC Identity Services & interactive Auth Modal verified on both frontends.');
+    // Verify inline scripts parse without syntax errors
+    const plamoScript = plamoAuthHtml.match(/<script>([\s\S]*?)<\/script>/)[1];
+    new vm.Script(plamoScript, { filename: 'plamo-inline.js' });
+    const gunplaScript = gunplaAuthHtml.match(/<script>([\s\S]*?)<\/script>/)[1];
+    new vm.Script(gunplaScript, { filename: 'gunpla-inline.js' });
+
+    console.log('[PASS] Google OAuth 2.0 / OIDC Identity Services & interactive Auth Modal verified on both frontends (zero JS syntax errors).');
 
     console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 SMOKETEST CHECKS PASSED ===');
   } finally {
