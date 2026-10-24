@@ -11,7 +11,9 @@ import {
   PaintRecord,
   BuildProjectRecord,
   ContestRecord,
-  ShopRecord
+  ShopRecord,
+  renderPrivacyPolicy,
+  renderTermsOfService
 } from '@gunpla/shared';
 
 dotenv.config();
@@ -158,6 +160,17 @@ app.get('/health', (_req: Request, res: Response) => {
     apiUrl: API_URL,
     timestamp: new Date().toISOString()
   });
+});
+
+// Legal Pages for Google OAuth Compliance
+app.get('/privacy', (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(renderPrivacyPolicy('PlamoScale', 'plamoscale.com', 'legal@plamoscale.com'));
+});
+
+app.get('/terms', (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(renderTermsOfService('PlamoScale', 'plamoscale.com', 'legal@plamoscale.com'));
 });
 
 // App Shell Main Entry Point
