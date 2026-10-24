@@ -11,6 +11,15 @@ Current live state of the project.
 
 ## Live Capabilities
 
+- **Rúbricas Oficiales de Jueces y Diplomas/Certificados de Concurso (`B1` / `/api/v1/contests/:id/entries/:entryId/*`):**
+  - **Rúbrica Estándar de Jurado (`POST .../judge`, `#modal-judge-entry`):**
+    - Evaluación oficial con 4 criterios estandarizados (1 a 10 cada uno, máximo 40 puntos): *1. Montaje & Construcción*, *2. Pintura & Aerografía*, *3. Acabado & Weathering/Detallado*, y *4. Creatividad & Presentación*.
+    - Cálculo automático de puntuación total acumulada, nota promedio del jurado (`judgeScoreAverage`), total de jueces participantes (`judgeCount`) y retroalimentación técnica constructiva para el modelista.
+    - Control de acceso por rol: Solo jueces oficiales, moderadores o administradores (`judge`, `moderator`, `tenant_admin`, `admin`) pueden calificar (403 Forbidden para usuarios estándar).
+  - **Diplomas y Certificados Digitales Verificados (`GET .../certificate`, `#modal-contest-certificate`):**
+    - Generación automática de diploma oficial en formato HTML/vectorial de alta resolución para los puestos del podio (🥇 *1er Lugar - Medalla de Oro*, 🥈 *2do Lugar - Medalla de Plata*, 🥉 *3er Lugar - Medalla de Bronce*) o mención de honor.
+    - Incorpora código de verificación criptográfico único (`CERT-XXXX-XXXX`), código QR dinámico de auditoría que enlaza a la bitácora verificada, sello orlado y firmas oficiales del jurado.
+    - Soporte de impresión física directa (`?format=html` con CSS `@media print` optimizado a tamaño apaisado) o visualización interactiva en modal.
 - **White-Label Tenant Self-Service Onboarding & Custom Theme Editor (`B3` / `/api/v1/tenants/*`):**
   - **Self-Service Onboarding (`POST /api/v1/tenants`, `#modal-new-tenant`):** Permite a clubes de modelismo, tiendas o comunidades de maquetismo registrar y desplegar su propio portal independiente, asignando al creador como `tenant_admin` automáticamente con slug único, dominio/subdominio, tagline, y enlaces sociales.
   - **Editor de Marca y Temas en Vivo (`PATCH /api/v1/tenants/:slug`, `#modal-tenant-theme`):**

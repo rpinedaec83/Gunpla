@@ -1637,7 +1637,10 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
                         <div style="overflow: hidden; flex: 1;">
                           <div style="font-size: 0.72rem; font-weight: 700; color: #fbbf24;">${medals[idx]}</div>
                           <div style="font-size: 0.82rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(entry.title)}</div>
-                          <div style="font-size: 0.72rem; color: #94a3b8;">@${entry.username} • <strong style="color: #fbbf24;">${entry.voteCount} votos</strong></div>
+                          <div style="font-size: 0.72rem; color: #94a3b8; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.2rem;">
+                            <span>@${entry.username} • <strong style="color: #fbbf24;">${entry.voteCount} votos</strong></span>
+                            <button type="button" class="filter-pill" style="font-size: 0.65rem; padding: 0.15rem 0.5rem; color: #fbbf24; border-color: rgba(251, 191, 36, 0.4);" onclick="viewCertificate('${c.id}', '${entry.id}')">📜 Diploma</button>
+                          </div>
                         </div>
                       </div>
                     `
@@ -1670,11 +1673,32 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
                             📖 Ver Bitácora & Fórmulas &rarr;
                           </a>
                         ` : ''}
-                        <div style="margin-top: auto; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 0.65rem;">
-                          <span id="vote-count-${e.id}" style="font-size: 0.85rem; font-weight: 600; color: #fbbf24;">⭐ ${e.voteCount} Votos</span>
-                          <button id="btn-vote-${e.id}" class="filter-pill vote-btn" style="padding: 0.3rem 0.85rem; font-size: 0.78rem;" data-contest-id="${c.id}" data-entry-id="${e.id}" data-voters='${JSON.stringify(e.votedByUserIds || [])}' onclick="voteEntry('${c.id}', '${e.id}', event)">
-                            Votar ⭐
-                          </button>
+
+                        ${e.judgeScoreAverage ? `
+                          <div style="font-size: 0.75rem; color: #c084fc; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.35rem;">
+                            <span>⚖️</span> Rúbrica Jueces: <strong id="judge-score-label-${e.id}">${e.judgeScoreAverage} / 40 pts</strong> (${e.judgeCount || 1} eval.)
+                          </div>
+                        ` : `
+                          <div id="judge-score-label-${e.id}" style="font-size: 0.72rem; color: #64748b; margin-bottom: 0.4rem;">
+                            ⚖️ Pendiente de evaluación por jurado
+                          </div>
+                        `}
+
+                        <div style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 0.65rem;">
+                          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                            <span id="vote-count-${e.id}" style="font-size: 0.85rem; font-weight: 600; color: #fbbf24;">⭐ ${e.voteCount} Votos</span>
+                            <button id="btn-vote-${e.id}" class="filter-pill vote-btn" style="padding: 0.3rem 0.85rem; font-size: 0.78rem;" data-contest-id="${c.id}" data-entry-id="${e.id}" data-voters='${JSON.stringify(e.votedByUserIds || [])}' onclick="voteEntry('${c.id}', '${e.id}', event)">
+                              Votar ⭐
+                            </button>
+                          </div>
+                          <div style="display: flex; gap: 0.4rem; justify-content: flex-end;">
+                            <button type="button" class="filter-pill btn-judge-entry" style="font-size: 0.7rem; padding: 0.2rem 0.55rem; color: #c084fc; border-color: rgba(168, 85, 247, 0.4); display: none;" data-contest-id="${c.id}" data-entry-id="${e.id}" data-entry-title="${escapeHtml(e.title)}" onclick="openJudgeModal('${c.id}', '${e.id}', '${escapeHtml(e.title)}')">
+                              ⚖️ Calificar
+                            </button>
+                            <button type="button" class="filter-pill" style="font-size: 0.7rem; padding: 0.2rem 0.55rem; color: #fbbf24; border-color: rgba(251, 191, 36, 0.4);" onclick="viewCertificate('${c.id}', '${e.id}')">
+                              📜 Diploma
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -2645,6 +2669,118 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
   </div>
 </div>
 
+<!-- Judge Rubric Scoring Modal -->
+<div id="modal-judge-entry" class="custom-modal" onclick="closeJudgeModal(event)">
+  <div class="auth-box" style="max-width: 580px; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeJudgeModal()">&times;</span>
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+      <span style="font-size: 1.4rem;">⚖️</span>
+      <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff;">Calificación Oficial de Jurado</h3>
+    </div>
+    <div id="judge-modal-entry-title" style="font-size: 0.95rem; font-weight: 600; color: #38bdf8; margin-bottom: 0.25rem;"></div>
+    <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
+      Rúbrica oficial estándar de 4 criterios (1 a 10 cada uno, máximo 40 puntos). Tu calificación computa en el ranking final de premiación.
+    </p>
+
+    <form id="judge-scoring-form" onsubmit="submitJudgeScore(event)">
+      <input type="hidden" id="judge-contest-id">
+      <input type="hidden" id="judge-entry-id">
+
+      <!-- 1. Assembly -->
+      <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <label style="font-size: 0.85rem; font-weight: 600; color: #fff;">1. Montaje & Construcción</label>
+          <span id="score-val-assembly" style="font-size: 0.95rem; font-weight: 700; color: #38bdf8;">8 / 10</span>
+        </div>
+        <p style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.6rem;">Limpieza de rebabas (nubs), líneas de molde eliminadas, alineación y simetría.</p>
+        <input type="range" id="judge-score-assembly" min="1" max="10" value="8" style="width: 100%; cursor: pointer;" oninput="updateJudgeTotal()">
+      </div>
+
+      <!-- 2. Painting -->
+      <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <label style="font-size: 0.85rem; font-weight: 600; color: #fff;">2. Pintura & Aerografía</label>
+          <span id="score-val-painting" style="font-size: 0.95rem; font-weight: 700; color: #38bdf8;">8 / 10</span>
+        </div>
+        <p style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.6rem;">Homogeneidad de capas, ausencia de polvo/piel de naranja, definición de bordes.</p>
+        <input type="range" id="judge-score-painting" min="1" max="10" value="8" style="width: 100%; cursor: pointer;" oninput="updateJudgeTotal()">
+      </div>
+
+      <!-- 3. Finish -->
+      <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <label style="font-size: 0.85rem; font-weight: 600; color: #fff;">3. Acabado & Weathering</label>
+          <span id="score-val-finish" style="font-size: 0.95rem; font-weight: 700; color: #38bdf8;">8 / 10</span>
+        </div>
+        <p style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.6rem;">Calcas/decals sin silvering, panel line consistente, pátinas o barniz uniforme.</p>
+        <input type="range" id="judge-score-finish" min="1" max="10" value="8" style="width: 100%; cursor: pointer;" oninput="updateJudgeTotal()">
+      </div>
+
+      <!-- 4. Creativity -->
+      <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <label style="font-size: 0.85rem; font-weight: 600; color: #fff;">4. Creatividad & Presentación</label>
+          <span id="score-val-creativity" style="font-size: 0.95rem; font-weight: 700; color: #38bdf8;">8 / 10</span>
+        </div>
+        <p style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.6rem;">Dificultad de la técnica, balance de colores, peana/base o pose dinámica.</p>
+        <input type="range" id="judge-score-creativity" min="1" max="10" value="8" style="width: 100%; cursor: pointer;" oninput="updateJudgeTotal()">
+      </div>
+
+      <!-- Live Total Summary -->
+      <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 0.85rem 1.25rem; margin-bottom: 1rem;">
+        <div>
+          <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase;">Puntuación Total Rúbrica</div>
+          <div id="judge-total-grade" style="font-size: 0.82rem; font-weight: 600; color: #22c55e;">Excelente</div>
+        </div>
+        <div id="judge-total-score" style="font-size: 1.8rem; font-weight: 700; color: #fff; font-family: 'Chakra Petch', sans-serif;">
+          32 <span style="font-size: 1rem; color: #94a3b8;">/ 40</span>
+        </div>
+      </div>
+
+      <!-- Technical Feedback -->
+      <div class="auth-input-group">
+        <label class="auth-label">Comentarios Técnicos / Observaciones del Juez (opcional)</label>
+        <textarea id="judge-feedback" class="auth-input" rows="3" maxlength="500" placeholder="Añade sugerencias constructivas para el modelista sobre la tensión de las uniones, barniz o tonalidad..."></textarea>
+      </div>
+
+      <div id="judge-status-msg" style="display: none; font-size: 0.82rem; margin-bottom: 0.75rem;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+        <button type="button" class="filter-pill" onclick="closeJudgeModal()">Cancelar</button>
+        <button type="submit" id="btn-submit-judge" class="btn-primary" style="padding: 0.65rem 1.25rem;">
+          ⚖️ Emitir Calificación Oficial
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Contest Certificate / Diploma Viewer Modal -->
+<div id="modal-contest-certificate" class="custom-modal" onclick="closeCertificateModal(event)">
+  <div class="auth-box" style="max-width: 760px; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeCertificateModal()">&times;</span>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <span style="font-size: 1.5rem;">📜</span>
+        <div>
+          <h3 style="font-size: 1.2rem; font-weight: 700; color: #fff;">Diploma & Certificado Oficial</h3>
+          <p style="font-size: 0.75rem; color: #94a3b8;">Reconocimiento digital verificado con código QR y rúbrica</p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="button" class="btn-primary" style="font-size: 0.82rem; padding: 0.4rem 0.85rem;" onclick="printCertificate()">
+          🖨️ Imprimir Diploma
+        </button>
+      </div>
+    </div>
+
+    <!-- Certificate Render Target -->
+    <div id="certificate-display-target" style="border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);">
+      <div style="padding: 3rem; text-align: center; color: #94a3b8;">Cargando certificado...</div>
+    </div>
+  </div>
+</div>
+
 <script>
   function escapeHtml(str) {
     if (!str) return '';
@@ -3040,6 +3176,17 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
         currentUser.username === 'rpineda'
       );
 
+      const isJudge = currentUser.roles && (
+        currentUser.roles.includes('admin') ||
+        currentUser.roles.includes('tenant_admin') ||
+        currentUser.roles.includes('moderator') ||
+        currentUser.username === 'rpineda'
+      );
+
+      document.querySelectorAll('.btn-judge-entry').forEach(btn => {
+        btn.style.display = isJudge ? 'inline-flex' : 'none';
+      });
+
       const navThemeBtn = document.getElementById('nav-customize-theme');
       if (navThemeBtn) navThemeBtn.style.display = isTenantAdminOrAdmin ? 'flex' : 'none';
 
@@ -3064,11 +3211,190 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       const navThemeBtn = document.getElementById('nav-customize-theme');
       if (navThemeBtn) navThemeBtn.style.display = 'none';
 
+      document.querySelectorAll('.btn-judge-entry').forEach(btn => {
+        btn.style.display = 'none';
+      });
+
       container.innerHTML =
         '<button id="btn-open-login" class="btn-auth" onclick="openAuthModal()">' +
           '<svg width="16" height="16" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15.2s.7 5.5 1.9 7.9l3.7-2.9z"/><path fill="#34A853" d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2-6.4-4.8L1.9 17C3.7 20.7 7.5 23.5 12 23.5z"/></svg>' +
           '<span>Iniciar Sesión</span>' +
         '</button>';
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Official Judge Rubric Scoring & Certificate Functions
+  // -------------------------------------------------------------------------
+  function openJudgeModal(contestId, entryId, title) {
+    if (!currentUser) {
+      openAuthModal();
+      return;
+    }
+    const modal = document.getElementById('modal-judge-entry');
+    const contestIdInput = document.getElementById('judge-contest-id');
+    const entryIdInput = document.getElementById('judge-entry-id');
+    const titleEl = document.getElementById('judge-modal-entry-title');
+    const statusMsg = document.getElementById('judge-status-msg');
+
+    if (contestIdInput) contestIdInput.value = contestId;
+    if (entryIdInput) entryIdInput.value = entryId;
+    if (titleEl) titleEl.textContent = 'Obra: ' + title;
+    if (statusMsg) statusMsg.style.display = 'none';
+
+    updateJudgeTotal();
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeJudgeModal(e) {
+    if (!e || e.target.id === 'modal-judge-entry' || e.target.classList.contains('auth-close')) {
+      const modal = document.getElementById('modal-judge-entry');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  function updateJudgeTotal() {
+    const assembly = Number(document.getElementById('judge-score-assembly')?.value || 8);
+    const painting = Number(document.getElementById('judge-score-painting')?.value || 8);
+    const finish = Number(document.getElementById('judge-score-finish')?.value || 8);
+    const creativity = Number(document.getElementById('judge-score-creativity')?.value || 8);
+
+    const valAssembly = document.getElementById('score-val-assembly');
+    const valPainting = document.getElementById('score-val-painting');
+    const valFinish = document.getElementById('score-val-finish');
+    const valCreativity = document.getElementById('score-val-creativity');
+
+    if (valAssembly) valAssembly.textContent = assembly + ' / 10';
+    if (valPainting) valPainting.textContent = painting + ' / 10';
+    if (valFinish) valFinish.textContent = finish + ' / 10';
+    if (valCreativity) valCreativity.textContent = creativity + ' / 10';
+
+    const total = assembly + painting + finish + creativity;
+    const totalEl = document.getElementById('judge-total-score');
+    const gradeEl = document.getElementById('judge-total-grade');
+
+    if (totalEl) {
+      totalEl.innerHTML = total + ' <span style="font-size: 1rem; color: #94a3b8;">/ 40</span>';
+    }
+
+    if (gradeEl) {
+      if (total >= 36) {
+        gradeEl.textContent = '🌟 Sobresaliente (Medalla de Oro)';
+        gradeEl.style.color = '#eab308';
+      } else if (total >= 30) {
+        gradeEl.textContent = '✨ Excelente (Plata / Bronce)';
+        gradeEl.style.color = '#38bdf8';
+      } else if (total >= 24) {
+        gradeEl.textContent = '👍 Muy Bueno (Diploma de Honor)';
+        gradeEl.style.color = '#22c55e';
+      } else {
+        gradeEl.textContent = 'Mención de Participación';
+        gradeEl.style.color = '#94a3b8';
+      }
+    }
+  }
+
+  async function submitJudgeScore(e) {
+    e.preventDefault();
+    if (!currentToken) {
+      alert('Debes iniciar sesión con tu cuenta de juez o administrador.');
+      return;
+    }
+
+    const contestId = document.getElementById('judge-contest-id')?.value;
+    const entryId = document.getElementById('judge-entry-id')?.value;
+    const assembly = Number(document.getElementById('judge-score-assembly')?.value || 8);
+    const painting = Number(document.getElementById('judge-score-painting')?.value || 8);
+    const finish = Number(document.getElementById('judge-score-finish')?.value || 8);
+    const creativity = Number(document.getElementById('judge-score-creativity')?.value || 8);
+    const feedback = document.getElementById('judge-feedback')?.value;
+
+    const btn = document.getElementById('btn-submit-judge');
+    const statusMsg = document.getElementById('judge-status-msg');
+    if (btn) btn.disabled = true;
+
+    try {
+      const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+      const res = await fetch(apiBase + '/api/v1/contests/' + contestId + '/entries/' + entryId + '/judge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken
+        },
+        body: JSON.stringify({
+          scores: { assembly, painting, finish, creativity },
+          feedback
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || data.title || 'Error al emitir calificación');
+      }
+
+      const scoreLabel = document.getElementById('judge-score-label-' + entryId);
+      if (scoreLabel) {
+        scoreLabel.innerHTML = '⚖️ Rúbrica Jueces: <strong>' + data.entry.judgeScoreAverage + ' / 40 pts</strong> (' + (data.entry.judgeCount || 1) + ' eval.)';
+        scoreLabel.style.color = '#c084fc';
+      }
+
+      if (statusMsg) {
+        statusMsg.style.display = 'block';
+        statusMsg.style.color = '#22c55e';
+        statusMsg.textContent = '✓ ¡Calificación oficial de ' + data.judgeScore.totalScore + '/40 pts emitida con éxito!';
+      }
+
+      setTimeout(() => {
+        closeJudgeModal();
+      }, 1400);
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.style.display = 'block';
+        statusMsg.style.color = '#ef4444';
+        statusMsg.textContent = err.message || 'Error inesperado';
+      }
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function viewCertificate(contestId, entryId) {
+    const modal = document.getElementById('modal-contest-certificate');
+    const target = document.getElementById('certificate-display-target');
+    if (modal) modal.classList.add('active');
+    if (target) target.innerHTML = '<div style="padding: 3rem; text-align: center; color: #94a3b8;">Generando diploma oficial con firma y código QR...</div>';
+
+    try {
+      const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+      const res = await fetch(apiBase + '/api/v1/contests/' + contestId + '/entries/' + entryId + '/certificate');
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || data.title || 'Error al obtener certificado');
+      }
+
+      if (target && data.htmlTemplate) {
+        target.innerHTML = '<iframe id="cert-iframe" srcdoc="' + escapeHtml(data.htmlTemplate) + '" style="width: 100%; height: 580px; border: none; background: #fff;"></iframe>';
+      }
+    } catch (err) {
+      if (target) {
+        target.innerHTML = '<div style="padding: 2rem; color: #ef4444; text-align: center;">Error al cargar diploma: ' + escapeHtml(err.message) + '</div>';
+      }
+    }
+  }
+
+  function closeCertificateModal(e) {
+    if (!e || e.target.id === 'modal-contest-certificate' || e.target.classList.contains('auth-close')) {
+      const modal = document.getElementById('modal-contest-certificate');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  function printCertificate() {
+    const iframe = document.getElementById('cert-iframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.print();
+    } else {
+      window.print();
     }
   }
 

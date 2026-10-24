@@ -1,11 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
+import QRCode from 'qrcode';
 import {
   ContestRecord,
   ShopRecord,
   ContestEntryRecord,
   CreateContestEntryRequest,
-  VoteContestEntryResponse
+  VoteContestEntryResponse,
+  JudgeScoreRecord,
+  ContestCertificateRecord
 } from '@gunpla/shared';
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
@@ -323,13 +326,24 @@ communityRouter.post('/contests/:id/entries/:entryId/vote', requireAuth, (req: R
   const user = req.user!;
   const { id: contestId, entryId } = req.params;
 
+  const contest = INITIAL_CONTESTS.find(c => c.id === contestId || c.slug === contestId);
+  if (!contest) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Concurso No Encontrado',
+      `El concurso '${contestId}' no existe.`
+    );
+  }
+
   const db = getDb();
   if (!db.contestEntries) {
     db.contestEntries = [...INITIAL_CONTEST_ENTRIES];
   }
 
   const entry = db.contestEntries.find(
-    e => e.id === entryId && (e.contestId === contestId || e.contestId === 'contest-' + contestId)
+    e => e.id === entryId && (e.contestId === contest.id || e.contestId === contest.slug)
   );
 
   if (!entry) {
@@ -359,6 +373,461 @@ communityRouter.post('/contests/:id/entries/:entryId/vote', requireAuth, (req: R
   };
 
   return res.status(200).json(response);
+});
+
+function escapeHtml(str: string): string {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function buildCertificateHtml(cert: ContestCertificateRecord): string {
+  const accentGold =
+    cert.rank === 1
+      ? '#eab308'
+      : cert.rank === 2
+      ? '#94a3b8'
+      : cert.rank === 3
+      ? '#d97706'
+      : '#38bdf8';
+  const badgeEmoji =
+    cert.rank === 1 ? '🥇' : cert.rank === 2 ? '🥈' : cert.rank === 3 ? '🥉' : '📜';
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Certificado Oficial — ${escapeHtml(cert.entryTitle)}</title>
+  <style>
+    @page { size: landscape; margin: 10mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Times New Roman', serif;
+      background: #0f172a;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .cert-frame {
+      width: 100%;
+      max-width: 900px;
+      background: #fdfbf7;
+      border: 12px double ${accentGold};
+      border-radius: 12px;
+      padding: 40px 50px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    }
+    .cert-header {
+      font-family: 'Georgia', serif;
+      font-size: 24px;
+      letter-spacing: 2px;
+      color: #334155;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .cert-title {
+      font-family: 'Georgia', serif;
+      font-size: 38px;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: 1px;
+      margin-bottom: 18px;
+      border-bottom: 2px solid ${accentGold};
+      display: inline-block;
+      padding-bottom: 6px;
+    }
+    .cert-body {
+      font-size: 18px;
+      color: #475569;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .cert-name {
+      font-size: 34px;
+      font-weight: 700;
+      color: #0f172a;
+      font-family: 'Georgia', serif;
+      margin: 8px 0;
+      text-decoration: underline;
+      text-decoration-color: ${accentGold};
+    }
+    .cert-rank-badge {
+      display: inline-block;
+      background: ${accentGold};
+      color: #fff;
+      font-weight: 700;
+      font-size: 19px;
+      padding: 8px 24px;
+      border-radius: 9999px;
+      margin: 12px 0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .cert-details-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 20px;
+      margin-top: 26px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      text-align: left;
+    }
+    .cert-signature {
+      text-align: center;
+    }
+    .sig-line {
+      width: 170px;
+      border-bottom: 1px solid #64748b;
+      margin: 0 auto 6px;
+    }
+    .sig-title {
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+    .cert-qr {
+      text-align: center;
+    }
+    .cert-code {
+      font-family: monospace;
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    @media print {
+      body { background: transparent; padding: 0; }
+      .cert-frame { box-shadow: none; max-width: 100%; border-width: 8px; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="cert-frame">
+    <div class="cert-header">${escapeHtml(cert.contestTitle)}</div>
+    <div class="cert-title">Diploma Oficial de Honor & Mérito</div>
+    
+    <div class="cert-body">
+      Por cuanto el modelista
+      <div class="cert-name">${escapeHtml(cert.builderName)}</div>
+      ha participado y presentado con distinción sobresaliente la obra
+      <div style="font-size: 21px; font-weight: 700; color: #1e293b; margin: 6px 0;">«${escapeHtml(cert.entryTitle)}»</div>
+      haciéndose acreedor al galardón oficial:
+      <br>
+      <div class="cert-rank-badge">${badgeEmoji} ${escapeHtml(cert.rankTitle)}</div>
+      ${cert.judgeAverageScore ? `<div style="font-size: 14px; color: #64748b; margin-top: 4px;">Puntuación Promedio de Rúbrica Oficial: <strong>${cert.judgeAverageScore.toFixed(1)} / 40.0 pts</strong> | Votos Comunitarios: <strong>${cert.voteCount}</strong></div>` : ''}
+    </div>
+
+    <div class="cert-details-grid">
+      <div class="cert-signature">
+        <div class="sig-line"></div>
+        <div style="font-weight: 700; font-size: 14px;">Comité de Jueces IPMS / Gunpla</div>
+        <div class="sig-title">Jurado Oficial Certificado</div>
+      </div>
+
+      <div class="cert-qr">
+        <img src="${cert.qrCodeDataUrl}" width="80" height="80" alt="QR Verificación">
+        <div class="cert-code">${cert.verificationCode}</div>
+      </div>
+
+      <div class="cert-signature">
+        <div class="sig-line"></div>
+        <div style="font-weight: 700; font-size: 14px;">Comunidad ${cert.tenantSlug === 'gunplajunkies' ? 'GunplaJunkies' : 'PlamoScale'}</div>
+        <div class="sig-title">Emisión: ${new Date(cert.issuedAt).toLocaleDateString('es-ES')}</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+/**
+ * POST /api/v1/contests/:id/entries/:entryId/judge
+ * Official Judge Scoring with Standard 4-Criteria Rubric (Assembly, Painting, Finish, Creativity)
+ */
+communityRouter.post('/contests/:id/entries/:entryId/judge', requireAuth, (req: Request, res: Response) => {
+  const user = req.user!;
+  const { id: contestId, entryId } = req.params;
+  const { scores, feedback } = req.body || {};
+
+  const isJudge =
+    user.roles.includes('admin') ||
+    user.roles.includes('tenant_admin') ||
+    user.username === 'rpineda' ||
+    user.roles.includes('moderator');
+
+  if (!isJudge) {
+    return sendProblem(
+      req,
+      res,
+      403,
+      'Permiso Denegado',
+      'Solo jueces designados o administradores pueden emitir calificaciones oficiales de concurso.',
+      'forbidden-judge'
+    );
+  }
+
+  if (!scores || typeof scores !== 'object') {
+    return sendProblem(
+      req,
+      res,
+      400,
+      'Rúbrica Requerida',
+      'Debe proporcionar las puntuaciones de la rúbrica (assembly, painting, finish, creativity).',
+      'validation-error'
+    );
+  }
+
+  const { assembly, painting, finish, creativity } = scores;
+  const numAssembly = Number(assembly);
+  const numPainting = Number(painting);
+  const numFinish = Number(finish);
+  const numCreativity = Number(creativity);
+
+  if (
+    isNaN(numAssembly) || numAssembly < 1 || numAssembly > 10 ||
+    isNaN(numPainting) || numPainting < 1 || numPainting > 10 ||
+    isNaN(numFinish) || numFinish < 1 || numFinish > 10 ||
+    isNaN(numCreativity) || numCreativity < 1 || numCreativity > 10
+  ) {
+    return sendProblem(
+      req,
+      res,
+      400,
+      'Puntuaciones Inválidas',
+      'Cada criterio de la rúbrica (assembly, painting, finish, creativity) debe ser un número entre 1 y 10.',
+      'validation-error'
+    );
+  }
+
+  const contest = INITIAL_CONTESTS.find(c => c.id === contestId || c.slug === contestId);
+  if (!contest) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Concurso No Encontrado',
+      `El concurso '${contestId}' no existe.`
+    );
+  }
+
+  const db = getDb();
+  if (!db.contestEntries) {
+    db.contestEntries = [...INITIAL_CONTEST_ENTRIES];
+  }
+
+  const entry = db.contestEntries.find(
+    e => e.id === entryId && (e.contestId === contest.id || e.contestId === contest.slug)
+  );
+
+  if (!entry) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Inscripción No Encontrada',
+      `No se encontró la inscripción '${entryId}' en este concurso.`
+    );
+  }
+
+  if (!entry.judgeScores) {
+    entry.judgeScores = [];
+  }
+
+  const totalScore = numAssembly + numPainting + numFinish + numCreativity;
+  const existingIndex = entry.judgeScores.findIndex(j => j.judgeUserId === user.id);
+
+  const judgeRecord: JudgeScoreRecord = {
+    id: existingIndex >= 0 ? entry.judgeScores[existingIndex].id : `jscore-${randomUUID().slice(0, 8)}`,
+    entryId: entry.id,
+    judgeUserId: user.id,
+    judgeUsername: user.username,
+    judgeDisplayName: user.username,
+    scores: {
+      assembly: numAssembly,
+      painting: numPainting,
+      finish: numFinish,
+      creativity: numCreativity
+    },
+    totalScore,
+    feedback: feedback ? String(feedback).trim().slice(0, 500) : undefined,
+    createdAt: new Date().toISOString()
+  };
+
+  if (existingIndex >= 0) {
+    entry.judgeScores[existingIndex] = judgeRecord;
+  } else {
+    entry.judgeScores.push(judgeRecord);
+  }
+
+  // Update summary metrics on entry
+  const sum = entry.judgeScores.reduce((acc, curr) => acc + curr.totalScore, 0);
+  entry.judgeCount = entry.judgeScores.length;
+  entry.judgeScoreAverage = Number((sum / entry.judgeScores.length).toFixed(1));
+
+  saveDb(db);
+
+  return res.status(200).json({
+    entry,
+    judgeScore: judgeRecord
+  });
+});
+
+/**
+ * GET /api/v1/contests/:id/entries/:entryId/judge-scores
+ * Retrieve all official judge scoring records and feedback for an entry
+ */
+communityRouter.get('/contests/:id/entries/:entryId/judge-scores', (req: Request, res: Response) => {
+  const { id: contestId, entryId } = req.params;
+  const contest = INITIAL_CONTESTS.find(c => c.id === contestId || c.slug === contestId);
+  if (!contest) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Concurso No Encontrado',
+      `El concurso '${contestId}' no existe.`
+    );
+  }
+
+  const db = getDb();
+  if (!db.contestEntries) {
+    db.contestEntries = [...INITIAL_CONTEST_ENTRIES];
+  }
+
+  const entry = db.contestEntries.find(
+    e => e.id === entryId && (e.contestId === contest.id || e.contestId === contest.slug)
+  );
+
+  if (!entry) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Inscripción No Encontrada',
+      `No se encontró la inscripción '${entryId}' en este concurso.`
+    );
+  }
+
+  return res.json({
+    entryId: entry.id,
+    judgeScores: entry.judgeScores || [],
+    judgeScoreAverage: entry.judgeScoreAverage || 0,
+    judgeCount: entry.judgeCount || 0
+  });
+});
+
+/**
+ * GET /api/v1/contests/:id/entries/:entryId/certificate
+ * Generate official competition certificate / diploma with QR code verification
+ */
+communityRouter.get('/contests/:id/entries/:entryId/certificate', async (req: Request, res: Response) => {
+  const { id: contestId, entryId } = req.params;
+  const format = req.query.format as string | undefined;
+
+  const contest = INITIAL_CONTESTS.find(c => c.id === contestId || c.slug === contestId);
+  if (!contest) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Concurso No Encontrado',
+      `El concurso '${contestId}' no existe.`
+    );
+  }
+
+  const db = getDb();
+  if (!db.contestEntries) {
+    db.contestEntries = [...INITIAL_CONTEST_ENTRIES];
+  }
+
+  const contestEntries = db.contestEntries.filter(
+    e => e.contestId === contest.id || e.contestId === contest.slug
+  );
+
+  const entry = contestEntries.find(e => e.id === entryId);
+  if (!entry) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Inscripción No Encontrada',
+      `No se encontró la inscripción '${entryId}' en este concurso.`
+    );
+  }
+
+  // Sort approved entries by composite score (judgeScoreAverage 70% + voteCount 30%)
+  const sorted = [...contestEntries].sort((a, b) => {
+    const scoreA = ((a.judgeScoreAverage || 0) * 0.7) + (a.voteCount * 0.3);
+    const scoreB = ((b.judgeScoreAverage || 0) * 0.7) + (b.voteCount * 0.3);
+    if (scoreB !== scoreA) return scoreB - scoreA;
+    return b.voteCount - a.voteCount;
+  });
+
+  const rank = Math.max(1, sorted.findIndex(e => e.id === entry.id) + 1);
+  const rankTitle =
+    rank === 1
+      ? '1er Lugar - Medalla de Oro'
+      : rank === 2
+      ? '2do Lugar - Medalla de Plata'
+      : rank === 3
+      ? '3er Lugar - Medalla de Bronce'
+      : 'Diploma de Honor y Participación';
+
+  const verificationCode = `CERT-${contest.slug.slice(0, 6).toUpperCase()}-${entry.id.replace('entry-', '').toUpperCase()}`;
+  const verifyHost = contest.tenantSlug === 'gunplajunkies' ? 'www.gunplajunkies.com' : 'www.plamoscale.com';
+  const verifyUrl = `https://${verifyHost}#entry-${entry.id}`;
+
+  let qrCodeDataUrl = '';
+  try {
+    qrCodeDataUrl = await QRCode.toDataURL(verifyUrl, {
+      width: 140,
+      margin: 1,
+      color: { dark: '#0f172a', light: '#ffffff' }
+    });
+  } catch (err) {
+    qrCodeDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  }
+
+  const certificate: ContestCertificateRecord = {
+    certificateId: `cert-${randomUUID().slice(0, 8)}`,
+    verificationCode,
+    contestTitle: contest.title,
+    tenantSlug: contest.tenantSlug,
+    category: entry.category,
+    builderName: entry.userDisplayName || entry.username,
+    entryTitle: entry.title,
+    rank,
+    rankTitle,
+    judgeAverageScore: entry.judgeScoreAverage,
+    voteCount: entry.voteCount,
+    qrCodeDataUrl,
+    verifyUrl,
+    issuedAt: new Date().toISOString(),
+    organizerSignatures: [
+      { title: 'Jurado Oficial Certificado', name: 'Comité de Jueces IPMS / Gunpla' },
+      { title: 'Organizador', name: contest.tenantSlug === 'gunplajunkies' ? 'GunplaJunkies' : 'PlamoScale' }
+    ]
+  };
+
+  certificate.htmlTemplate = buildCertificateHtml(certificate);
+
+  if (format === 'html') {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.send(certificate.htmlTemplate);
+  }
+
+  return res.json(certificate);
 });
 
 /**

@@ -440,6 +440,25 @@ export interface UploadMediaResponse {
   fullUrl: string;
 }
 
+export interface JudgeRubricCriteria {
+  assembly: number;   // 1 - 10: Mold lines, nubs, fitment, alignment
+  painting: number;   // 1 - 10: Smoothness, opacity, coverage, color separation
+  finish: number;     // 1 - 10: Decals, panel lining, weathering, clear coat
+  creativity: number; // 1 - 10: Posing, difficulty, presentation, diorama
+}
+
+export interface JudgeScoreRecord {
+  id: string;
+  entryId: string;
+  judgeUserId: string;
+  judgeUsername: string;
+  judgeDisplayName: string;
+  scores: JudgeRubricCriteria;
+  totalScore: number; // 4 - 40
+  feedback?: string;
+  createdAt: string;
+}
+
 export interface ContestEntryRecord {
   id: string;
   contestId: string;
@@ -453,6 +472,9 @@ export interface ContestEntryRecord {
   coverImageUrl?: string;
   voteCount: number;
   votedByUserIds: string[];
+  judgeScores?: JudgeScoreRecord[];
+  judgeScoreAverage?: number;
+  judgeCount?: number;
   status: 'submitted' | 'approved' | 'disqualified';
   createdAt: string;
 }
@@ -464,6 +486,25 @@ export interface CreateContestEntryRequest {
 export interface VoteContestEntryResponse {
   voted: boolean;
   voteCount: number;
+}
+
+export interface ContestCertificateRecord {
+  certificateId: string;
+  verificationCode: string;
+  contestTitle: string;
+  tenantSlug: string;
+  category: ScaleCategory;
+  builderName: string;
+  entryTitle: string;
+  rank: number;
+  rankTitle: string;
+  judgeAverageScore?: number;
+  voteCount: number;
+  qrCodeDataUrl: string;
+  verifyUrl: string;
+  issuedAt: string;
+  organizerSignatures: { title: string; name: string }[];
+  htmlTemplate?: string;
 }
 
 export type SpecCardFormat = 'flat' | 'tent';

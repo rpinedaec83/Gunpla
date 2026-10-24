@@ -1175,7 +1175,102 @@ async function runSmoketest() {
 
     console.log('[PASS] White-Label Tenant Self-Service Onboarding & Custom Theme Editor verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL CHECKS PASSED ===');
+    // --- Checking Official Judge Rubrics & Contest Diplomas (B1) ---
+    console.log('\n--- Checking Official Judge Rubrics & Contest Diplomas (B1) ---');
+    // Obtain updated session for amuroray with tenant_admin role
+    const judgeSessionRes = await fetch(`${baseUrl}/api/v1/auth/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'plamoscale' },
+      body: JSON.stringify({ identifier: 'amuroray', password: 'Rx78-2-Password!' })
+    });
+    assert.equal(judgeSessionRes.status, 200);
+    const judgeSessionData = await judgeSessionRes.json();
+    assert.ok(judgeSessionData.user.roles.includes('tenant_admin'), 'Amuro must have tenant_admin role after creating tenant');
+    const judgeToken = judgeSessionData.token;
+
+    // 1. Unauthorized judge scoring attempt by regular user (quattro) -> 403 Forbidden
+    const unauthJudgeRes = await fetch(`${baseUrl}/api/v1/contests/gunpla-open-cup-2026/entries/entry-aperich-hinu-cup/judge`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${quattroData.token}`
+      },
+      body: JSON.stringify({
+        scores: { assembly: 8, painting: 8, finish: 8, creativity: 8 }
+      })
+    });
+    assert.equal(unauthJudgeRes.status, 403, 'Regular non-judge user must be rejected with 403 Forbidden');
+
+    // 2. Validation error on out-of-range score
+    const invalidJudgeRes = await fetch(`${baseUrl}/api/v1/contests/gunpla-open-cup-2026/entries/entry-aperich-hinu-cup/judge`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${judgeToken}`
+      },
+      body: JSON.stringify({
+        scores: { assembly: 15, painting: 9, finish: 8, creativity: 10 }
+      })
+    });
+    assert.equal(invalidJudgeRes.status, 400, 'Score > 10 must return 400 Validation Error');
+
+    // 3. Valid official judge evaluation (amuroray as tenant_admin)
+    const validJudgeRes = await fetch(`${baseUrl}/api/v1/contests/gunpla-open-cup-2026/entries/entry-aperich-hinu-cup/judge`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${judgeToken}`
+      },
+      body: JSON.stringify({
+        scores: { assembly: 10, painting: 9, finish: 9, creativity: 10 },
+        feedback: 'Excelente remoción de rebabas y acabado de barniz semimate en el Hi-Nu.'
+      })
+    });
+    assert.equal(validJudgeRes.status, 200, 'Authorized judge must score entry with 200 OK');
+    const judgeData = await validJudgeRes.json();
+    assert.equal(judgeData.judgeScore.totalScore, 38, 'Must calculate sum of criteria (10+9+9+10 = 38)');
+    assert.equal(judgeData.entry.judgeScoreAverage, 38);
+    assert.equal(judgeData.entry.judgeCount, 1);
+    assert.ok(judgeData.judgeScore.feedback.includes('Hi-Nu'));
+
+    // 4. Retrieve judge scoring breakdown
+    const getJudgeScoresRes = await fetch(`${baseUrl}/api/v1/contests/gunpla-open-cup-2026/entries/entry-aperich-hinu-cup/judge-scores`);
+    assert.equal(getJudgeScoresRes.status, 200);
+    const scoresList = await getJudgeScoresRes.json();
+    assert.equal(scoresList.judgeCount, 1);
+    assert.equal(scoresList.judgeScores[0].totalScore, 38);
+
+    // 5. Generate Official Certificate / Diploma with QR code
+    const certRes = await fetch(`${baseUrl}/api/v1/contests/gunpla-open-cup-2026/entries/entry-aperich-hinu-cup/certificate`);
+    assert.equal(certRes.status, 200, 'Certificate endpoint must return 200 OK');
+    const certData = await certRes.json();
+    assert.equal(certData.rank, 1, 'Top entry must be rank 1');
+    assert.equal(certData.rankTitle, '1er Lugar - Medalla de Oro');
+    assert.ok(certData.verificationCode.startsWith('CERT-'));
+    assert.ok(certData.qrCodeDataUrl.startsWith('data:image/png;base64,'));
+    assert.equal(certData.builderName, 'Aldo Perich');
+    assert.ok(certData.htmlTemplate.includes('Diploma Oficial de Honor'));
+
+    // 6. Direct HTML Diploma generation
+    const certHtmlRes = await fetch(`${baseUrl}/api/v1/contests/gunpla-open-cup-2026/entries/entry-aperich-hinu-cup/certificate?format=html`);
+    assert.equal(certHtmlRes.status, 200);
+    assert.ok(certHtmlRes.headers.get('content-type').includes('text/html'));
+    const certHtml = await certHtmlRes.text();
+    assert.ok(certHtml.includes('Diploma Oficial de Honor'));
+    assert.ok(certHtml.includes(certData.verificationCode));
+
+    // 7. Verify Web Shell renders Judge & Diploma controls on GunplaJunkies
+    const gunplaPageCheck = await fetch(`${gunplaUrl}/`);
+    assert.equal(gunplaPageCheck.status, 200);
+    const gunplaWebHtml = await gunplaPageCheck.text();
+    assert.ok(gunplaWebHtml.includes('id="modal-judge-entry"'), 'Must render judge scoring modal');
+    assert.ok(gunplaWebHtml.includes('id="modal-contest-certificate"'), 'Must render contest certificate modal');
+    assert.ok(gunplaWebHtml.includes('openJudgeModal'), 'Must include openJudgeModal JS function');
+    assert.ok(gunplaWebHtml.includes('viewCertificate'), 'Must include viewCertificate JS function');
+
+    console.log('[PASS] Official Judge Rubrics & Contest Diplomas (B1) verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

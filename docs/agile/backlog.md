@@ -4,19 +4,11 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 — DVT Pilot & Community Expansion)
 
-### B1 -- Slice 6: Interactive Group Builds, Contests & Judging Rubrics
-- Goal: Full contest lifecycle management for tenant admins (creating categories, submission verification codes, judge scoring rubrics, community voting, and digital winner badges/certificates).
-- Why: Core driver for B2B White-Label adoption by modeling clubs and regional tournaments (`FR10`).
-- eMOE: 4 CU
-- Dependencies: `DT1`–`DT5`
-
-### B2 -- Slice 7: Trusted Shops Marketplace & Custom Painting Commission Workflow
-- Goal: Allow verified hobby shops to publish stock highlights matching user wishlists, and enable builders to request/offer custom painting commissions (`FR11`).
-- Why: Connects community demand with trusted local businesses (`bio.txt` evolution).
-- eMOE: 4 CU
-- Dependencies: `DT1`–`DT5`
-
 ## Completed Candidates & Parking Lot Items
+
+### B1 -- Slice 6: Interactive Group Builds, Contests & Judging Rubrics (COMPLETED)
+- Goal: Full contest lifecycle management for tenant admins (creating categories, submission verification codes, judge scoring rubrics, community voting, and digital winner badges/certificates).
+- Delivered: Endpoints `POST .../judge`, `GET .../judge-scores`, and `GET .../certificate`; 4-criteria rubric (Montaje, Pintura, Acabado, Creatividad, max 40 pts), role-based judge authorization, `#modal-judge-entry`, live ranking podium, `#modal-contest-certificate` with digital diplomas, unique cryptographic verification code, QR code audit link, and print-ready layout.
 
 ### B3 -- White-Label Tenant Self-Service Onboarding & Custom Theme Editor (COMPLETED)
 - Goal: Allow a new club or store (`tenant_admin`) to configure custom colors, logo, CNAME domain, and allowed model categories via UI.
