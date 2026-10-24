@@ -20,7 +20,7 @@ dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
-const API_URL = process.env.API_URL || 'http://localhost:8080';
+const getApiUrl = () => process.env.API_URL || 'http://localhost:8080';
 const OTHER_TENANT_URL = process.env.GUNPLAJUNKIES_WEB_URL || 'http://localhost:3001';
 const PUBLIC_API_URL = process.env.PUBLIC_API_URL || '';
 
@@ -47,16 +47,17 @@ const config: AppShellConfig = {
 async function fetchTenantData(): Promise<AppShellData> {
   try {
     const headers = { 'X-Tenant-Slug': 'plamoscale' };
+    const api = getApiUrl();
 
     const [buildersRes, buildsRes, kitsRes, paintsRes, contestsRes, shopsRes, listingsRes, commissionsRes] = await Promise.allSettled([
-      fetch(`${API_URL}/api/v1/builders`, { headers }).then(r => r.json()),
-      fetch(`${API_URL}/api/v1/builds`, { headers }).then(r => r.json()),
-      fetch(`${API_URL}/api/v1/catalog/kits`, { headers }).then(r => r.json()),
-      fetch(`${API_URL}/api/v1/catalog/paints`, { headers }).then(r => r.json()),
-      fetch(`${API_URL}/api/v1/contests`, { headers }).then(r => r.json()),
-      fetch(`${API_URL}/api/v1/shops`, { headers }).then(r => r.json()),
-      fetch(`${API_URL}/api/v1/marketplace/listings`, { headers }).then(r => r.json()),
-      fetch(`${API_URL}/api/v1/commissions/builders`, { headers }).then(r => r.json())
+      fetch(`${api}/api/v1/builders`, { headers }).then(r => r.json()),
+      fetch(`${api}/api/v1/builds`, { headers }).then(r => r.json()),
+      fetch(`${api}/api/v1/catalog/kits`, { headers }).then(r => r.json()),
+      fetch(`${api}/api/v1/catalog/paints`, { headers }).then(r => r.json()),
+      fetch(`${api}/api/v1/contests`, { headers }).then(r => r.json()),
+      fetch(`${api}/api/v1/shops`, { headers }).then(r => r.json()),
+      fetch(`${api}/api/v1/marketplace/listings`, { headers }).then(r => r.json()),
+      fetch(`${api}/api/v1/commissions/builders`, { headers }).then(r => r.json())
     ]);
 
     const buildersData: any = buildersRes.status === 'fulfilled' ? buildersRes.value : { items: [] };
@@ -105,7 +106,7 @@ async function fetchTenantData(): Promise<AppShellData> {
 // Transparent Reverse Proxy for API & Media Assets
 app.all(['/api/*', '/legacy-media/*', '/uploads/*'], async (req: Request, res: Response) => {
   try {
-    const targetUrl = `${API_URL}${req.originalUrl}`;
+    const targetUrl = `${getApiUrl()}${req.originalUrl}`;
     const headers: Record<string, string> = {};
     for (const [key, value] of Object.entries(req.headers)) {
       if (key !== 'host' && key.toLowerCase() !== 'content-length' && typeof value === 'string') {
@@ -157,7 +158,7 @@ app.get('/health', (_req: Request, res: Response) => {
     status: 'ok',
     service: 'plamoscale-web',
     tenant: 'plamoscale',
-    apiUrl: API_URL,
+    apiUrl: getApiUrl(),
     timestamp: new Date().toISOString()
   });
 });
@@ -176,14 +177,18 @@ app.get('/terms', (_req: Request, res: Response) => {
 // App Shell Main Entry Point
 app.get('*', async (_req: Request, res: Response) => {
   const data = await fetchTenantData();
-  const html = renderAppShell(config, data);
+  const currentConfig: AppShellConfig = {
+    ...config,
+    apiUrl: getApiUrl()
+  };
+  const html = renderAppShell(currentConfig, data);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(html);
 });
 
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`[PlamoScale Web] running on http://localhost:${PORT} (Connected to API: ${API_URL})`);
+    console.log(`[PlamoScale Web] running on http://localhost:${PORT} (Connected to API: ${getApiUrl()})`);
   });
 }
 

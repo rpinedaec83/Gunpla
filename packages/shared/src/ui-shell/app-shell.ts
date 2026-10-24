@@ -40,6 +40,16 @@ export interface AppShellData {
   commissionBuilders?: CommissionBuilderRecord[];
 }
 
+function escapeHtml(str: string): string {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export function renderAppShell(config: AppShellConfig, data: AppShellData): string {
   const isGunpla = config.tenantSlug === 'gunplajunkies';
   const birthYearOptions = Array.from({ length: 87 }, (_, i) => 2026 - i)
@@ -452,6 +462,36 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       outline: none;
       border-color: var(--primary);
     }
+
+    /* Community Contests & Voting Styles */
+    .vote-btn {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .vote-btn.voted {
+      background: rgba(251, 191, 36, 0.2) !important;
+      color: #fbbf24 !important;
+      border-color: #f59e0b !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+      font-weight: 700;
+    }
+    .podium-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .podium-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-color);
+    }
+    .podium-rank-1 { border-color: rgba(234, 179, 8, 0.5); background: linear-gradient(180deg, rgba(234, 179, 8, 0.12) 0%, transparent 100%); }
+    .podium-rank-2 { border-color: rgba(148, 163, 184, 0.5); background: linear-gradient(180deg, rgba(148, 163, 184, 0.12) 0%, transparent 100%); }
+    .podium-rank-3 { border-color: rgba(217, 119, 6, 0.5); background: linear-gradient(180deg, rgba(217, 119, 6, 0.12) 0%, transparent 100%); }
 
     /* Main Content Area */
     #main-content {
@@ -1507,59 +1547,111 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
         ${data.contests
           .map(
             (c) => `
-          <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
-            <div style="padding: 1.5rem; border-bottom: 1px solid var(--border-color);">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <span class="status-badge" style="background: rgba(37, 99, 235, 0.2); color: #60a5fa; border-color: rgba(37, 99, 235, 0.4);">
-                  ${c.status.toUpperCase()} • ${c.participantsCount} Inscritos
+          <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+            <div style="padding: 1.5rem; border-bottom: 1px solid var(--border-color); background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <span class="status-badge" style="background: rgba(37, 99, 235, 0.2); color: #60a5fa; border: 1px solid rgba(37, 99, 235, 0.4);">
+                  ${c.status.toUpperCase()} • <span id="contest-participants-badge-${c.id}">${c.participantsCount} Inscritos</span>
                 </span>
-                <span style="font-size: 0.8rem; color: #94a3b8;">Finaliza: ${new Date(c.endDate).toLocaleDateString()}</span>
+                <span style="font-size: 0.8rem; color: #94a3b8;">📅 Cierre de Votación: <strong>${new Date(c.endDate).toLocaleDateString()}</strong></span>
               </div>
-              <h2 style="font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem;">${c.title}</h2>
-              <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 1rem;">${c.description}</p>
+              <h2 style="font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem;">${c.title}</h2>
+              <p style="font-size: 0.92rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 1.25rem;">${c.description}</p>
               
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                <div style="padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px solid var(--border-color);">
-                  <div style="font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 0.4rem;">Reglas de Participación:</div>
-                  <ul style="padding-left: 1.25rem; font-size: 0.82rem; color: #94a3b8;">
+                <div style="padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border-color);">
+                  <div style="font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
+                    <span>📜</span> Reglas de Participación:
+                  </div>
+                  <ul style="padding-left: 1.25rem; font-size: 0.82rem; color: #94a3b8; line-height: 1.6;">
                     ${c.rules.map((r) => `<li>${r}</li>`).join('')}
                   </ul>
                 </div>
-                <div style="padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px solid var(--border-color);">
-                  <div style="font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 0.4rem;">Premios:</div>
-                  <ul style="padding-left: 1.25rem; font-size: 0.82rem; color: #94a3b8;">
+                <div style="padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border-color);">
+                  <div style="font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
+                    <span>🎁</span> Premios & Reconocimientos:
+                  </div>
+                  <ul style="padding-left: 1.25rem; font-size: 0.82rem; color: #94a3b8; line-height: 1.6;">
                     ${c.prizes.map((p) => `<li>${p}</li>`).join('')}
                   </ul>
                 </div>
               </div>
 
-              <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
-                <button class="btn-primary" onclick="submitToContest('${c.id}')">
+              <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; flex-wrap: wrap;">
+                <button class="btn-primary" style="padding: 0.7rem 1.25rem; font-size: 0.9rem;" onclick="openContestEntryModal('${c.id}', '${escapeHtml(c.title)}')">
                   🏆 Inscribir mi Bitácora al Concurso
                 </button>
               </div>
             </div>
 
             <!-- Participating Builds Gallery & Voting Leaderboard -->
-            <div style="padding: 1.5rem; background: rgba(0,0,0,0.15);">
-              <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 1rem;">
-                Obras Inscritas & Votación Comunitaria
-              </h3>
+            <div style="padding: 1.5rem; background: rgba(0,0,0,0.2);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                  <span>⭐</span> Obras Inscritas & Votación Comunitaria
+                </h3>
+                <span style="font-size: 0.8rem; color: #94a3b8;">1 voto por modelista por obra • Transparente y auditable</span>
+              </div>
+
+              ${(() => {
+                if (!c.entries || c.entries.length === 0) return '';
+                const sorted = [...c.entries].sort((a, b) => (b.voteCount || 0) - (a.voteCount || 0));
+                const top3 = sorted.slice(0, 3);
+                const medals = ['🥇 1er Lugar (Líder)', '🥈 2do Lugar', '🥉 3er Lugar'];
+                const rankClasses = ['podium-rank-1', 'podium-rank-2', 'podium-rank-3'];
+                return `
+                <div style="margin-bottom: 1.75rem; background: rgba(0,0,0,0.35); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+                    <div style="font-size: 0.95rem; font-weight: 700; color: #fbbf24; display: flex; align-items: center; gap: 0.4rem;">
+                      <span>👑</span> Podio de Líderes Provisionales
+                    </div>
+                    <span style="font-size: 0.75rem; color: #94a3b8;">Clasificación en vivo por votos de la comunidad</span>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
+                    ${top3
+                      .map(
+                        (entry, idx) => `
+                      <div class="podium-card ${rankClasses[idx]}">
+                        <img src="${entry.coverImageUrl}" alt="${escapeHtml(entry.title)}" style="width: 52px; height: 52px; border-radius: 6px; object-fit: cover; border: 1px solid rgba(255,255,255,0.15);" />
+                        <div style="overflow: hidden; flex: 1;">
+                          <div style="font-size: 0.72rem; font-weight: 700; color: #fbbf24;">${medals[idx]}</div>
+                          <div style="font-size: 0.82rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(entry.title)}</div>
+                          <div style="font-size: 0.72rem; color: #94a3b8;">@${entry.username} • <strong style="color: #fbbf24;">${entry.voteCount} votos</strong></div>
+                        </div>
+                      </div>
+                    `
+                      )
+                      .join('')}
+                  </div>
+                </div>
+                `;
+              })()}
+
               ${
                 c.entries && c.entries.length > 0
                   ? `
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem;">
+                <div id="contest-entries-grid-${c.id}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem;">
                   ${c.entries
                     .map(
                       (e) => `
-                    <div style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;">
-                      <img src="${e.coverImageUrl}" alt="${e.title}" style="width: 100%; height: 180px; object-fit: cover;" loading="lazy" />
+                    <div id="contest-entry-card-${e.id}" style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s;" onmouseenter="this.style.transform='translateY(-3px)'" onmouseleave="this.style.transform='translateY(0)'">
+                      <div style="position: relative; width: 100%; height: 180px; cursor: pointer;" onclick="openLightbox('${e.coverImageUrl}', '${escapeHtml(e.title)}', '${e.username}')">
+                        <img src="${e.coverImageUrl}" alt="${escapeHtml(e.title)}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+                        <span style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; color: #e2e8f0; border: 1px solid rgba(255,255,255,0.15); font-weight: 600;">
+                          ${(e.category || 'GUNPLA').toUpperCase()}
+                        </span>
+                      </div>
                       <div style="padding: 0.85rem 1rem; display: flex; flex-direction: column; flex: 1;">
-                        <div style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem;">${e.title}</div>
-                        <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.75rem;">Por <strong>@${e.username}</strong></div>
+                        <div style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem; line-height: 1.3;">${escapeHtml(e.title)}</div>
+                        <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.5rem;">Por <strong>@${e.username}</strong></div>
+                        ${e.build ? `
+                          <a href="#build-${e.build.slug}" onclick="switchTab('feed'); viewBuildDetail('${e.build.slug}')" style="font-size: 0.75rem; color: #38bdf8; text-decoration: none; margin-bottom: 0.75rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                            📖 Ver Bitácora & Fórmulas &rarr;
+                          </a>
+                        ` : ''}
                         <div style="margin-top: auto; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 0.65rem;">
-                          <span style="font-size: 0.85rem; font-weight: 600; color: #fbbf24;">⭐ ${e.voteCount} Votos</span>
-                          <button class="filter-pill" style="padding: 0.25rem 0.75rem; font-size: 0.78rem;" onclick="voteEntry('${c.id}', '${e.id}')">
+                          <span id="vote-count-${e.id}" style="font-size: 0.85rem; font-weight: 600; color: #fbbf24;">⭐ ${e.voteCount} Votos</span>
+                          <button id="btn-vote-${e.id}" class="filter-pill vote-btn" style="padding: 0.3rem 0.85rem; font-size: 0.78rem;" data-contest-id="${c.id}" data-entry-id="${e.id}" data-voters='${JSON.stringify(e.votedByUserIds || [])}' onclick="voteEntry('${c.id}', '${e.id}', event)">
                             Votar ⭐
                           </button>
                         </div>
@@ -1571,9 +1663,15 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
                 </div>
               `
                   : `
-                <p style="font-size: 0.85rem; color: #64748b; font-style: italic;">
-                  Aún no hay obras inscritas. ¡Sé el primero en participar con tu bitácora!
-                </p>
+                <div id="contest-entries-grid-${c.id}" style="background: rgba(255,255,255,0.02); border: 1px dashed var(--border-color); border-radius: 8px; padding: 2rem; text-align: center;">
+                  <span style="font-size: 2rem; display: block; margin-bottom: 0.5rem;">🏁</span>
+                  <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 0.75rem;">
+                    Aún no hay obras inscritas. ¡Sé el primero en participar e inscribe tu proyecto!
+                  </p>
+                  <button class="btn-primary" style="margin: 0 auto;" onclick="openContestEntryModal('${c.id}', '${escapeHtml(c.title)}')">
+                    🏆 Inscribir mi Bitácora
+                  </button>
+                </div>
               `
               }
             </div>
@@ -2123,7 +2221,70 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
   </div>
 </div>
 
+<!-- Contest Entry Modal -->
+<div id="modal-contest-entry" class="custom-modal" onclick="closeContestEntryModal(event)">
+  <div class="auth-box" style="max-width: 520px;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeContestEntryModal()">&times;</span>
+    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+      <span style="font-size: 1.4rem;">🏆</span>
+      <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff;">Inscribir Bitácora al Concurso</h3>
+    </div>
+    <div id="contest-entry-contest-name" style="font-size: 0.85rem; color: #38bdf8; font-weight: 600; margin-bottom: 1rem;"></div>
+    
+    <div id="contest-entry-auth-warning" style="display: none; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; text-align: center;">
+      <p style="font-size: 0.85rem; color: #fca5a5; margin-bottom: 0.75rem;">Debes iniciar sesión con tu cuenta para inscribir tus obras.</p>
+      <button type="button" class="btn-primary" onclick="closeContestEntryModal(); openAuthModal();">Iniciar Sesión</button>
+    </div>
+
+    <div id="contest-entry-form-body">
+      <div class="auth-input-group">
+        <label class="auth-label">Selecciona tu Bitácora de Armado</label>
+        <select id="contest-entry-build-select" class="auth-input" onchange="onContestBuildSelectChange()">
+          <option value="">Cargando tus bitácoras...</option>
+        </select>
+      </div>
+
+      <!-- Preview of selected build -->
+      <div id="contest-entry-build-preview" style="display: none; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; margin-bottom: 1rem; align-items: center; gap: 0.85rem;">
+        <img id="contest-entry-preview-img" src="" alt="" style="width: 60px; height: 60px; border-radius: 6px; object-fit: cover;" />
+        <div style="overflow: hidden; flex: 1;">
+          <div id="contest-entry-preview-title" style="font-size: 0.85rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+          <div id="contest-entry-preview-meta" style="font-size: 0.75rem; color: #94a3b8;"></div>
+        </div>
+      </div>
+
+      <div id="contest-entry-empty-state" style="display: none; background: rgba(255,255,255,0.02); border: 1px dashed var(--border-color); border-radius: 8px; padding: 1.25rem; text-align: center; margin-bottom: 1rem;">
+        <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.75rem;">Aún no tienes bitácoras creadas con tu cuenta. ¡Crea una en Mi Taller para participar!</p>
+        <button type="button" class="btn-primary" onclick="closeContestEntryModal(); switchTab('workbench');">🛠️ Ir a Mi Taller / Crear Bitácora</button>
+      </div>
+
+      <div style="background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.2); border-radius: 6px; padding: 0.75rem; font-size: 0.75rem; color: #93c5fd; margin-bottom: 1.25rem;">
+        ℹ️ Tu obra entrará de inmediato a la galería de votación comunitaria. Asegúrate de que las fotos muestren el acabado final.
+      </div>
+
+      <div id="contest-entry-error-msg" style="display: none; color: #ef4444; font-size: 0.8rem; margin-bottom: 0.75rem;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button type="button" class="filter-pill" onclick="closeContestEntryModal()">Cancelar</button>
+        <button type="button" id="btn-confirm-contest-entry" class="btn-primary" onclick="confirmContestSubmission()">
+          🏆 Confirmar Inscripción
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   function switchTab(tabId, el) {
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.sidebar-nav .nav-item').forEach(el => el.classList.remove('active'));
@@ -2227,12 +2388,246 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     alert('Like registrado para la bitácora ' + buildId + '. (POST /api/v1/builds/' + buildId + '/like)');
   }
 
+  // --- Contests & Community Voting Engine ---
+  let activeContestId = null;
+  let userContestBuilds = [];
+
   function submitToContest(contestId) {
-    alert('Para inscribir tu proyecto en el concurso ' + contestId + ', ingresa el buildId de tu bitácora mediante POST /api/v1/contests/' + contestId + '/entries');
+    openContestEntryModal(contestId, 'Concurso');
   }
 
-  function voteEntry(contestId, entryId) {
-    alert('Voto registrado para la obra participante ' + entryId + ' en ' + contestId + '. (POST /api/v1/contests/' + contestId + '/entries/' + entryId + '/vote)');
+  async function openContestEntryModal(contestId, contestTitle) {
+    if (!currentUser || !currentToken) {
+      alert('Debes iniciar sesión con tu cuenta de modelista para inscribir tus bitácoras en los concursos.');
+      openAuthModal();
+      return;
+    }
+
+    activeContestId = contestId;
+    const modal = document.getElementById('modal-contest-entry');
+    const contestNameEl = document.getElementById('contest-entry-contest-name');
+    const select = document.getElementById('contest-entry-build-select');
+    const preview = document.getElementById('contest-entry-build-preview');
+    const emptyState = document.getElementById('contest-entry-empty-state');
+    const errorMsg = document.getElementById('contest-entry-error-msg');
+    const btn = document.getElementById('btn-confirm-contest-entry');
+
+    if (contestNameEl) contestNameEl.textContent = 'Concurso: ' + contestTitle;
+    if (errorMsg) errorMsg.style.display = 'none';
+
+    if (modal) modal.classList.add('active');
+
+    // Fetch user builds from API
+    if (select) {
+      select.innerHTML = '<option value="">Cargando tus proyectos...</option>';
+      select.disabled = true;
+    }
+    if (preview) preview.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/v1/builds?username=' + encodeURIComponent(currentUser.username));
+      if (!res.ok) throw new Error('No se pudieron cargar las bitácoras');
+      const data = await res.json();
+      const builds = data.items || [];
+      userContestBuilds = builds;
+
+      if (builds.length === 0) {
+        if (select) {
+          select.innerHTML = '<option value="">Sin proyectos registrados</option>';
+          select.disabled = true;
+        }
+        if (emptyState) emptyState.style.display = 'block';
+        if (btn) btn.disabled = true;
+      } else {
+        if (select) {
+          select.disabled = false;
+          select.innerHTML = builds.map(b => 
+            '<option value="' + b.id + '">' + escapeHtml(b.title) + ' (' + (b.category || 'Gunpla') + ')</option>'
+          ).join('');
+        }
+        if (btn) btn.disabled = false;
+        onContestBuildSelectChange();
+      }
+    } catch (err) {
+      if (select) select.innerHTML = '<option value="">Error al cargar proyectos</option>';
+      if (errorMsg) {
+        errorMsg.textContent = err.message;
+        errorMsg.style.display = 'block';
+      }
+    }
+  }
+
+  function closeContestEntryModal(e) {
+    if (!e || e.target.id === 'modal-contest-entry' || e.target.classList.contains('auth-close')) {
+      const modal = document.getElementById('modal-contest-entry');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  function onContestBuildSelectChange() {
+    const select = document.getElementById('contest-entry-build-select');
+    const preview = document.getElementById('contest-entry-build-preview');
+    const img = document.getElementById('contest-entry-preview-img');
+    const title = document.getElementById('contest-entry-preview-title');
+    const meta = document.getElementById('contest-entry-preview-meta');
+
+    if (!select || !select.value) {
+      if (preview) preview.style.display = 'none';
+      return;
+    }
+
+    const selected = userContestBuilds.find(b => b.id === select.value);
+    if (selected && preview) {
+      preview.style.display = 'flex';
+      if (img) img.src = selected.coverImageUrl || (selected.steps && selected.steps[0]?.photoUrls[0]) || '/uploads/sample.jpg';
+      if (title) title.textContent = selected.title;
+      if (meta) meta.textContent = (selected.category || 'Gunpla').toUpperCase() + ' • ' + (selected.steps ? selected.steps.length : 0) + ' etapas documentadas';
+    }
+  }
+
+  async function confirmContestSubmission() {
+    if (!activeContestId || !currentToken) return;
+    const select = document.getElementById('contest-entry-build-select');
+    const buildId = select ? select.value : null;
+    const btn = document.getElementById('btn-confirm-contest-entry');
+    const errorMsg = document.getElementById('contest-entry-error-msg');
+
+    if (!buildId) {
+      alert('Por favor selecciona una bitácora para inscribir.');
+      return;
+    }
+
+    if (errorMsg) errorMsg.style.display = 'none';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ Inscribiendo...';
+    }
+
+    try {
+      const res = await fetch('/api/v1/contests/' + activeContestId + '/entries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken
+        },
+        body: JSON.stringify({ buildId })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || data.title || 'Error al inscribir el proyecto en el concurso');
+      }
+
+      alert('🎉 ¡Felicitaciones! Tu obra "' + data.title + '" ha sido inscrita exitosamente en el concurso.');
+      closeContestEntryModal();
+
+      // Update participants count badge if present
+      const countBadge = document.getElementById('contest-participants-badge-' + activeContestId);
+      if (countBadge) {
+        const currentCount = parseInt(countBadge.textContent) || 0;
+        countBadge.textContent = (currentCount + 1) + ' Inscritos';
+      }
+
+      // Dynamically add card to the contest entries grid
+      const grid = document.getElementById('contest-entries-grid-' + activeContestId);
+      if (grid) {
+        const cardHtml = 
+          '<div id="contest-entry-card-' + data.id + '" style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; animation: fadeIn 0.4s ease;">' +
+            '<div style="position: relative; width: 100%; height: 180px; cursor: pointer;" onclick="openLightbox(&quot;' + data.coverImageUrl + '&quot;, &quot;' + escapeHtml(data.title) + '&quot;, &quot;' + data.username + '&quot;)">' +
+              '<img src="' + data.coverImageUrl + '" alt="' + escapeHtml(data.title) + '" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />' +
+              '<span style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; color: #e2e8f0; border: 1px solid rgba(255,255,255,0.15); font-weight: 600;">' +
+                (data.category || 'GUNPLA').toUpperCase() +
+              '</span>' +
+            '</div>' +
+            '<div style="padding: 0.85rem 1rem; display: flex; flex-direction: column; flex: 1;">' +
+              '<div style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem;">' + escapeHtml(data.title) + '</div>' +
+              '<div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.65rem;">Por <strong>@' + data.username + '</strong> (¡Tu inscripción!)</div>' +
+              '<div style="margin-top: auto; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 0.65rem;">' +
+                '<span id="vote-count-' + data.id + '" style="font-size: 0.85rem; font-weight: 600; color: #fbbf24;">⭐ 0 Votos</span>' +
+                '<button id="btn-vote-' + data.id + '" class="filter-pill vote-btn" style="padding: 0.3rem 0.85rem; font-size: 0.78rem;" data-contest-id="' + activeContestId + '" data-entry-id="' + data.id + '" data-voters="[]" onclick="voteEntry(&quot;' + activeContestId + '&quot;, &quot;' + data.id + '&quot;, event)">' +
+                  'Votar ⭐' +
+                '</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        grid.insertAdjacentHTML('afterbegin', cardHtml);
+      }
+    } catch (err) {
+      if (errorMsg) {
+        errorMsg.textContent = err.message;
+        errorMsg.style.display = 'block';
+      } else {
+        alert(err.message);
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🏆 Confirmar Inscripción';
+      }
+    }
+  }
+
+  async function voteEntry(contestId, entryId, event) {
+    if (event) event.stopPropagation();
+    if (!currentUser || !currentToken) {
+      alert('Debes iniciar sesión con Google o tu cuenta de modelista para votar en los concursos comunitarios.');
+      openAuthModal();
+      return;
+    }
+
+    const btn = document.getElementById('btn-vote-' + entryId);
+    const countEl = document.getElementById('vote-count-' + entryId);
+    if (btn) btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/v1/contests/' + contestId + '/entries/' + entryId + '/vote', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken
+        }
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || data.title || 'Error al emitir el voto');
+      }
+
+      if (countEl) {
+        countEl.textContent = '⭐ ' + data.voteCount + ' Votos';
+      }
+
+      if (btn) {
+        if (data.voted) {
+          btn.classList.add('voted');
+          btn.innerHTML = '⭐ ¡Votado!';
+        } else {
+          btn.classList.remove('voted');
+          btn.innerHTML = 'Votar ⭐';
+        }
+      }
+    } catch (err) {
+      alert('Error en la votación: ' + err.message);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function updateContestVotesForCurrentUser() {
+    if (!currentUser) return;
+    document.querySelectorAll('.vote-btn').forEach(btn => {
+      const votersRaw = btn.getAttribute('data-voters');
+      if (votersRaw) {
+        try {
+          const voters = JSON.parse(votersRaw);
+          if (Array.isArray(voters) && voters.includes(currentUser.id)) {
+            btn.classList.add('voted');
+            btn.innerHTML = '⭐ ¡Votado!';
+          }
+        } catch (e) {}
+      }
+    });
   }
 
   function openNewListingModal() {
@@ -2282,6 +2677,7 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
             '<a class="user-dropdown-item" style="color: #ef4444;" onclick="logout()">🚪 Cerrar Sesión</a>' +
           '</div>' +
         '</div>';
+      updateContestVotesForCurrentUser();
     } else {
       container.innerHTML =
         '<button id="btn-open-login" class="btn-auth" onclick="openAuthModal()">' +

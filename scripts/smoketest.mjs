@@ -616,7 +616,10 @@ async function runSmoketest() {
     assert.ok(gunplaHtml.includes('High Grade (HG)'), 'Should contain HG pill');
     assert.ok(gunplaHtml.includes('Master Grade (MG)'), 'Should contain MG pill');
     assert.ok(gunplaHtml.includes('Ir a <strong>PlamoScale</strong>'), 'Should contain Portal Switcher to PlamoScale');
-    console.log('[PASS] GunplaJunkies Web Frontend (UXP-01 Shell) verified successfully.');
+    assert.ok(gunplaHtml.includes('modal-contest-entry'), 'Should contain Contest Entry Modal');
+    assert.ok(gunplaHtml.includes('openContestEntryModal'), 'Should contain openContestEntryModal handler');
+    assert.ok(gunplaHtml.includes('voteEntry'), 'Should contain voteEntry handler');
+    console.log('[PASS] GunplaJunkies Web Frontend (UXP-01 Shell & Contest UI) verified successfully.');
 
     // 20. DT6 - Contest Entry Submission & Duplicate Prevention
     console.log('\n--- Checking DT6: Contest Entry Submission ---');
@@ -686,7 +689,13 @@ async function runSmoketest() {
     assert.equal(contestDetailRes.status, 200);
     const detailedContest = await contestDetailRes.json();
     assert.ok(detailedContest.entries.some((e) => e.id === entryData.id));
-    console.log(`[PASS] Community voting verified (Contest: ${detailedContest.title}, Entries: ${detailedContest.entries.length}).`);
+
+    // Verify Web UI renders live podium after entries and votes are present
+    const updatedGunplaRes = await fetch(`${gunplaUrl}/`);
+    assert.equal(updatedGunplaRes.status, 200);
+    const updatedHtml = await updatedGunplaRes.text();
+    assert.ok(updatedHtml.includes('Podio de Líderes Provisionales'), 'Should render podium in web UI when contest has voted entries');
+    console.log(`[PASS] Community voting & Web UI Podium verified (Contest: ${detailedContest.title}, Entries: ${detailedContest.entries.length}).`);
 
     // 22. DT7 - Stash Marketplace (Publish from Stash, Scoping, Ownership Protection)
     console.log('\n--- Checking DT7: Stash Marketplace Listings & Stash Integration ---');

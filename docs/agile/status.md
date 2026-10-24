@@ -49,10 +49,11 @@ Current live state of the project.
   - Featured commission builders directory (`GET /api/v1/commissions/builders`) highlighting top painters (`aperich`, `fog1labs1`, `dcampos`) with direct WhatsApp consultation buttons and portfolios.
   - Interactive "Bazar & Venta de Kits" (`#view-marketplace`) and "Comisiones de Pintura" (`#view-commissions`) views integrated in both web frontends.
 - **Group Builds, Contests & Community Voting (`Slice 6 / DT6`):**
-  - Interactive contest system (`GET /api/v1/contests`, `GET /api/v1/contests/:slugOrId`).
-  - Personal build project submission (`POST /api/v1/contests/:id/entries`) with ownership check (`403`) and duplicate protection (`409`).
-  - Community voting leaderboard (`POST /api/v1/contests/:id/entries/:entryId/vote`) with toggle vote behavior and live tallying.
-  - Interactive contest cards with rules, prizes, participating build galleries, and voting buttons in both frontends.
+  - **Interactive Contest UI & In-App Submissions:** Dedicated contest view (`#view-contests`) in `plamoscale.com` and `gunplajunkies.com` with active contest cards (*Gunpla Open Cup Peru 2026* and *PlamoScale Masters 2026*), countdown dates, rules, prizes, and dynamic participants count badge.
+  - **In-App Project Entry Modal (`#modal-contest-entry`):** 1-click submission flow allowing logged-in modelers to select their personal build projects (`GET /api/v1/builds?username=...`), previewing title, category, and cover photo before confirming registration (`POST /api/v1/contests/:id/entries`).
+  - **Live Community Voting & Instant Reaction (`voteEntry`):** 1-click toggle voting (`POST /api/v1/contests/:id/entries/:entryId/vote`) with real-time UI tallying, active vote state (`⭐ ¡Votado!`), and duplicate vote prevention.
+  - **Podio de Líderes Provisionales:** Automatic real-time top-3 podium (🥇 1° Lugar, 🥈 2° Lugar, 🥉 3° Lugar) computed from community votes and featured prominently at the top of each contest gallery.
+  - **Cross-Section Build Linking:** Direct links from contest entries back to full build logs (`#build-:slug`), displaying work-in-progress internal frames, techniques, and paint formulas.
 - **Frontends Web (`apps/plamoscale-web` & `apps/gunplajunkies-web`):**
   - Implement **`UXP-01 Modern App Shell Layout`** with persistent left text-labeled sidebar, top utility bar with search & SSO status, breadcrumbs, and responsive mobile drawer.
   - **PlamoScale (`apps/plamoscale-web` on port 3000):** General scale modeling hub (Military, Aviation, Automotive, Gunpla/Mecha, Figures, Naval, Diorama) with Studio Technical palette.
