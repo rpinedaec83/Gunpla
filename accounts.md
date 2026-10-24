@@ -33,10 +33,15 @@ Do not store credentials, keys, tokens, passwords, connection strings, or deploy
 
 - Account ID: TBD (x-codec Cloudflare account)
 - Account name: x-codec
-- Zone ID or zone name: `plamoscale.com` (Pending Nameserver migration to Cloudflare), `gunplajunkies.com` (Pending Nameserver migration to Cloudflare)
+- Zone ID or zone name:
+  - `plamoscale.com`: Delegated Nameservers `cruz.ns.cloudflare.com`, `dylan.ns.cloudflare.com` (Zone active in Cloudflare)
+  - `gunplajunkies.com`: Delegated Nameservers `cruz.ns.cloudflare.com`, `dylan.ns.cloudflare.com` (Zone active in Cloudflare)
+- Nameservers assigned:
+  1. `cruz.ns.cloudflare.com`
+  2. `dylan.ns.cloudflare.com`
 - Pages project: Optional edge static caching / DNS proxy
 - Workers service: Optional image resizing / CDN edge caching
-- Deployment environment notes: Both `plamoscale.com` and `gunplajunkies.com` domains will be migrated to Cloudflare DNS/Proxy (Full Strict SSL/TLS) and linked to Cloudflare R2 bucket (`plamoscale-media-prod` / `plamoscale-media-dev`) for zero-egress high-resolution image delivery.
+- Deployment environment notes: Both `plamoscale.com` and `gunplajunkies.com` domains are bound to Cloudflare DNS/Proxy with assigned nameservers `cruz.ns.cloudflare.com` and `dylan.ns.cloudflare.com`. DNS record cutover and Resend domain verification are paused by user decision (2026-10-23) and will be resumed during final production deployment. Both zones will link to Cloudflare R2 bucket (`plamoscale-media-prod` / `plamoscale-media-dev`) for zero-egress high-resolution image delivery.
 
 ## GitHub
 

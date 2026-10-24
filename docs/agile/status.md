@@ -20,7 +20,11 @@ Current live state of the project.
 
 ## Current Constraints
 
-- Production deployment targets `x-codec` VPS/Hosting + PostgreSQL + Cloudflare R2/S3 + Resend.com verified domains; local development and CI smoketests run self-contained.
+- Production deployment targets `x-codec` VPS/Homelab + PostgreSQL + Cloudflare R2/S3 + Resend.com verified domains.
+- **Cloudflare & Resend Onboarding Status (2026-10-23):**
+  - Nameservers for both `plamoscale.com` and `gunplajunkies.com` are delegated to Cloudflare: `cruz.ns.cloudflare.com` and `dylan.ns.cloudflare.com`.
+  - Further Cloudflare DNS record adjustments and Resend DKIM/SPF domain verification are temporarily paused by user instruction and will resume during staging/production cutover.
+  - Local development and CI smoketests remain 100% self-contained with offline mocks.
 
 ## Next Focus
 
