@@ -1069,7 +1069,113 @@ async function runSmoketest() {
 
     console.log('[PASS] Printable Contest Spec Cards verified: Configurable WxH dimensions, table-tent folding & vector QR code.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + PAINTS-AI + SPEC-CARDS CHECKS PASSED ===');
+    // --- Checking White-Label Tenant Onboarding & Theme Customizer (B3) ---
+    console.log('\n--- Checking White-Label Tenant Onboarding & Theme Customizer (B3) ---');
+    // 1. Fetch current tenant and specific tenant details
+    const currTenantRes = await fetch(`${baseUrl}/api/v1/tenants/current`, {
+      headers: { 'X-Tenant-Slug': 'gunplajunkies' }
+    });
+    assert.equal(currTenantRes.status, 200);
+    const currTenant = await currTenantRes.json();
+    assert.equal(currTenant.slug, 'gunplajunkies');
+    assert.ok(currTenant.themeConfig.primaryColor);
+
+    const getTenantRes = await fetch(`${baseUrl}/api/v1/tenants/plamoscale`);
+    assert.equal(getTenantRes.status, 200);
+    const plamoTenant = await getTenantRes.json();
+    assert.equal(plamoTenant.slug, 'plamoscale');
+
+    // 2. Self-service Onboarding: Create a new White-Label Club / Portal
+    const newTenantRes = await fetch(`${baseUrl}/api/v1/tenants`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        name: 'Arequipa Scale Modelers',
+        slug: 'arequipa-scale',
+        domain: 'arequipascale.com',
+        tagline: 'Comunidad de Maquetismo Militar, Dioramas y Figuras del Sur',
+        allowedCategories: ['military', 'aviation', 'diorama'],
+        themeConfig: {
+          primaryColor: '#1c2818',
+          accentColor: '#22c55e',
+          surfaceColor: '#0d140b',
+          logoText: 'AREQUIPA SCALE'
+        }
+      })
+    });
+    assert.equal(newTenantRes.status, 201, 'Should create new white-label tenant');
+    const createdTenant = await newTenantRes.json();
+    assert.equal(createdTenant.slug, 'arequipa-scale');
+    assert.equal(createdTenant.name, 'Arequipa Scale Modelers');
+    assert.equal(createdTenant.themeConfig.primaryColor, '#1c2818');
+    assert.equal(createdTenant.themeConfig.accentColor, '#22c55e');
+    assert.deepEqual(createdTenant.allowedCategories, ['military', 'aviation', 'diorama']);
+    assert.equal(createdTenant.createdBy, 'amuroray');
+
+    // 3. Duplicate protection
+    const dupRes = await fetch(`${baseUrl}/api/v1/tenants`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Duplicate Arequipa',
+        slug: 'arequipa-scale',
+        domain: 'arequipascale.com'
+      })
+    });
+    assert.equal(dupRes.status, 409, 'Should reject duplicate slug with 409 Conflict');
+
+    // 4. Update Theme & Branding via PATCH
+    const patchThemeRes = await fetch(`${baseUrl}/api/v1/tenants/arequipa-scale`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        tagline: 'Club Oficial de Modelismo Estático de Arequipa y el Sur',
+        themeConfig: {
+          primaryColor: '#0f172a',
+          accentColor: '#eab308',
+          surfaceColor: '#090d16',
+          logoText: 'AREQUIPA STATIC GUILD'
+        },
+        allowedCategories: ['military', 'aviation', 'diorama', 'figures']
+      })
+    });
+    assert.equal(patchThemeRes.status, 200, 'Should update tenant theme via PATCH');
+    const patchedTenant = await patchThemeRes.json();
+    assert.equal(patchedTenant.themeConfig.accentColor, '#eab308');
+    assert.equal(patchedTenant.themeConfig.logoText, 'AREQUIPA STATIC GUILD');
+    assert.ok(patchedTenant.allowedCategories.includes('figures'));
+
+    // 5. Unauthorized PATCH attempt (no token)
+    const anonPatchRes = await fetch(`${baseUrl}/api/v1/tenants/arequipa-scale`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Hacked Name' })
+    });
+    assert.equal(anonPatchRes.status, 401, 'Anonymous PATCH must return 401 Unauthorized');
+
+    // 6. Verify Web Shell includes White-Label modals & controls
+    const webShellRes = await fetch(`${baseUrl}/api/v1/tenants`);
+    assert.equal(webShellRes.status, 200);
+    const allTenants = await webShellRes.json();
+    assert.ok(allTenants.items.some(t => t.slug === 'arequipa-scale'));
+
+    const plamoPageCheck = await fetch(`${plamoUrl}/`);
+    assert.equal(plamoPageCheck.status, 200);
+    const plamoWebHtml = await plamoPageCheck.text();
+    assert.ok(plamoWebHtml.includes('id="modal-tenant-theme"'), 'Must render theme customizer modal');
+    assert.ok(plamoWebHtml.includes('id="modal-new-tenant"'), 'Must render new white-label tenant modal');
+    assert.ok(plamoWebHtml.includes('openTenantThemeModal'), 'Must include openTenantThemeModal function');
+    assert.ok(plamoWebHtml.includes('openNewTenantModal'), 'Must include openNewTenantModal function');
+
+    console.log('[PASS] White-Label Tenant Self-Service Onboarding & Custom Theme Editor verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

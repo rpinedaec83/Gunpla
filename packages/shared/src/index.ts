@@ -17,6 +17,7 @@ export interface TenantThemeConfig {
   accentColor: string;
   surfaceColor: string;
   logoText: string;
+  logoUrl?: string;
   uxPatternId: string;
 }
 
@@ -39,6 +40,7 @@ export interface Tenant {
     gundamHobbyLife?: string;
     trustedShopsCatalog?: string;
   };
+  createdBy?: string;
   createdAt: string;
 }
 

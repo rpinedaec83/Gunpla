@@ -16,13 +16,11 @@ Future work queue. Keep this separate from the active burn-down.
 - eMOE: 4 CU
 - Dependencies: `DT1`–`DT5`
 
-### B3 -- White-Label Tenant Self-Service Onboarding & Custom Theme Editor
-- Goal: Allow a new club or store (`tenant_admin`) to configure custom colors, logo, CNAME domain, and allowed model categories via UI.
-- Why: Enables scalable onboarding of "other possible clients" beyond `plamoscale.com` and `gunplajunkies.com`.
-- eMOE: 3 CU
-- Dependencies: `DT1`, `DT5`
+## Completed Candidates & Parking Lot Items
 
-## Completed Parking Lot Items
+### B3 -- White-Label Tenant Self-Service Onboarding & Custom Theme Editor (COMPLETED)
+- Goal: Allow a new club or store (`tenant_admin`) to configure custom colors, logo, CNAME domain, and allowed model categories via UI.
+- Delivered: Endpoints `POST /api/v1/tenants`, `PATCH /api/v1/tenants/:slug`, and `GET /api/v1/tenants/:slug`; `#modal-new-tenant` for onboarding with auto-slug, `#modal-tenant-theme` with live CSS variable mutation, 5 color presets, category filtering, and role-based authorization.
 
 ### P1 -- Printable QR Spec Cards for Physical IPMS / Gunpla Contests (COMPLETED)
 - Goal: Generate printable table tent cards with QR codes linking a physical contest model on a table to its online Build Log and Paint Recipe with configurable width and height dimensions.

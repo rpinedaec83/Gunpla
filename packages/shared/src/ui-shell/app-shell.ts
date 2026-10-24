@@ -989,6 +989,16 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
         <span>Tiendas de Confianza</span>
         <span class="nav-badge">${data.shops.length}</span>
       </a>
+
+      <div class="nav-group-title">White-Label & Portales</div>
+      <a class="nav-item" onclick="openNewTenantModal()">
+        <span>🏛️ Crear Club / Portal</span>
+        <span class="nav-badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">Nuevo</span>
+      </a>
+      <a id="nav-customize-theme" class="nav-item" onclick="openTenantThemeModal()" style="display: none;">
+        <span>🎨 Personalizar Portal</span>
+        <span class="nav-badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">Admin</span>
+      </a>
     </nav>
   </aside>
 
@@ -1007,6 +1017,12 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       <a href="${config.otherTenantUrl}" class="portal-switcher">
         <span>Ir a <strong>${config.otherTenantName}</strong> ➔</span>
       </a>
+
+      <!-- White-Label Portal CTA -->
+      <button class="filter-pill" onclick="openNewTenantModal()" style="font-size: 0.8rem; padding: 0.38rem 0.75rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; display: inline-flex; align-items: center; gap: 0.35rem;" title="Crear Nuevo Club o Portal White-Label">
+        <span>🏛️</span>
+        <span>Crear Portal</span>
+      </button>
 
       <!-- Primary Action CTA -->
       <button class="btn-primary" onclick="openNewBuildModal()">
@@ -2363,6 +2379,272 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
   </div>
 </div>
 
+<!-- Custom Theme & Portal Customizer Modal (Admin / Tenant Admin) -->
+<div id="modal-tenant-theme" class="custom-modal" onclick="closeTenantThemeModal(event)">
+  <div class="auth-box" style="max-width: 620px; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeTenantThemeModal()">&times;</span>
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+      <span style="font-size: 1.4rem;">🎨</span>
+      <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff;">Personalizar Tema y Marca del Portal</h3>
+    </div>
+    <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
+      Ajusta los colores corporativos, logotipo y categorías visibles para este portal. Los cambios aplican de inmediato para toda la comunidad.
+    </p>
+
+    <form id="tenant-theme-form" onsubmit="saveTenantTheme(event)">
+      <!-- Name & Tagline -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="auth-input-group">
+          <label class="auth-label">Nombre del Portal</label>
+          <input type="text" id="theme-tenant-name" class="auth-input" required maxlength="80" value="${escapeHtml(config.tenantName)}">
+        </div>
+        <div class="auth-input-group">
+          <label class="auth-label">Texto de Logotipo (Topbar)</label>
+          <input type="text" id="theme-tenant-logo-text" class="auth-input" maxlength="40" value="${escapeHtml(config.tenantName.toUpperCase())}">
+        </div>
+      </div>
+
+      <div class="auth-input-group">
+        <label class="auth-label">Lema / Tagline de la Comunidad</label>
+        <input type="text" id="theme-tenant-tagline" class="auth-input" maxlength="150" value="${escapeHtml(config.tenantTagline)}">
+      </div>
+
+      <!-- Color Palette Customizer -->
+      <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+        <label class="auth-label" style="margin-bottom: 0.6rem; color: #38bdf8; display: flex; align-items: center; gap: 0.4rem;">
+          <span>🎨</span> Paleta de Colores de Marca
+        </label>
+
+        <!-- Color Presets -->
+        <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem;">
+          <span style="font-size: 0.72rem; color: #64748b; align-self: center;">Presets Rápidos:</span>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;" onclick="applyThemePreset('#1e293b', '#3b82f6', '#0f172a')">🔵 Titan Blue</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;" onclick="applyThemePreset('#3b1111', '#ef4444', '#180808')">🔴 Char Crimson</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;" onclick="applyThemePreset('#1c2818', '#22c55e', '#0d140b')">🟢 Zaku Military</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;" onclick="applyThemePreset('#0f172a', '#eab308', '#090d16')">🟡 Gundam Gold</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;" onclick="applyThemePreset('#1a0b2e', '#06b6d4', '#0d0517')">🟣 Neon Cyberpunk</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem;">
+          <!-- Primary Color -->
+          <div>
+            <label class="auth-label" style="font-size: 0.75rem;">Color Primario (Botones)</label>
+            <div style="display: flex; gap: 0.4rem; align-items: center;">
+              <input type="color" id="theme-primary-color" value="${config.theme.primaryColor}" style="width: 36px; height: 36px; border: none; border-radius: 6px; cursor: pointer; background: transparent;" oninput="syncColorInput('theme-primary-hex', this.value); updateThemePreview()">
+              <input type="text" id="theme-primary-hex" class="auth-input" style="font-size: 0.8rem; padding: 0.4rem 0.6rem; font-family: monospace;" value="${config.theme.primaryColor}" oninput="syncColorInput('theme-primary-color', this.value); updateThemePreview()">
+            </div>
+          </div>
+
+          <!-- Accent Color -->
+          <div>
+            <label class="auth-label" style="font-size: 0.75rem;">Color de Acento (Badges/Links)</label>
+            <div style="display: flex; gap: 0.4rem; align-items: center;">
+              <input type="color" id="theme-accent-color" value="${config.theme.accentColor}" style="width: 36px; height: 36px; border: none; border-radius: 6px; cursor: pointer; background: transparent;" oninput="syncColorInput('theme-accent-hex', this.value); updateThemePreview()">
+              <input type="text" id="theme-accent-hex" class="auth-input" style="font-size: 0.8rem; padding: 0.4rem 0.6rem; font-family: monospace;" value="${config.theme.accentColor}" oninput="syncColorInput('theme-accent-color', this.value); updateThemePreview()">
+            </div>
+          </div>
+
+          <!-- Surface / Background Color -->
+          <div>
+            <label class="auth-label" style="font-size: 0.75rem;">Fondo / Superficie</label>
+            <div style="display: flex; gap: 0.4rem; align-items: center;">
+              <input type="color" id="theme-surface-color" value="${config.theme.bgDark}" style="width: 36px; height: 36px; border: none; border-radius: 6px; cursor: pointer; background: transparent;" oninput="syncColorInput('theme-surface-hex', this.value); updateThemePreview()">
+              <input type="text" id="theme-surface-hex" class="auth-input" style="font-size: 0.8rem; padding: 0.4rem 0.6rem; font-family: monospace;" value="${config.theme.bgDark}" oninput="syncColorInput('theme-surface-color', this.value); updateThemePreview()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Theme Preview Card -->
+      <div style="margin-bottom: 1.25rem;">
+        <label class="auth-label" style="margin-bottom: 0.4rem;">Vista Previa de Marca (Live Preview)</label>
+        <div id="theme-preview-box" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; background: ${config.theme.bgDark}; transition: all 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <div id="theme-preview-brand" style="font-size: 1rem; font-weight: 700; color: #fff; font-family: 'Chakra Petch', sans-serif;">${escapeHtml(config.tenantName)}</div>
+            <span id="theme-preview-badge" style="background: ${config.theme.accentColor}; color: #fff; font-size: 0.68rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 9999px;">ACTIVO</span>
+          </div>
+          <p id="theme-preview-tagline" style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.85rem;">${escapeHtml(config.tenantTagline)}</p>
+          <div style="display: flex; gap: 0.6rem; align-items: center;">
+            <button type="button" id="theme-preview-btn-primary" style="background: ${config.theme.primaryColor}; border: none; color: #fff; font-size: 0.78rem; font-weight: 600; padding: 0.4rem 0.85rem; border-radius: 6px;">Botón Primario</button>
+            <button type="button" id="theme-preview-btn-accent" style="background: ${config.theme.accentColor}; border: none; color: #fff; font-size: 0.78rem; font-weight: 600; padding: 0.4rem 0.85rem; border-radius: 6px;">Botón Acento</button>
+            <span style="font-size: 0.75rem; color: #94a3b8;">Estilo visual en vivo</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Allowed Categories -->
+      <div class="auth-input-group">
+        <label class="auth-label" style="margin-bottom: 0.4rem;">Categorías Habilitadas en este Portal</label>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.5rem; background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color);">
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="theme-category" value="gunpla-mecha" checked> Gunpla & Mecha
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="theme-category" value="military" ${!isGunpla ? 'checked' : ''}> Militar 1/35
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="theme-category" value="aviation" ${!isGunpla ? 'checked' : ''}> Aviación 1/48
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="theme-category" value="automotive" ${!isGunpla ? 'checked' : ''}> Automotriz 1/24
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="theme-category" value="naval" ${!isGunpla ? 'checked' : ''}> Naval
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="theme-category" value="figures" ${!isGunpla ? 'checked' : ''}> Figuras
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="theme-category" value="scifi" ${!isGunpla ? 'checked' : ''}> Sci-Fi
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="theme-category" value="diorama" ${!isGunpla ? 'checked' : ''}> Dioramas
+          </label>
+        </div>
+      </div>
+
+      <div id="theme-status-msg" style="display: none; font-size: 0.82rem; margin-bottom: 0.75rem;"></div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-top: 1rem;">
+        <button type="button" class="filter-pill" onclick="previewThemeLive()" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">
+          👁️ Probar en esta Página
+        </button>
+        <div style="display: flex; gap: 0.6rem;">
+          <button type="button" class="filter-pill" onclick="closeTenantThemeModal()">Cancelar</button>
+          <button type="submit" id="btn-save-theme" class="btn-primary" style="padding: 0.65rem 1.25rem;">
+            💾 Guardar Cambios
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Self-Service White-Label New Tenant Modal -->
+<div id="modal-new-tenant" class="custom-modal" onclick="closeNewTenantModal(event)">
+  <div class="auth-box" style="max-width: 620px; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeNewTenantModal()">&times;</span>
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+      <span style="font-size: 1.4rem;">🏛️</span>
+      <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff;">Crear Nuevo Club o Portal White-Label</h3>
+    </div>
+    <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
+      Despliega una comunidad de modelismo personalizada con tu propia marca, colores, categorías especializadas y dominio. Serás configurado como Administrador del Portal automáticamente.
+    </p>
+
+    <form id="new-tenant-form" onsubmit="createNewTenant(event)">
+      <!-- Name, Slug & Domain -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="auth-input-group">
+          <label class="auth-label">Nombre del Club o Portal</label>
+          <input type="text" id="new-tenant-name" class="auth-input" required maxlength="80" placeholder="ej. Arequipa Scale Modelers" oninput="autoSuggestSlug(this.value)">
+        </div>
+        <div class="auth-input-group">
+          <label class="auth-label">Slug Único (identificador)</label>
+          <input type="text" id="new-tenant-slug" class="auth-input" required maxlength="40" placeholder="ej. arequipa-scale">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="auth-input-group">
+          <label class="auth-label">Dominio o Subdominio</label>
+          <input type="text" id="new-tenant-domain" class="auth-input" required maxlength="100" placeholder="ej. arequipascale.com">
+        </div>
+        <div class="auth-input-group">
+          <label class="auth-label">Email de Contacto</label>
+          <input type="email" id="new-tenant-email" class="auth-input" placeholder="contacto@arequipascale.com">
+        </div>
+      </div>
+
+      <div class="auth-input-group">
+        <label class="auth-label">Lema / Tagline de la Comunidad</label>
+        <input type="text" id="new-tenant-tagline" class="auth-input" maxlength="150" placeholder="ej. Comunidad de Maquetismo Militar, Dioramas y Figuras">
+      </div>
+
+      <!-- Color Palette Customizer for New Tenant -->
+      <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+        <label class="auth-label" style="margin-bottom: 0.6rem; color: #38bdf8; display: flex; align-items: center; gap: 0.4rem;">
+          <span>🎨</span> Paleta de Colores del Nuevo Portal
+        </label>
+
+        <!-- Color Presets -->
+        <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem;">
+          <span style="font-size: 0.72rem; color: #64748b; align-self: center;">Presets:</span>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;" onclick="applyNewTenantPreset('#1e293b', '#3b82f6', '#0f172a')">🔵 Titan Blue</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;" onclick="applyNewTenantPreset('#3b1111', '#ef4444', '#180808')">🔴 Char Crimson</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;" onclick="applyNewTenantPreset('#1c2818', '#22c55e', '#0d140b')">🟢 Zaku Military</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;" onclick="applyNewTenantPreset('#0f172a', '#eab308', '#090d16')">🟡 Gundam Gold</button>
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.6rem;" onclick="applyNewTenantPreset('#1a0b2e', '#06b6d4', '#0d0517')">🟣 Neon Cyberpunk</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem;">
+          <div>
+            <label class="auth-label" style="font-size: 0.75rem;">Color Primario</label>
+            <div style="display: flex; gap: 0.4rem; align-items: center;">
+              <input type="color" id="new-tenant-primary-color" value="#1e293b" style="width: 36px; height: 36px; border: none; border-radius: 6px; cursor: pointer; background: transparent;" oninput="syncColorInput('new-tenant-primary-hex', this.value)">
+              <input type="text" id="new-tenant-primary-hex" class="auth-input" style="font-size: 0.8rem; padding: 0.4rem 0.6rem; font-family: monospace;" value="#1e293b" oninput="syncColorInput('new-tenant-primary-color', this.value)">
+            </div>
+          </div>
+          <div>
+            <label class="auth-label" style="font-size: 0.75rem;">Color de Acento</label>
+            <div style="display: flex; gap: 0.4rem; align-items: center;">
+              <input type="color" id="new-tenant-accent-color" value="#3b82f6" style="width: 36px; height: 36px; border: none; border-radius: 6px; cursor: pointer; background: transparent;" oninput="syncColorInput('new-tenant-accent-hex', this.value)">
+              <input type="text" id="new-tenant-accent-hex" class="auth-input" style="font-size: 0.8rem; padding: 0.4rem 0.6rem; font-family: monospace;" value="#3b82f6" oninput="syncColorInput('new-tenant-accent-color', this.value)">
+            </div>
+          </div>
+          <div>
+            <label class="auth-label" style="font-size: 0.75rem;">Superficie / Fondo</label>
+            <div style="display: flex; gap: 0.4rem; align-items: center;">
+              <input type="color" id="new-tenant-surface-color" value="#0f172a" style="width: 36px; height: 36px; border: none; border-radius: 6px; cursor: pointer; background: transparent;" oninput="syncColorInput('new-tenant-surface-hex', this.value)">
+              <input type="text" id="new-tenant-surface-hex" class="auth-input" style="font-size: 0.8rem; padding: 0.4rem 0.6rem; font-family: monospace;" value="#0f172a" oninput="syncColorInput('new-tenant-surface-color', this.value)">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories for New Tenant -->
+      <div class="auth-input-group">
+        <label class="auth-label" style="margin-bottom: 0.4rem;">Especialidades / Categorías del Portal</label>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.5rem; background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color);">
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="new-tenant-category" value="gunpla-mecha" checked> Gunpla & Mecha
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="new-tenant-category" value="military" checked> Militar 1/35
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="new-tenant-category" value="aviation" checked> Aviación 1/48
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="new-tenant-category" value="automotive" checked> Automotriz 1/24
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="new-tenant-category" value="naval" checked> Naval
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="new-tenant-category" value="figures" checked> Figuras
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="new-tenant-category" value="scifi" checked> Sci-Fi
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; cursor: pointer;">
+            <input type="checkbox" name="new-tenant-category" value="diorama" checked> Dioramas
+          </label>
+        </div>
+      </div>
+
+      <div id="new-tenant-status-msg" style="display: none; font-size: 0.82rem; margin-bottom: 0.75rem;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+        <button type="button" class="filter-pill" onclick="closeNewTenantModal()">Cancelar</button>
+        <button type="submit" id="btn-create-tenant" class="btn-primary" style="padding: 0.65rem 1.25rem;">
+          🚀 Crear Portal White-Label
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   function escapeHtml(str) {
     if (!str) return '';
@@ -2752,6 +3034,15 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
         ? '<img class="user-avatar-img" src="' + currentUser.avatarUrl + '" alt="' + currentUser.displayName + '">'
         : '<div class="user-avatar-img">' + initials + '</div>';
 
+      const isTenantAdminOrAdmin = currentUser.roles && (
+        currentUser.roles.includes('admin') ||
+        currentUser.roles.includes('tenant_admin') ||
+        currentUser.username === 'rpineda'
+      );
+
+      const navThemeBtn = document.getElementById('nav-customize-theme');
+      if (navThemeBtn) navThemeBtn.style.display = isTenantAdminOrAdmin ? 'flex' : 'none';
+
       container.innerHTML = 
         '<div class="user-profile-badge" onclick="toggleUserDropdown(event)">' +
           avatarHtml +
@@ -2762,17 +3053,289 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
               '<div style="font-size: 0.8rem; font-weight: 700; color: #fff;">' + (currentUser.displayName || currentUser.username) + '</div>' +
               '<div style="font-size: 0.72rem; color: #94a3b8;">' + (currentUser.email || '') + '</div>' +
             '</div>' +
+            (isTenantAdminOrAdmin ? '<a class="user-dropdown-item" onclick="openTenantThemeModal()">🎨 Personalizar Tema del Portal</a>' : '') +
+            '<a class="user-dropdown-item" onclick="openNewTenantModal()">🏛️ Crear Nuevo Club / Portal</a>' +
             '<a class="user-dropdown-item" onclick="goToWorkbench()">🛠️ Mi Workbench & Stash</a>' +
             '<a class="user-dropdown-item" style="color: #ef4444;" onclick="logout()">🚪 Cerrar Sesión</a>' +
           '</div>' +
         '</div>';
       updateContestVotesForCurrentUser();
     } else {
+      const navThemeBtn = document.getElementById('nav-customize-theme');
+      if (navThemeBtn) navThemeBtn.style.display = 'none';
+
       container.innerHTML =
         '<button id="btn-open-login" class="btn-auth" onclick="openAuthModal()">' +
           '<svg width="16" height="16" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15.2s.7 5.5 1.9 7.9l3.7-2.9z"/><path fill="#34A853" d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2-6.4-4.8L1.9 17C3.7 20.7 7.5 23.5 12 23.5z"/></svg>' +
           '<span>Iniciar Sesión</span>' +
         '</button>';
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // White-Label Tenant & Theme Editor Logic
+  // -------------------------------------------------------------------------
+  function syncColorInput(targetId, value) {
+    const el = document.getElementById(targetId);
+    if (el) el.value = value;
+  }
+
+  function applyThemePreset(primary, accent, surface) {
+    syncColorInput('theme-primary-color', primary);
+    syncColorInput('theme-primary-hex', primary);
+    syncColorInput('theme-accent-color', accent);
+    syncColorInput('theme-accent-hex', accent);
+    syncColorInput('theme-surface-color', surface);
+    syncColorInput('theme-surface-hex', surface);
+    updateThemePreview();
+  }
+
+  function updateThemePreview() {
+    const primary = document.getElementById('theme-primary-hex')?.value || '#1e293b';
+    const accent = document.getElementById('theme-accent-hex')?.value || '#3b82f6';
+    const surface = document.getElementById('theme-surface-hex')?.value || '#0f172a';
+    const name = document.getElementById('theme-tenant-name')?.value || '${escapeHtml(config.tenantName)}';
+    const tagline = document.getElementById('theme-tenant-tagline')?.value || '${escapeHtml(config.tenantTagline)}';
+
+    const box = document.getElementById('theme-preview-box');
+    const brand = document.getElementById('theme-preview-brand');
+    const badge = document.getElementById('theme-preview-badge');
+    const taglineEl = document.getElementById('theme-preview-tagline');
+    const btnPrimary = document.getElementById('theme-preview-btn-primary');
+    const btnAccent = document.getElementById('theme-preview-btn-accent');
+
+    if (box) box.style.background = surface;
+    if (brand) brand.textContent = name;
+    if (taglineEl) taglineEl.textContent = tagline;
+    if (badge) badge.style.background = accent;
+    if (btnPrimary) btnPrimary.style.background = primary;
+    if (btnAccent) btnAccent.style.background = accent;
+  }
+
+  function previewThemeLive() {
+    const primary = document.getElementById('theme-primary-hex')?.value;
+    const accent = document.getElementById('theme-accent-hex')?.value;
+    const surface = document.getElementById('theme-surface-hex')?.value;
+    if (primary) document.documentElement.style.setProperty('--primary', primary);
+    if (accent) document.documentElement.style.setProperty('--accent', accent);
+    if (surface) {
+      document.documentElement.style.setProperty('--bg-dark', surface);
+      document.documentElement.style.setProperty('--card-bg', surface);
+    }
+    const statusMsg = document.getElementById('theme-status-msg');
+    if (statusMsg) {
+      statusMsg.style.display = 'block';
+      statusMsg.style.color = '#38bdf8';
+      statusMsg.textContent = '✓ Tema previsualizado en vivo en la pantalla. Haz clic en "Guardar Cambios" para fijarlo.';
+    }
+  }
+
+  function openTenantThemeModal() {
+    if (!currentUser) {
+      openAuthModal();
+      return;
+    }
+    const modal = document.getElementById('modal-tenant-theme');
+    if (modal) modal.classList.add('active');
+    updateThemePreview();
+  }
+
+  function closeTenantThemeModal(e) {
+    if (!e || e.target.id === 'modal-tenant-theme' || e.target.classList.contains('auth-close')) {
+      const modal = document.getElementById('modal-tenant-theme');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  async function saveTenantTheme(e) {
+    e.preventDefault();
+    if (!currentToken) {
+      alert('Debes iniciar sesión como administrador para guardar cambios de marca.');
+      return;
+    }
+
+    const btn = document.getElementById('btn-save-theme');
+    const statusMsg = document.getElementById('theme-status-msg');
+    if (btn) btn.disabled = true;
+
+    const name = document.getElementById('theme-tenant-name')?.value;
+    const tagline = document.getElementById('theme-tenant-tagline')?.value;
+    const logoText = document.getElementById('theme-tenant-logo-text')?.value;
+    const primaryColor = document.getElementById('theme-primary-hex')?.value;
+    const accentColor = document.getElementById('theme-accent-hex')?.value;
+    const surfaceColor = document.getElementById('theme-surface-hex')?.value;
+
+    const selectedCategories = Array.from(
+      document.querySelectorAll('input[name="theme-category"]:checked')
+    ).map(el => el.value);
+
+    try {
+      const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+      const tenantSlug = '${config.tenantSlug}';
+      const res = await fetch(apiBase + '/api/v1/tenants/' + tenantSlug, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken
+        },
+        body: JSON.stringify({
+          name,
+          tagline,
+          allowedCategories: selectedCategories,
+          themeConfig: {
+            primaryColor,
+            accentColor,
+            surfaceColor,
+            logoText
+          }
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || data.title || 'Error al guardar configuración del portal');
+      }
+
+      previewThemeLive();
+      if (statusMsg) {
+        statusMsg.style.display = 'block';
+        statusMsg.style.color = '#22c55e';
+        statusMsg.textContent = '✓ ¡Cambios de marca y tema guardados exitosamente!';
+      }
+      setTimeout(() => {
+        closeTenantThemeModal();
+        window.location.reload();
+      }, 1200);
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.style.display = 'block';
+        statusMsg.style.color = '#ef4444';
+        statusMsg.textContent = err.message || 'Error inesperado';
+      }
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // New Tenant Onboarding Modal Logic
+  // -------------------------------------------------------------------------
+  function openNewTenantModal() {
+    if (!currentUser) {
+      openAuthModal();
+      return;
+    }
+    const modal = document.getElementById('modal-new-tenant');
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeNewTenantModal(e) {
+    if (!e || e.target.id === 'modal-new-tenant' || e.target.classList.contains('auth-close')) {
+      const modal = document.getElementById('modal-new-tenant');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  function autoSuggestSlug(name) {
+    const slugInput = document.getElementById('new-tenant-slug');
+    const domainInput = document.getElementById('new-tenant-domain');
+    if (!slugInput || !name) return;
+    const cleanSlug = name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    slugInput.value = cleanSlug;
+    if (domainInput && !domainInput.value) {
+      domainInput.value = cleanSlug + '.plamoscale.com';
+    }
+  }
+
+  function applyNewTenantPreset(primary, accent, surface) {
+    syncColorInput('new-tenant-primary-color', primary);
+    syncColorInput('new-tenant-primary-hex', primary);
+    syncColorInput('new-tenant-accent-color', accent);
+    syncColorInput('new-tenant-accent-hex', accent);
+    syncColorInput('new-tenant-surface-color', surface);
+    syncColorInput('new-tenant-surface-hex', surface);
+  }
+
+  async function createNewTenant(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-create-tenant');
+    const statusMsg = document.getElementById('new-tenant-status-msg');
+    if (btn) btn.disabled = true;
+
+    const name = document.getElementById('new-tenant-name')?.value;
+    const slug = document.getElementById('new-tenant-slug')?.value;
+    const domain = document.getElementById('new-tenant-domain')?.value;
+    const tagline = document.getElementById('new-tenant-tagline')?.value;
+    const contactEmail = document.getElementById('new-tenant-email')?.value;
+    const primaryColor = document.getElementById('new-tenant-primary-hex')?.value;
+    const accentColor = document.getElementById('new-tenant-accent-hex')?.value;
+    const surfaceColor = document.getElementById('new-tenant-surface-hex')?.value;
+
+    const selectedCategories = Array.from(
+      document.querySelectorAll('input[name="new-tenant-category"]:checked')
+    ).map(el => el.value);
+
+    try {
+      const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+      const headers = { 'Content-Type': 'application/json' };
+      if (currentToken) {
+        headers['Authorization'] = 'Bearer ' + currentToken;
+      }
+
+      const res = await fetch(apiBase + '/api/v1/tenants', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          slug,
+          name,
+          domain,
+          tagline,
+          contactEmail,
+          allowedCategories: selectedCategories,
+          themeConfig: {
+            primaryColor,
+            accentColor,
+            surfaceColor,
+            logoText: name.toUpperCase()
+          }
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || data.title || 'Error al crear portal');
+      }
+
+      if (statusMsg) {
+        statusMsg.style.display = 'block';
+        statusMsg.style.color = '#22c55e';
+        statusMsg.innerHTML = '🎉 ¡Portal creado con éxito! Slug: <strong>' + data.slug + '</strong>. Eres administrador del nuevo portal.';
+      }
+
+      // If current user is logged in, grant role locally too
+      if (currentUser && currentUser.roles && !currentUser.roles.includes('tenant_admin')) {
+        currentUser.roles.push('tenant_admin');
+        localStorage.setItem('plamo_sso_user', JSON.stringify(currentUser));
+        renderAuthUI();
+      }
+
+      setTimeout(() => {
+        closeNewTenantModal();
+        alert('Portal "' + data.name + '" desplegado correctamente.\\nPuedes acceder usando subdominio o enviando cabecera X-Tenant-Slug: ' + data.slug);
+      }, 1500);
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.style.display = 'block';
+        statusMsg.style.color = '#ef4444';
+        statusMsg.textContent = err.message || 'Error inesperado';
+      }
+    } finally {
+      if (btn) btn.disabled = false;
     }
   }
 

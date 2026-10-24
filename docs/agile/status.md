@@ -11,6 +11,14 @@ Current live state of the project.
 
 ## Live Capabilities
 
+- **White-Label Tenant Self-Service Onboarding & Custom Theme Editor (`B3` / `/api/v1/tenants/*`):**
+  - **Self-Service Onboarding (`POST /api/v1/tenants`, `#modal-new-tenant`):** Permite a clubes de modelismo, tiendas o comunidades de maquetismo registrar y desplegar su propio portal independiente, asignando al creador como `tenant_admin` automáticamente con slug único, dominio/subdominio, tagline, y enlaces sociales.
+  - **Editor de Marca y Temas en Vivo (`PATCH /api/v1/tenants/:slug`, `#modal-tenant-theme`):**
+    - Paleta de colores interactiva con presets rápidos (*Titan Blue, Char Crimson, Zaku Military, Gundam Gold, Cyberpunk Neon*).
+    - Color pickers en tiempo real para Color Primario (`--primary`), Color de Acento (`--accent`) y Fondo/Superficie (`--bg-dark` y `--card-bg`).
+    - Previsualización en vivo en la pantalla (*live CSS custom property mutation*) sin requerir recargar la página.
+    - Selector y filtrado de categorías permitidas en el portal (Mecha, Militar, Aviación, Automotriz, Naval, Figuras, Sci-Fi, Diorama).
+  - **Permisos & Seguridad:** Validación estricta con RFC 7807 Problem Details; protección contra slugs duplicados (409 Conflict) y autorización obligatoria (`tenant_admin` o `admin`) para modificar marcas de portales existentes.
 - **Cloudflare R2 / S3 Object Storage & Media Engine (`POST /api/v1/media/upload`, `GET /api/v1/media/storage-diagnostics`):**
   - **Dual-Engine Architecture:** High-resolution photo upload pipeline powered by Cloudflare R2 (S3 API via `@aws-sdk/client-s3`) for zero-egress permanent cloud storage; graceful automatic fallback to local disk (`data/uploads/`) for development and smoketests when credentials are absent.
   - **Optimización y Compresión Automática de Imágenes (WebP & Dual-Tier):**
