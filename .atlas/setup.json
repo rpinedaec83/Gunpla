@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "manifestVersion": 1,
+  "source": {
+    "repository": "picostar/Atlas_AI",
+    "revision": "c79bc344210a3bd125af470fe1ada8ba464741ae"
+  },
+  "answers": {
+    "scaffold": true,
+    "initializeGit": true,
+    "includePS": true,
+    "includeCGR": true,
+    "stackPattern": null,
+    "apiFirst": null,
+    "uxPattern": "uxp-01-modern-app-shell-layout",
+    "createGitHubRepository": true
+  },
+  "relocatedRootEntries": [
+    "gunplajunkies.com",
+    "plamoscale.com"
+  ],
+  "outcomes": {
+    "git": "initialized",
+    "github": "created"
+  }
+}

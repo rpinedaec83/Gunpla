@@ -1,0 +1,298 @@
+{
+  "schemaVersion": 1,
+  "manifestVersion": 1,
+  "kit": {
+    "name": "Atlas_AI",
+    "repository": "picostar/Atlas_AI"
+  },
+  "receiptPath": ".atlas/setup.json",
+  "allowedRootEntries": {
+    "always": [
+      ".atlas",
+      ".claude",
+      ".github",
+      ".gitignore",
+      "AGENTS.md",
+      "ATLAS.md",
+      "CHATGPT.md",
+      "CLAUDE.md",
+      "DEEPSEEK.md",
+      "GEMINI.md",
+      "GROK.md",
+      "README.md",
+      "accounts.md",
+      "atlas_newproject.md",
+      "atlas_update.md",
+      "atlas_validate.md",
+      "docs",
+      "infra",
+      "scripts",
+      "secrets.md",
+      "seed.md"
+    ],
+    "gitMetadata": [
+      ".git",
+      ".gitattributes",
+      ".gitmodules"
+    ],
+    "scaffold": [
+      "archive",
+      "infra",
+      "patterns"
+    ],
+    "cgr": [
+      "atlas_cgr.md"
+    ],
+    "stackPattern": [
+      "patterns"
+    ],
+    "uxPattern": [
+      "patterns"
+    ]
+  },
+  "preserveAndMergeRootEntries": [
+    ".atlas",
+    ".git",
+    ".gitattributes",
+    ".gitignore",
+    ".gitmodules",
+    ".github",
+    ".claude"
+  ],
+  "temporarySourceKitNames": [
+    "atlas_ai",
+    "Atlas_AI"
+  ],
+  "groups": {
+    "core": {
+      "requiredPaths": [
+        ".atlas/install-manifest.json",
+        ".claude/skills/atlas-newproject/SKILL.md",
+        ".github/FRONTMATTER-SCHEMA.md",
+        ".github/INSTRUCTION-MAINTENANCE.md",
+        ".github/TOOL-CAPABILITY-MATRIX.md",
+        ".github/TOOLING-ASSUMPTIONS.md",
+        ".github/copilot-instructions.md",
+        ".github/prompts/README.md",
+        ".github/prompts/atlas-closeout.prompt.md",
+        ".github/prompts/atlas-realign.prompt.md",
+        ".github/skills/README.md",
+        ".github/skills/anti-patterns/SKILL.md",
+        ".github/skills/api-design/SKILL.md",
+        ".github/skills/code-style/SKILL.md",
+        ".github/skills/devcycle-management/SKILL.md",
+        ".github/skills/git-workflow/SKILL.md",
+        ".github/skills/model-tier-advisor/SKILL.md",
+        ".github/skills/powershell-style/SKILL.md",
+        ".github/skills/project-setup/SKILL.md",
+        ".github/skills/requirements-writing/SKILL.md",
+        ".github/skills/security-patterns/SKILL.md",
+        ".github/skills/testing-patterns/SKILL.md",
+        ".github/tropes.md",
+        ".gitignore",
+        "AGENTS.md",
+        "ATLAS.md",
+        "CHATGPT.md",
+        "CLAUDE.md",
+        "README.md",
+        "accounts.md",
+        "atlas_newproject.md",
+        "atlas_update.md",
+        "atlas_validate.md",
+        "docs/reference/README.md",
+        "scripts/README.md",
+        "scripts/atlas-validate.ps1",
+        "scripts/smoketest.ps1",
+        "seed.md"
+      ],
+      "generatedPaths": [
+        ".atlas/setup.json",
+        "secrets.md"
+      ]
+    },
+    "scaffold": {
+      "requiredPaths": [
+        "archive/README.md",
+        "docs/agile/backlog.md",
+        "docs/agile/devcycle.md",
+        "docs/agile/retro.md",
+        "docs/agile/status.md",
+        "docs/agile/testing/README.md",
+        "patterns/README.md",
+        "patterns/stack-patterns/README.md",
+        "patterns/stack-patterns/stack-pattern-templates/README.md",
+        "patterns/stack-patterns/stack-pattern-templates/sp-01-functions-tables-swa-keyvault.md",
+        "patterns/stack-patterns/stack-pattern-templates/sp-02-functions-tables-sqlserverless-swa-keyvault.md",
+        "patterns/stack-patterns/stack-pattern-templates/sp-03-functions-servicebus-cosmos-swa-keyvault.md",
+        "patterns/stack-patterns/stack-pattern-templates/sp-04-appservice-sql-redis-frontdoor-keyvault.md",
+        "patterns/stack-patterns/stack-pattern-templates/sp-05-functions-swa-keyvault-egressproxy.md",
+        "patterns/ux-patterns/README.md",
+        "patterns/ux-patterns/ux-pattern-templates/README.md",
+        "patterns/ux-patterns/ux-pattern-templates/uxp-01-modern-app-shell-layout.md",
+        "patterns/ux-patterns/ux-pattern-templates/uxp-02-b2b-marketing-website-journey.md",
+        "patterns/ux-patterns/ux-pattern-templates/uxp-03-mobile-first-touch-app-flow.md",
+        "patterns/ux-patterns/ux-pattern-templates/uxp-04-monitoring-and-incident-response-console.md",
+        "patterns/ux-patterns/ux-pattern-templates/uxp-05-identity-auth-sso-journey.md"
+      ]
+    },
+    "cgr": {
+      "requiredPaths": [
+        ".github/prompts/cgr-iterate.prompt.md",
+        ".github/prompts/cgr-seed-to-cgr.prompt.md",
+        ".github/prompts/cgr.prompt.md",
+        "atlas_cgr.md",
+        "docs/cgr/ESD_TEMPLATE.md",
+        "docs/cgr/MRD-PRD-ESD-TRACEABILITY.md",
+        "docs/cgr/MRD_TEMPLATE.md",
+        "docs/cgr/PRD_TEMPLATE.md",
+        "docs/cgr/README.md",
+        "docs/cgr/remediation-tracking.md",
+        "docs/cgr/score.md",
+        "docs/cgr/seed-to-docs-mapping.md"
+      ]
+    },
+    "ps": {
+      "requiredPaths": [
+        "docs/cgr/PS.md",
+        "docs/cgr/README.md"
+      ]
+    },
+    "azureStack": {
+      "requiredPaths": [
+        ".github/skills/azure-deploy/SKILL.md"
+      ]
+    }
+  },
+  "questionnaire": [
+    {
+      "key": "scaffold",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "initializeGit",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "includePS",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "includeCGR",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "stackPattern",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    {
+      "key": "apiFirst",
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "default": null
+    },
+    {
+      "key": "uxPattern",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    {
+      "key": "createGitHubRepository",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "catalogs": {
+    "stackPatterns": [
+      {
+        "number": 1,
+        "id": "sp-01-functions-tables-swa-keyvault",
+        "label": "SP-01 Functions + Tables + SWA + Key Vault",
+        "sourcePath": "patterns/stack-patterns/stack-pattern-templates/sp-01-functions-tables-swa-keyvault.md",
+        "destinationPath": "patterns/stack-patterns/active-stack-pattern.md",
+        "group": "azureStack"
+      },
+      {
+        "number": 2,
+        "id": "sp-02-functions-tables-sqlserverless-swa-keyvault",
+        "label": "SP-02 Functions + Tables + SQL Serverless + SWA + Key Vault",
+        "sourcePath": "patterns/stack-patterns/stack-pattern-templates/sp-02-functions-tables-sqlserverless-swa-keyvault.md",
+        "destinationPath": "patterns/stack-patterns/active-stack-pattern.md",
+        "group": "azureStack"
+      },
+      {
+        "number": 3,
+        "id": "sp-03-functions-servicebus-cosmos-swa-keyvault",
+        "label": "SP-03 Functions + Service Bus + Cosmos DB + SWA + Key Vault",
+        "sourcePath": "patterns/stack-patterns/stack-pattern-templates/sp-03-functions-servicebus-cosmos-swa-keyvault.md",
+        "destinationPath": "patterns/stack-patterns/active-stack-pattern.md",
+        "group": "azureStack"
+      },
+      {
+        "number": 4,
+        "id": "sp-04-appservice-sql-redis-frontdoor-keyvault",
+        "label": "SP-04 App Service + Azure SQL + Redis + Front Door + Key Vault",
+        "sourcePath": "patterns/stack-patterns/stack-pattern-templates/sp-04-appservice-sql-redis-frontdoor-keyvault.md",
+        "destinationPath": "patterns/stack-patterns/active-stack-pattern.md",
+        "group": "azureStack"
+      },
+      {
+        "number": 5,
+        "id": "sp-05-functions-swa-keyvault-egressproxy",
+        "label": "SP-05 Functions + SWA + Key Vault + Egress Proxy",
+        "sourcePath": "patterns/stack-patterns/stack-pattern-templates/sp-05-functions-swa-keyvault-egressproxy.md",
+        "destinationPath": "patterns/stack-patterns/active-stack-pattern.md",
+        "group": "azureStack"
+      }
+    ],
+    "uxPatterns": [
+      {
+        "number": 1,
+        "id": "uxp-01-modern-app-shell-layout",
+        "label": "UXP-01 Modern app shell layout",
+        "sourcePath": "patterns/ux-patterns/ux-pattern-templates/uxp-01-modern-app-shell-layout.md",
+        "destinationPath": "patterns/ux-patterns/active-ux-pattern.md"
+      },
+      {
+        "number": 2,
+        "id": "uxp-02-b2b-marketing-website-journey",
+        "label": "UXP-02 B2B marketing website journey",
+        "sourcePath": "patterns/ux-patterns/ux-pattern-templates/uxp-02-b2b-marketing-website-journey.md",
+        "destinationPath": "patterns/ux-patterns/active-ux-pattern.md"
+      },
+      {
+        "number": 3,
+        "id": "uxp-03-mobile-first-touch-app-flow",
+        "label": "UXP-03 Mobile-first touch app flow",
+        "sourcePath": "patterns/ux-patterns/ux-pattern-templates/uxp-03-mobile-first-touch-app-flow.md",
+        "destinationPath": "patterns/ux-patterns/active-ux-pattern.md"
+      },
+      {
+        "number": 4,
+        "id": "uxp-04-monitoring-and-incident-response-console",
+        "label": "UXP-04 Monitoring and incident response console",
+        "sourcePath": "patterns/ux-patterns/ux-pattern-templates/uxp-04-monitoring-and-incident-response-console.md",
+        "destinationPath": "patterns/ux-patterns/active-ux-pattern.md"
+      },
+      {
+        "number": 5,
+        "id": "uxp-05-identity-auth-sso-journey",
+        "label": "UXP-05 Identity, Authentication, and SSO Journey",
+        "sourcePath": "patterns/ux-patterns/ux-pattern-templates/uxp-05-identity-auth-sso-journey.md",
+        "destinationPath": "patterns/ux-patterns/active-ux-pattern.md"
+      }
+    ]
+  }
+}

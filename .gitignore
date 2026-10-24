@@ -1,0 +1,42 @@
+# Archive -- superseded artifacts and one-off outputs
+archive/*
+!archive/README.md
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+secrets.md
+
+# Legacy redundant account file. Do not use; replace non-secret binding with committed accounts.md.
+accounts.txt
+
+# Local scratch notes
+todo.txt
+
+# Local emulators and cloud session state
+.azurite/
+.azure/
+.azure-session/
+local.settings.json
+
+# Dependencies and build outputs
+node_modules/
+dist/
+build/
+bin/
+obj/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Legacy nested git backups
+.git-legacy-backup/
