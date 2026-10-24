@@ -237,6 +237,114 @@ export interface UpdatePaintRackItemRequest {
   notes?: string;
 }
 
+export type BuildStepStage =
+  | 'unboxing'
+  | 'assembly'
+  | 'assembly_inner_frame'
+  | 'modification'
+  | 'priming'
+  | 'painting'
+  | 'decals'
+  | 'weathering'
+  | 'final_reveal'
+  | (string & {});
+
+export interface PaintRecipeUsage {
+  paintId: string;
+  paint?: PaintRecord;
+  partDescription?: string;
+  role?: string;
+  mixRatio?: string;
+  thinnerRatio?: string;
+  technique?: string;
+}
+
+export interface BuildStep {
+  id: string;
+  buildId: string;
+  stage: BuildStepStage;
+  orderIndex: number;
+  title: string;
+  description: string;
+  photoUrls: string[];
+  paintUsages: PaintRecipeUsage[];
+  createdAt: string;
+}
+
+export interface BuildComment {
+  id: string;
+  buildId: string;
+  userId: string;
+  username: string;
+  userDisplayName: string;
+  comment: string;
+  createdAt: string;
+}
+
+export interface BuildProjectRecord {
+  id: string;
+  slug: string;
+  userId: string;
+  username: string;
+  userDisplayName: string;
+  kitId?: string;
+  kit?: KitRecord;
+  category: ScaleCategory;
+  scale?: string;
+  grade?: string;
+  title: string;
+  subtitle?: string;
+  status: 'wip' | 'completed' | 'paused' | 'in_progress';
+  coverImageUrl?: string;
+  likeCount: number;
+  likedByUserIds: string[];
+  viewCount: number;
+  steps: BuildStep[];
+  comments: BuildComment[];
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateBuildProjectRequest {
+  kitId?: string;
+  title: string;
+  category?: ScaleCategory;
+  categoryOverride?: ScaleCategory;
+  scale?: string;
+  grade?: string;
+  subtitle?: string;
+  status?: 'wip' | 'completed' | 'paused' | 'in_progress';
+  coverImageUrl?: string;
+  tags?: string[];
+}
+
+export interface UpdateBuildProjectRequest {
+  title?: string;
+  subtitle?: string;
+  status?: 'wip' | 'completed' | 'paused' | 'in_progress';
+  coverImageUrl?: string;
+  tags?: string[];
+}
+
+export interface CreateBuildStepRequest {
+  stage: BuildStepStage;
+  title: string;
+  description?: string;
+  photoUrls?: string[];
+  paintUsages?: PaintRecipeUsage[];
+}
+
+export interface CreateBuildCommentRequest {
+  comment: string;
+}
+
+export interface UploadMediaResponse {
+  media: MediaAsset;
+  thumbUrl: string;
+  fullUrl: string;
+}
+
 export interface PaginatedResult<T> {
   items: T[];
   nextCursor: string | null;

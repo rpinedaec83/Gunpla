@@ -9,12 +9,6 @@ Goal: Deliver the TypeScript Monorepo foundation, Central API with OpenAPI 3.1 (
 
 ## Active Tasks
 
-### DT4 -- Slice 4: Step-by-Step Build Logs, Paint Recipes & Media Upload Pipeline | eMOE: 5 CU
-- Goal: Implement the Build Logs slice (`src/slices/build-logs` and `src/slices/media-storage`) enabling builders to create WIP/Completed projects linked to a catalog kit, add chronological steps (`unboxing`, `assembly`, `modification`, `priming`, `painting`, `decals`, `weathering`, `final_reveal`), attach paint recipes from the catalog/rack, and upload photos to S3/Cloudflare R2 (with local dev fallback and thumbnail generation).
-- API Result: `GET /api/v1/builds`, `GET /api/v1/builds/:slugOrId`, `POST /api/v1/builds`, `PATCH /api/v1/builds/:id`, `POST /api/v1/builds/:id/steps`, `POST /api/v1/media/upload`, `POST /api/v1/builds/:id/like`, `POST /api/v1/builds/:id/comments`.
-- Smoketest: Run `npm run smoketest` verifying build log creation, step addition with paint recipe tags, photo upload generating `thumbUrl` and `fullUrl`, tenant-scoped feed filtering, and OpenAPI verification.
-- UAT: Create a multi-step Gunpla build log with photos and paint recipe, and verify it appears on both `gunplajunkies.com` and `plamoscale.com`, while a military tank build log appears only on `plamoscale.com`.
-
 ### DT5 -- Slice 5: Dual Multi-Tenant Frontends (`plamoscale.com` & `gunplajunkies.com`) with UXP-01 App Shell | eMOE: 5 CU
 - Goal: Build and connect the two web frontends (`apps/plamoscale-web` and `apps/gunplajunkies-web`) following `UXP-01 Modern App Shell Layout` (persistent left text-labeled sidebar, top utility bar with global search & SSO switcher, breadcrumbs, clear page headers, responsive mobile drawer, and Poptrox-inspired high-res lightbox showcase), including builder profiles (`/@aperich`, `/@dcampos`, `/@cluna`, `/@fog1labs1`), Contests preview, and Trusted Shops directory (`bio.txt` & Mailchimp).
 - API Result: `GET /api/v1/builders`, `GET /api/v1/builders/:username`, `GET /api/v1/contests`, `GET /api/v1/shops` consumed by both frontend applications.

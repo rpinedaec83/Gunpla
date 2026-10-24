@@ -302,6 +302,93 @@ export const openApiSpec = {
           '404': { description: 'Item not found' }
         }
       }
+    },
+    '/api/v1/builds': {
+      get: {
+        tags: ['Build Logs'],
+        summary: 'List build projects feed scoped by tenant allowed categories',
+        parameters: [
+          { name: 'category', in: 'query', schema: { type: 'string' } },
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['planning', 'in_progress', 'completed', 'on_hold', 'abandoned'] } },
+          { name: 'username', in: 'query', schema: { type: 'string' } },
+          { name: 'search', in: 'query', schema: { type: 'string' } }
+        ],
+        responses: { '200': { description: 'List of build projects' } }
+      },
+      post: {
+        tags: ['Build Logs'],
+        summary: 'Create a new step-by-step build project',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '201': { description: 'Build project created' },
+          '400': { description: 'Validation error' },
+          '401': { description: 'Unauthorized' }
+        }
+      }
+    },
+    '/api/v1/builds/{slugOrId}': {
+      get: {
+        tags: ['Build Logs'],
+        summary: 'Get build project details including steps and paint recipes',
+        parameters: [{ name: 'slugOrId', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Build project details' },
+          '404': { description: 'Build project not found' }
+        }
+      }
+    },
+    '/api/v1/builds/{id}/steps': {
+      post: {
+        tags: ['Build Logs'],
+        summary: 'Add a build step with stage, photos, and paint recipe usages',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '201': { description: 'Build step created' },
+          '400': { description: 'Validation error' },
+          '403': { description: 'Forbidden (not owner)' },
+          '404': { description: 'Build project not found' }
+        }
+      }
+    },
+    '/api/v1/builds/{id}/like': {
+      post: {
+        tags: ['Build Logs'],
+        summary: 'Toggle like on a build project',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Like toggled' },
+          '401': { description: 'Unauthorized' },
+          '404': { description: 'Build project not found' }
+        }
+      }
+    },
+    '/api/v1/builds/{id}/comments': {
+      post: {
+        tags: ['Build Logs'],
+        summary: 'Post a comment on a build project',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '201': { description: 'Comment posted' },
+          '400': { description: 'Validation error' },
+          '401': { description: 'Unauthorized' },
+          '404': { description: 'Build project not found' }
+        }
+      }
+    },
+    '/api/v1/media/upload': {
+      post: {
+        tags: ['Media'],
+        summary: 'Upload build photo (supports base64, enforces <= 15MB limit)',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '201': { description: 'Photo uploaded' },
+          '400': { description: 'Validation error' },
+          '413': { description: 'Payload too large (> 15MB)' }
+        }
+      }
     }
   }
 };

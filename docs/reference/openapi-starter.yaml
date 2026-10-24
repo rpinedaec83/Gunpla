@@ -642,3 +642,110 @@ paths:
       responses:
         '200':
           description: Item deleted
+  /api/v1/builds:
+    get:
+      tags: [Build Logs]
+      summary: List build projects feed scoped by tenant allowed categories
+      parameters:
+        - $ref: '#/components/parameters/TenantSlugHeader'
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: username
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of build projects
+    post:
+      tags: [Build Logs]
+      summary: Create a new step-by-step build project
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, category]
+      responses:
+        '201':
+          description: Build project created
+  /api/v1/builds/{slugOrId}:
+    get:
+      tags: [Build Logs]
+      summary: Get build project details
+      parameters:
+        - name: slugOrId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Build project details
+  /api/v1/builds/{id}/steps:
+    post:
+      tags: [Build Logs]
+      summary: Add step to build project with stage, photos and paint recipes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Step added
+  /api/v1/builds/{id}/like:
+    post:
+      tags: [Build Logs]
+      summary: Toggle like for build project
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Like toggled
+  /api/v1/builds/{id}/comments:
+    post:
+      tags: [Build Logs]
+      summary: Add comment to build project
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Comment added
+  /api/v1/media/upload:
+    post:
+      tags: [Media]
+      summary: Upload photo (up to 15MB)
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Photo uploaded

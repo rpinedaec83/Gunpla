@@ -80,3 +80,31 @@ Decisions made:
 Lessons learned:
 - Joining catalog metadata (`kit`, `paint`) in workbench list and detail responses eliminates N+1 roundtrips for frontend clients and mobile apps.
 Usage: Moderate -- self-estimated
+
+### DT4 -- Slice 4: Step-by-Step Build Logs, Paint Recipes & Media Upload Pipeline | eMOE: 5 CU | aMOE: 5 CU
+What was done:
+- Designed Step-by-Step Build Log data models in `@gunpla/shared` (`BuildProjectRecord`, `BuildStep`, `BuildStepStage`, `PaintRecipeUsage`, `BuildComment`, `UploadMediaResponse`, request interfaces) and PostgreSQL schema (`apps/api/sql/001_init_schema.sql` with tables `build_projects`, `build_steps`, `build_likes`, `build_comments`).
+- Implemented Build Logs and Media Storage slices (`apps/api/src/slices/build-logs/builds.slice.ts`):
+  - `GET /api/v1/builds`: Multi-tenant build log feed scoped by tenant allowed categories (`gunplajunkies` receives Gunpla/Mecha/Sci-Fi builds, `plamoscale` receives both Gunpla and Military/Aviation/Automotive builds), filterable by category, status (`wip`, `completed`, `paused`, `in_progress`), builder username, and keyword search.
+  - `POST /api/v1/builds`: Create build project with optional catalog kit association, slug generation with collision handling, and tenant category verification.
+  - `GET /api/v1/builds/:slugOrId`: Retrieve full build project with view count increment, joined kit, chronological steps, paint recipes, likes, and comments.
+  - `PATCH /api/v1/builds/:id`: Update build metadata with strict builder ownership check (`403 Forbidden`).
+  - `DELETE /api/v1/builds/:id`: Delete build project with ownership check.
+  - `POST /api/v1/builds/:id/steps`: Add chronological build step with stage (`unboxing`, `assembly`, `assembly_inner_frame`, `modification`, `priming`, `painting`, `decals`, `weathering`, `final_reveal`), photo URLs, and paint recipe usages with catalog paint joins.
+  - `POST /api/v1/builds/:id/like`: Toggle like for authenticated user.
+  - `POST /api/v1/builds/:id/comments`: Add comment to build project.
+  - `POST /api/v1/media/upload`: Photo upload pipeline supporting base64 image data, storing files locally under `/uploads/` (with Cloudflare R2 / S3 adapter support) and enforcing a 15MB file size limit (Rule 5).
+- Added seeded build projects (`apps/api/src/seed/seed-builds.ts`):
+  - `build-rg-hi-nu-titanium`: RG Hi-Nu Gundam Titanium Finish by `aperich` with inner frame and armor painting steps.
+  - `build-tiger-i-kursk-1943`: Tiger I Early Production (Battle of Kursk 1943) by `fog1labs1` with weathering and chipping steps.
+- Configured static uploads serving (`/uploads/`) and RFC 7807 error middleware in `server.ts` for payload size violations (`413 Payload Too Large`).
+- Updated OpenAPI 3.1 contract (`docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`).
+- Updated automated CLI smoketest (`scripts/smoketest.mjs`) with Checks 14, 15, and 16, verifying all 16 assertions pass.
+Issues hit:
+- Express default body-parser returned HTML for oversized payloads; added an RFC 7807 global error handler converting `entity.too.large` into RFC 7807 `application/problem+json` `413`.
+- Builder projects without pre-catalogued kits (scratch-builds, dioramas) required `kitId` to be optional, resolving category from `categoryOverride` or defaulting to `gunpla-mecha`.
+Decisions made:
+- Paint recipe usages automatically join catalog paint details (`brand`, `line`, `hexColor`, `code`) in the step response so frontend clients render color swatches without extra API calls.
+Lessons learned:
+- Enforcing tenant category boundaries on the build feed ensures `gunplajunkies.com` maintains a dedicated Mecha/Sci-Fi atmosphere, while `plamoscale.com` serves as the umbrella platform celebrating all scale modeling disciplines.
+Usage: Moderate -- self-estimated

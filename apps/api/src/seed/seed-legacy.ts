@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { Tenant, UserRecord, MediaAsset, ScaleCategory } from '@gunpla/shared';
 import { getDb, saveDb, PlatformDatabaseState } from '../core/db';
 import { INITIAL_KITS, INITIAL_PAINTS } from './seed-catalog';
+import { INITIAL_BUILDS } from './seed-builds';
 
 const ALL_CATEGORIES: ScaleCategory[] = [
   'gunpla-mecha',
@@ -238,6 +239,7 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
   // Preserve existing kits/paints on soft startup, or reset to starter catalog on forced seed
   const kits = !forceReset && db.kits && db.kits.length > 0 ? db.kits : INITIAL_KITS;
   const paints = !forceReset && db.paints && db.paints.length > 0 ? db.paints : INITIAL_PAINTS;
+  const builds = !forceReset && db.builds && db.builds.length > 0 ? db.builds : INITIAL_BUILDS;
 
   const nextState: PlatformDatabaseState = {
     tenants,
@@ -248,6 +250,7 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
     paints,
     stashItems: db.stashItems || [],
     paintRackItems: db.paintRackItems || [],
+    builds,
     lastSeededAt: now
   };
 

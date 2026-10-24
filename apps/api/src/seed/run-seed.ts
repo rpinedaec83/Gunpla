@@ -11,6 +11,7 @@ console.log(
       mediaAssetsCount: state.mediaAssets.length,
       kitsCount: state.kits.length,
       paintsCount: state.paints.length,
+      buildsCount: state.builds ? state.builds.length : 0,
       lastSeededAt: state.lastSeededAt
     },
     null,

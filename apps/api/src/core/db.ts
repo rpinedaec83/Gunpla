@@ -8,7 +8,8 @@ import {
   KitRecord,
   PaintRecord,
   StashItemRecord,
-  PaintRackItemRecord
+  PaintRackItemRecord,
+  BuildProjectRecord
 } from '@gunpla/shared';
 
 export interface PlatformDatabaseState {
@@ -20,6 +21,7 @@ export interface PlatformDatabaseState {
   paints: PaintRecord[];
   stashItems: StashItemRecord[];
   paintRackItems: PaintRackItemRecord[];
+  builds: BuildProjectRecord[];
   lastSeededAt: string | null;
 }
 
@@ -38,6 +40,7 @@ function createEmptyState(): PlatformDatabaseState {
     paints: [],
     stashItems: [],
     paintRackItems: [],
+    builds: [],
     lastSeededAt: null
   };
 }
@@ -59,6 +62,7 @@ export function getDb(): PlatformDatabaseState {
         paints: parsed.paints ?? [],
         stashItems: parsed.stashItems ?? [],
         paintRackItems: parsed.paintRackItems ?? [],
+        builds: parsed.builds ?? [],
         lastSeededAt: parsed.lastSeededAt ?? null
       };
       return memoryState;

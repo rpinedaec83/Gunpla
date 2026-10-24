@@ -388,7 +388,156 @@ async function runSmoketest() {
     assert.equal(summary.ownedPaintsCount, 1);
     console.log(`[PASS] Workbench Summary Metrics verified (Stash: ${summary.totalStash}, Paints: ${summary.totalPaints}).`);
 
-    console.log('=== ALL DT1 + DT2 + DT3 SMOKETEST CHECKS PASSED ===');
+    // 14. DT4 - Multi-Tenant Build Feed Scoping (GunplaJunkies vs PlamoScale)
+    console.log('\n--- Checking DT4: Multi-Tenant Build Feed Scoping ---');
+    const gjBuildsRes = await fetch(`${baseUrl}/api/v1/builds`, {
+      headers: { 'X-Tenant-Slug': 'gunplajunkies' }
+    });
+    assert.equal(gjBuildsRes.status, 200);
+    const gjBuilds = await gjBuildsRes.json();
+    assert.ok(gjBuilds.items.length > 0, 'GunplaJunkies should have seeded builds');
+    assert.ok(
+      gjBuilds.items.every((b) => ['gunpla-mecha', 'scifi', 'figures'].includes(b.category)),
+      'GunplaJunkies builds must only contain Gunpla/Mecha, SciFi, or Figures'
+    );
+
+    const plamoBuildsRes = await fetch(`${baseUrl}/api/v1/builds`, {
+      headers: { 'X-Tenant-Slug': 'plamoscale' }
+    });
+    assert.equal(plamoBuildsRes.status, 200);
+    const plamoBuilds = await plamoBuildsRes.json();
+    assert.ok(plamoBuilds.items.length >= gjBuilds.items.length, 'PlamoScale includes all scale modeling categories');
+    const hasMilitary = plamoBuilds.items.some((b) => b.category === 'military');
+    assert.ok(hasMilitary, 'PlamoScale feed should include military builds');
+    console.log(`[PASS] Tenant build scoping verified (GunplaJunkies: ${gjBuilds.items.length}, PlamoScale: ${plamoBuilds.items.length}).`);
+
+    // 15. DT4 - Create Build Project, Step with Paint Recipes, Like & Comment
+    console.log('\n--- Checking DT4: Build Project Lifecycle, Steps & Paint Recipes ---');
+    const createBuildRes = await fetch(`${baseUrl}/api/v1/builds`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`,
+        'X-Tenant-Slug': 'gunplajunkies'
+      },
+      body: JSON.stringify({
+        title: 'MG Eclipse Gundam Custom Paint',
+        category: 'gunpla-mecha',
+        scale: '1/100',
+        grade: 'Master Grade (MG)',
+        status: 'in_progress',
+        tags: ['custom', 'airbrush', 'metallics']
+      })
+    });
+    assert.equal(createBuildRes.status, 201);
+    const newBuild = await createBuildRes.json();
+    assert.ok(newBuild.id);
+    assert.equal(newBuild.slug, 'mg-eclipse-gundam-custom-paint');
+
+    // Add Step with Paint Recipe
+    const addStepRes = await fetch(`${baseUrl}/api/v1/builds/${newBuild.id}/steps`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        stage: 'assembly_inner_frame',
+        title: 'Inner Frame Priming and Metallic Shading',
+        description: 'Applied Mr. Surfacer 1500 black followed by Steel and Gun Metal.',
+        paintUsages: [
+          { paintId: 'paint-mrhobby-c28', role: 'inner-frame' },
+          { paintId: 'paint-tamiya-x10', role: 'hydraulics' }
+        ]
+      })
+    });
+    assert.equal(addStepRes.status, 201);
+    const stepData = await addStepRes.json();
+    assert.equal(stepData.stage, 'assembly_inner_frame');
+    assert.equal(stepData.paintUsages.length, 2);
+
+    // Toggle Like
+    const likeRes = await fetch(`${baseUrl}/api/v1/builds/${newBuild.id}/like`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${googleSsoData.token}` }
+    });
+    assert.equal(likeRes.status, 200);
+    const likeData = await likeRes.json();
+    assert.equal(likeData.liked, true);
+    assert.equal(likeData.likeCount, 1);
+
+    // Add Comment
+    const commentRes = await fetch(`${baseUrl}/api/v1/builds/${newBuild.id}/comments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        comment: 'Excelente combinación de colores en el inner frame!'
+      })
+    });
+    assert.equal(commentRes.status, 201);
+    const commentData = await commentRes.json();
+    assert.ok(commentData.id);
+    assert.equal(commentData.comment, 'Excelente combinación de colores en el inner frame!');
+
+    // Fetch Details
+    const detailRes = await fetch(`${baseUrl}/api/v1/builds/${newBuild.slug}`);
+    assert.equal(detailRes.status, 200);
+    const detailedBuild = await detailRes.json();
+    assert.equal(detailedBuild.steps.length, 1);
+    assert.equal(detailedBuild.likeCount, 1);
+    assert.equal(detailedBuild.comments.length, 1);
+    console.log(`[PASS] Build project lifecycle verified (Slug: ${detailedBuild.slug}, Steps: 1, Likes: 1, Comments: 1).`);
+
+    // 16. DT4 - Media Upload Pipeline & 15MB Size Guardrail
+    console.log('\n--- Checking DT4: Media Upload Pipeline & 15MB File Size Cap ---');
+    // Valid small 1x1 transparent PNG upload
+    const samplePngBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const uploadRes = await fetch(`${baseUrl}/api/v1/media/upload`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        fileName: 'inner-frame-wip.png',
+        dataBase64: samplePngBase64,
+        category: 'gunpla-mecha',
+        title: 'WIP Inner Frame Foto',
+        buildId: newBuild.id
+      })
+    });
+    assert.equal(uploadRes.status, 201);
+    const uploadData = await uploadRes.json();
+    assert.ok(uploadData.thumbUrl.startsWith('/uploads/'));
+    assert.ok(uploadData.fullUrl.startsWith('/uploads/'));
+
+    // Verify static serving of uploaded image
+    const staticServeRes = await fetch(`${baseUrl}${uploadData.fullUrl}`);
+    assert.equal(staticServeRes.status, 200);
+    assert.equal(staticServeRes.headers.get('content-type'), 'image/png');
+
+    // Test rejection of payload exceeding 15MB
+    const oversizedBase64 = 'data:image/png;base64,' + 'A'.repeat(21 * 1024 * 1024);
+    const oversizedRes = await fetch(`${baseUrl}/api/v1/media/upload`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        fileName: 'huge.png',
+        dataBase64: oversizedBase64
+      })
+    });
+    assert.equal(oversizedRes.status, 413);
+    const oversizedErr = await oversizedRes.json();
+    assert.equal(oversizedErr.status, 413);
+    console.log('[PASS] Media Upload Pipeline & 15MB Size Cap verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 SMOKETEST CHECKS PASSED ===');
   } finally {
     server.close();
   }

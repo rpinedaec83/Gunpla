@@ -115,6 +115,50 @@ CREATE TABLE IF NOT EXISTS paint_rack_items (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS build_projects (
+    id VARCHAR(64) PRIMARY KEY,
+    slug VARCHAR(120) UNIQUE NOT NULL,
+    user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    kit_id VARCHAR(64) NOT NULL REFERENCES kits(id),
+    category VARCHAR(64) NOT NULL DEFAULT 'gunpla-mecha',
+    title VARCHAR(255) NOT NULL,
+    subtitle VARCHAR(255),
+    status VARCHAR(32) NOT NULL DEFAULT 'wip',
+    cover_image_url TEXT,
+    like_count INT NOT NULL DEFAULT 0,
+    view_count INT NOT NULL DEFAULT 0,
+    tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS build_steps (
+    id VARCHAR(64) PRIMARY KEY,
+    build_id VARCHAR(64) NOT NULL REFERENCES build_projects(id) ON DELETE CASCADE,
+    stage VARCHAR(32) NOT NULL,
+    order_index INT NOT NULL DEFAULT 0,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    photo_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+    paint_usages JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS build_likes (
+    build_id VARCHAR(64) NOT NULL REFERENCES build_projects(id) ON DELETE CASCADE,
+    user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (build_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS build_comments (
+    id VARCHAR(64) PRIMARY KEY,
+    build_id VARCHAR(64) NOT NULL REFERENCES build_projects(id) ON DELETE CASCADE,
+    user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    comment TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_media_assets_builder ON media_assets(builder_username);
 CREATE INDEX IF NOT EXISTS idx_media_assets_category ON media_assets(category);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -129,3 +173,8 @@ CREATE INDEX IF NOT EXISTS idx_stash_kit_id ON stash_items(kit_id);
 CREATE INDEX IF NOT EXISTS idx_stash_status ON stash_items(status);
 CREATE INDEX IF NOT EXISTS idx_paint_rack_user_id ON paint_rack_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_paint_rack_paint_id ON paint_rack_items(paint_id);
+CREATE INDEX IF NOT EXISTS idx_builds_user_id ON build_projects(user_id);
+CREATE INDEX IF NOT EXISTS idx_builds_kit_id ON build_projects(kit_id);
+CREATE INDEX IF NOT EXISTS idx_builds_category ON build_projects(category);
+CREATE INDEX IF NOT EXISTS idx_builds_slug ON build_projects(slug);
+CREATE INDEX IF NOT EXISTS idx_build_steps_build_id ON build_steps(build_id);

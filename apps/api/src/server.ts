@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
@@ -13,6 +14,7 @@ import { buildersRouter } from './slices/builders/builders.slice';
 import { notificationsRouter } from './slices/notifications-resend/resend.slice';
 import { catalogRouter } from './slices/catalog-scalemates/catalog.slice';
 import { workbenchRouter } from './slices/workbench-stash/workbench.slice';
+import { buildsRouter, mediaRouter } from './slices/build-logs/builds.slice';
 import { openApiSpec } from './openapi/openapi-spec';
 
 dotenv.config();
@@ -23,8 +25,8 @@ export function createApp() {
 
   const app = express();
   app.use(cors());
-  app.use(express.json({ limit: '5mb' }));
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: '20mb' }));
+  app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
   // Serve preserved legacy images from plamoscale.com so all 92 photos work out of the box
   const legacyDir = resolveLegacyPlamoscaleDir();
@@ -32,6 +34,11 @@ export function createApp() {
     '/legacy-media/plamoscale/images',
     express.static(path.join(legacyDir, 'images'))
   );
+
+  // Serve uploaded media files
+  const uploadsDir = path.resolve(__dirname, '../data/uploads');
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  app.use('/uploads', express.static(uploadsDir));
 
   // OpenAPI 3.1 JSON & Swagger UI (/doc)
   app.get('/openapi.json', (_req: Request, res: Response) => {
@@ -59,6 +66,7 @@ export function createApp() {
       paintsCount: db.paints ? db.paints.length : 0,
       stashItemsCount: db.stashItems ? db.stashItems.length : 0,
       paintRackItemsCount: db.paintRackItems ? db.paintRackItems.length : 0,
+      buildsCount: db.builds ? db.builds.length : 0,
       authModes: ['local-credentials', 'google-oauth-oidc-sso'],
       emailProvider: 'resend.com',
       lastSeededAt: db.lastSeededAt,
@@ -76,6 +84,40 @@ export function createApp() {
   app.use('/api/v1/notifications', notificationsRouter);
   app.use('/api/v1/catalog', catalogRouter);
   app.use('/api/v1/workbench', workbenchRouter);
+  app.use('/api/v1/builds', buildsRouter);
+  app.use('/api/v1/media', mediaRouter);
+
+  // RFC 7807 Error Handler (handles body-parser entity.too.large, JSON syntax errors, etc.)
+  app.use((err: any, req: Request, res: Response, _next: any) => {
+    if (err.type === 'entity.too.large' || err.status === 413) {
+      return sendProblem(
+        req,
+        res,
+        413,
+        'Archivo Demasiado Grande',
+        'El tamaño de la petición excede el límite máximo permitido (15 MB).',
+        'payload-too-large'
+      );
+    }
+    if (err instanceof SyntaxError && 'body' in err) {
+      return sendProblem(
+        req,
+        res,
+        400,
+        'JSON Inválido',
+        'El cuerpo de la petición no tiene un formato JSON válido.',
+        'invalid-json'
+      );
+    }
+    return sendProblem(
+      req,
+      res,
+      500,
+      'Error Interno del Servidor',
+      err.message || 'Ocurrió un error inesperado.',
+      'server-error'
+    );
+  });
 
   // Fallback 404 in RFC 7807 Problem Details format
   app.use((req: Request, res: Response) => {
