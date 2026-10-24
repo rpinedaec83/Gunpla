@@ -55,9 +55,12 @@ Current live state of the project.
 ## Current Constraints
 
 - Production deployment targets `x-codec` VPS/Homelab + PostgreSQL + Cloudflare R2/S3 + Resend.com verified domains.
-- **Homelab & Cloudflare Tunnel Status (2026-10-23):**
-  - Proxmox container `atum-gunpla` (LXC 190, `10.20.30.190` / `192.168.1.190`) running Docker Compose with PostgreSQL 16 (`gunpla-db`) and Central API (`gunpla-api`).
-  - Cloudflare Tunnel routes `api.plamoscale.com` and `api.gunplajunkies.com` directly to `10.20.30.190:8080` with Full Strict SSL.
+- **Homelab & Cloudflare Tunnel Status (2026-10-24):**
+  - Proxmox container `atum-gunpla` (LXC 190, `10.20.30.190` / `192.168.1.190`) running Docker Compose with PostgreSQL 16 (`gunpla-db`), Central API (`gunpla-api`), PlamoScale Web (`plamoscale-web`), and GunplaJunkies Web (`gunplajunkies-web`).
+  - Cloudflare Tunnel (`xcodec-lab-tunnel`) routes all endpoints with Full Strict SSL:
+    - `https://plamoscale.com` & `https://www.plamoscale.com` -> `10.20.30.190:3000` (HTTP/2 200 OK)
+    - `https://gunplajunkies.com` & `https://www.gunplajunkies.com` -> `10.20.30.190:3001` (HTTP/2 200 OK)
+    - `https://api.plamoscale.com` & `https://api.gunplajunkies.com` -> `10.20.30.190:8080` (HTTP/2 200 OK)
   - Nameservers for both `plamoscale.com` and `gunplajunkies.com` are delegated to Cloudflare: `cruz.ns.cloudflare.com` and `dylan.ns.cloudflare.com`.
   - Resend.com domain verification for both `plamoscale.com` and `gunplajunkies.com` is **100% VERIFIED** (DKIM + SPF + DMARC).
   - Live transactional email dispatch confirmed from `noreply@plamoscale.com` and `noreply@gunplajunkies.com`.
@@ -65,4 +68,4 @@ Current live state of the project.
 
 ## Next Focus
 
-- Phase 3 (PVT / Release Hardening): Root domain Cloudflare DNS CNAME routing (`@` record), production Google OAuth credentials, and automated backup schedules.
+- Phase 3 (PVT / Persistence Migration): Migrate runtime storage from JSON flat-file to PostgreSQL 16 (`gunpla-db`) using Prisma/Kysely migrations and configure production Google OAuth client credentials.

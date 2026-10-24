@@ -39,9 +39,13 @@ Do not store credentials, keys, tokens, passwords, connection strings, or deploy
 - Nameservers assigned:
   1. `cruz.ns.cloudflare.com`
   2. `dylan.ns.cloudflare.com`
+- Routing & Tunnel (`xcodec-lab-tunnel` / `87cb64ac-1164-4153-890f-b6fee81e0327`):
+  - `plamoscale.com` (apex) & `www.plamoscale.com` -> LXC 190 (`10.20.30.190:3000`)
+  - `gunplajunkies.com` (apex) & `www.gunplajunkies.com` -> LXC 190 (`10.20.30.190:3001`)
+  - `api.plamoscale.com` & `api.gunplajunkies.com` -> LXC 190 (`10.20.30.190:8080`)
 - Pages project: Optional edge static caching / DNS proxy
 - Workers service: Optional image resizing / CDN edge caching
-- Deployment environment notes: Both `plamoscale.com` and `gunplajunkies.com` domains are bound to Cloudflare DNS/Proxy with assigned nameservers `cruz.ns.cloudflare.com` and `dylan.ns.cloudflare.com`. Resend DKIM/SPF domain verification is 100% completed and verified (2026-10-23). Both zones will link to Cloudflare R2 bucket (`plamoscale-media-prod` / `plamoscale-media-dev`) for zero-egress high-resolution image delivery.
+- Deployment environment notes: Both `plamoscale.com` and `gunplajunkies.com` apex and www domains are bound to Cloudflare DNS/Proxy with assigned nameservers `cruz.ns.cloudflare.com` and `dylan.ns.cloudflare.com`. Cloudflare Tunnel ingress rules route all traffic to homelab LXC 190 with Full Strict SSL. Resend DKIM/SPF domain verification is 100% completed and verified (2026-10-23). Both zones will link to Cloudflare R2 bucket (`plamoscale-media-prod` / `plamoscale-media-dev`) for zero-egress high-resolution image delivery.
 
 ## GitHub
 
