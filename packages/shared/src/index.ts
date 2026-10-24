@@ -263,6 +263,77 @@ export interface PaintRecipeUsage {
   technique?: string;
 }
 
+export interface PaintConversionRequest {
+  sourceBrand: string;
+  sourceCode: string;
+  targetBrand?: string;
+  checkUserRack?: boolean;
+}
+
+export interface PaintConversionMatch {
+  brand: string;
+  code: string;
+  name: string;
+  line: string;
+  type: string;
+  finish: string;
+  hexColor: string;
+  similarity: 'exact' | 'very_close' | 'close' | 'approximate';
+  ownedInRack?: boolean;
+  rackQuantity?: number;
+}
+
+export interface PaintConversionResult {
+  source: {
+    brand: string;
+    code: string;
+    name?: string;
+    hexColor?: string;
+    type?: string;
+  };
+  matches: PaintConversionMatch[];
+  airbrushGuide: {
+    recommendedThinner: string;
+    thinningRatio: string;
+    recommendedPSI: string;
+    dryingTime: string;
+    proTips: string;
+  };
+}
+
+export interface PaintRecipeAiRequest {
+  query: string;
+  preferredBrand?: string;
+  style?: 'anime_accurate' | 'weathered_realistic' | 'candy_metallic' | 'stealth_matte';
+}
+
+export interface PaintRecipeAiComponent {
+  partOrTonalStep: string;
+  recommendedPaint: string;
+  brand: string;
+  code: string;
+  hexColor: string;
+  percentage?: number;
+  inUserRack?: boolean;
+}
+
+export interface PaintRecipeAiResponse {
+  recipeName: string;
+  description: string;
+  aiEngine: 'gemini-3.8-flash' | 'expert-local-rules';
+  colorPaletteHex: string[];
+  components: PaintRecipeAiComponent[];
+  mixingInstructions: string;
+  airbrushApplication: {
+    primer: string;
+    baseCoat: string;
+    shadingOrHighlight: string;
+    topCoat: string;
+    thinnerRatio: string;
+    psi: string;
+  };
+}
+
 export interface BuildStep {
   id: string;
   buildId: string;

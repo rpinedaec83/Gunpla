@@ -17,6 +17,7 @@ import { workbenchRouter } from './slices/workbench-stash/workbench.slice';
 import { buildsRouter, mediaRouter } from './slices/build-logs/builds.slice';
 import { communityRouter } from './slices/community/community.slice';
 import { marketplaceRouter, commissionsRouter } from './slices/marketplace/marketplace.slice';
+import { paintsAiRouter } from './slices/paints-ai/paints-ai.slice';
 import { openApiSpec } from './openapi/openapi-spec';
 import { initPostgres, getPostgresStats, isPostgresConfigured } from './core/postgres';
 
@@ -91,6 +92,7 @@ export function createApp() {
   app.use('/api/v1/media', mediaRouter);
   app.use('/api/v1/marketplace', marketplaceRouter);
   app.use('/api/v1/commissions', commissionsRouter);
+  app.use('/api/v1/paints/ai', paintsAiRouter);
   app.use('/api/v1', communityRouter);
 
   // PostgreSQL Diagnostic & Status Endpoint

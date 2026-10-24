@@ -1105,21 +1105,111 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
 
     <!-- 4. PAINTS TAB -->
     <section id="view-paints" class="view-section">
-      <div class="paint-grid">
-        ${data.paints
-          .map(
-            (p) => `
-          <div class="paint-card">
-            <div class="paint-swatch" style="background-color: ${p.hexColor};"></div>
-            <div>
-              <div class="paint-name">${p.name}</div>
-              <div class="paint-code">${p.brand} • ${p.code}</div>
-              <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">${p.line} (${p.finish})</div>
+      <!-- Paints Navigation Tabs -->
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+        <button id="paints-tab-btn-catalog" class="filter-pill active" onclick="switchPaintsSubtab('catalog')">
+          🎨 Catálogo Maestro de Pinturas
+        </button>
+        <button id="paints-tab-btn-ai" class="filter-pill" onclick="switchPaintsSubtab('ai')">
+          🤖 Asistente IA de Mezclas & Equivalencias
+        </button>
+      </div>
+
+      <!-- Tab 1: Catalog Grid -->
+      <div id="paints-subtab-catalog">
+        <div class="paint-grid">
+          ${data.paints
+            .map(
+              (p) => `
+            <div class="paint-card" onclick="prefillAiPaintConversion('${p.brand}', '${p.code}')" style="cursor: pointer;" title="Haz clic para ver equivalencias IA">
+              <div class="paint-swatch" style="background-color: ${p.hexColor};"></div>
+              <div>
+                <div class="paint-name">${p.name}</div>
+                <div class="paint-code">${p.brand} • ${p.code}</div>
+                <div style="font-size: 0.75rem; color: #64748b; text-transform: uppercase;">${p.line} (${p.finish})</div>
+              </div>
             </div>
+          `
+            )
+            .join('')}
+        </div>
+      </div>
+
+      <!-- Tab 2: AI Assistant -->
+      <div id="paints-subtab-ai" style="display: none;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+          <!-- 1. Equivalencias entre Marcas -->
+          <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem;">
+              <span style="font-size: 1.3rem;">🔄</span>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">Conversor de Equivalencias</h3>
+            </div>
+            <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
+              Cruza códigos entre <strong>Mr. Color (Laca)</strong>, <strong>Tamiya (Acrílico)</strong> y <strong>Vallejo (Mecha/Model)</strong>, calcula la dilución y verifica stock en tu Rack.
+            </p>
+
+            <form onsubmit="handleAiConvertSubmit(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <div class="auth-input-group" style="margin-bottom: 0;">
+                <label class="auth-label">Pintura a Convertir</label>
+                <select id="ai-convert-code-select" class="auth-input">
+                  <option value="XF-1">Tamiya XF-1 (Flat Black)</option>
+                  <option value="XF-2">Tamiya XF-2 (Flat White)</option>
+                  <option value="C108">Mr. Color C108 (Character Red)</option>
+                  <option value="C110">Mr. Color C110 (Character Blue)</option>
+                  <option value="C113">Mr. Color C113 (RLM04 Yellow)</option>
+                  <option value="C28">Mr. Color C28 (Steel / Metallic)</option>
+                  <option value="C71">Mr. Color C71 (Midnight Blue)</option>
+                  <option value="XF-62">Tamiya XF-62 (Olive Drab)</option>
+                  <option value="XF-63">Tamiya XF-63 (German Grey)</option>
+                  <option value="70.950">Vallejo 70.950 (Black)</option>
+                  <option value="69.008">Vallejo Mecha 69.008 (Mecha Red)</option>
+                  <option value="69.011">Vallejo Mecha 69.011 (Mecha Dark Blue)</option>
+                </select>
+              </div>
+
+              <button type="submit" id="btn-convert-submit" class="btn-primary" style="justify-content: center; padding: 0.65rem;">
+                🔍 Calcular Equivalencias & Dilución
+              </button>
+            </form>
+
+            <!-- Results Slot -->
+            <div id="ai-convert-result" style="margin-top: 1.25rem; display: none;"></div>
           </div>
-        `
-          )
-          .join('')}
+
+          <!-- 2. Generador de Recetas IA -->
+          <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem;">
+              <span style="font-size: 1.3rem;">✨</span>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">Generador de Recetas & Tonos IA</h3>
+            </div>
+            <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
+              Describe el color o Mobile Suit que deseas pintar y la IA generará las proporciones exactas de mezcla y técnicas de aerógrafo.
+            </p>
+
+            <form onsubmit="handleAiRecipeSubmit(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <div class="auth-input-group" style="margin-bottom: 0;">
+                <label class="auth-label">Tono o Modelo a Pintar</label>
+                <input type="text" id="ai-recipe-query-input" class="auth-input" placeholder="ej. Verde Zaku II Militar, Azul Titan, Char Aznable..." required>
+              </div>
+
+              <!-- Quick Chips -->
+              <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: -0.25rem;">
+                <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="setRecipeQuery('Verde Zaku II Militar')">Verde Zaku II</button>
+                <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="setRecipeQuery('Rojo Cometa Char Aznable')">Rojo Char</button>
+                <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="setRecipeQuery('Azul Titán Gundam MK-II')">Azul Titán</button>
+                <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="setRecipeQuery('Inner Frame Barbatos Metalico')">Frame Barbatos</button>
+                <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;" onclick="setRecipeQuery('Blanco RX-78-2 Real Grade')">Blanco RX-78</button>
+              </div>
+
+              <button type="submit" id="btn-recipe-submit" class="btn-primary" style="justify-content: center; padding: 0.65rem; background: #0284c7; border-color: #0284c7;">
+                ✨ Generar Receta con IA
+              </button>
+            </form>
+
+            <!-- Recipe Results Slot -->
+            <div id="ai-recipe-result" style="margin-top: 1.25rem; display: none;"></div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -2761,6 +2851,225 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       loadWorkbenchData();
     } catch (err) {
       console.warn('Paint qty update error:', err);
+    }
+  }
+
+  // AI Paint Assistant Sub-Tab Switching
+  function switchPaintsSubtab(tab) {
+    const cat = document.getElementById('paints-subtab-catalog');
+    const ai = document.getElementById('paints-subtab-ai');
+    const btnCat = document.getElementById('paints-tab-btn-catalog');
+    const btnAi = document.getElementById('paints-tab-btn-ai');
+
+    if (tab === 'catalog') {
+      if (cat) cat.style.display = 'block';
+      if (ai) ai.style.display = 'none';
+      if (btnCat) btnCat.classList.add('active');
+      if (btnAi) btnAi.classList.remove('active');
+    } else {
+      if (cat) cat.style.display = 'none';
+      if (ai) ai.style.display = 'block';
+      if (btnCat) btnCat.classList.remove('active');
+      if (btnAi) btnAi.classList.add('active');
+    }
+  }
+
+  function prefillAiPaintConversion(brand, code) {
+    switchPaintsSubtab('ai');
+    const select = document.getElementById('ai-convert-code-select');
+    if (select) {
+      let found = false;
+      for (let i = 0; i < select.options.length; i++) {
+        if (select.options[i].value === code) {
+          select.selectedIndex = i;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = brand + ' ' + code;
+        opt.selected = true;
+        select.appendChild(opt);
+      }
+    }
+    const form = document.querySelector('#paints-subtab-ai form');
+    if (form) form.dispatchEvent(new Event('submit', { cancelable: true }));
+  }
+
+  function setRecipeQuery(text) {
+    const input = document.getElementById('ai-recipe-query-input');
+    if (input) {
+      input.value = text;
+      const form = document.querySelectorAll('#paints-subtab-ai form')[1];
+      if (form) form.dispatchEvent(new Event('submit', { cancelable: true }));
+    }
+  }
+
+  async function handleAiConvertSubmit(e) {
+    e.preventDefault();
+    const code = document.getElementById('ai-convert-code-select').value;
+    const btn = document.getElementById('btn-convert-submit');
+    const resultBox = document.getElementById('ai-convert-result');
+    if (!resultBox) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Calculando equivalencias...';
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<p style="font-size: 0.85rem; color: #94a3b8;">Buscando matriz de conversión...</p>';
+
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    const authHeaders = {
+      'Content-Type': 'application/json',
+      'X-Tenant-Slug': '${config.tenantSlug}'
+    };
+    if (currentToken) {
+      authHeaders['Authorization'] = 'Bearer ' + currentToken;
+    }
+
+    try {
+      const res = await fetch(apiBase + '/api/v1/paints/ai/convert', {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ sourceCode: code })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'No se encontró equivalencia');
+      }
+
+      const data = await res.json();
+      const matchesHtml = (data.matches || []).map(m => {
+        const rackBadge = m.ownedInRack 
+          ? '<span style="font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 4px; background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.3);">✓ En tu Rack (' + (m.rackQuantity || 1) + ')</span>'
+          : '<span style="font-size: 0.72rem; color: #64748b;">No registrado en rack</span>';
+
+        return '<div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">' +
+          '<div style="width: 32px; height: 32px; border-radius: 50%; background: ' + m.hexColor + '; border: 2px solid rgba(255,255,255,0.2); flex-shrink: 0;"></div>' +
+          '<div style="flex: 1;">' +
+            '<div style="font-size: 0.85rem; font-weight: 700; color: #fff;">' + m.brand + ' • ' + m.code + ' (' + m.name + ')</div>' +
+            '<div style="font-size: 0.75rem; color: #94a3b8;">' + m.line + ' • ' + m.type.toUpperCase() + ' (' + m.finish + ')</div>' +
+          '</div>' +
+          '<div>' + rackBadge + '</div>' +
+        '</div>';
+      }).join('');
+
+      const guide = data.airbrushGuide || {};
+
+      resultBox.innerHTML = 
+        '<div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 0.5rem;">' +
+          '<div style="font-size: 0.82rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; margin-bottom: 0.6rem;">Equivalencias Exactas:</div>' +
+          matchesHtml +
+          '<div style="background: rgba(2,132,199,0.08); border: 1px solid rgba(2,132,199,0.25); border-radius: 8px; padding: 0.85rem; margin-top: 0.75rem;">' +
+            '<div style="font-size: 0.82rem; font-weight: 700; color: #38bdf8; margin-bottom: 0.4rem;">🎯 Guía de Dilución & Aerógrafo:</div>' +
+            '<div style="font-size: 0.78rem; color: #cbd5e1; line-height: 1.5;">' +
+              '• <strong>Thinner Recomendado:</strong> ' + guide.recommendedThinner + '<br>' +
+              '• <strong>Ratio de Mezcla:</strong> ' + guide.thinningRatio + '<br>' +
+              '• <strong>Presión Óptima:</strong> ' + guide.recommendedPSI + '<br>' +
+              '• <strong>Secado:</strong> ' + guide.dryingTime + '<br>' +
+              '• <em>Pro Tip:</em> ' + guide.proTips +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    } catch (err) {
+      resultBox.innerHTML = '<div style="color: #ef4444; font-size: 0.82rem; padding: 0.75rem; background: rgba(239,68,68,0.1); border-radius: 6px;">' + err.message + '</div>';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🔍 Calcular Equivalencias & Dilución';
+    }
+  }
+
+  async function handleAiRecipeSubmit(e) {
+    e.preventDefault();
+    const query = document.getElementById('ai-recipe-query-input').value.trim();
+    const btn = document.getElementById('btn-recipe-submit');
+    const resultBox = document.getElementById('ai-recipe-result');
+    if (!resultBox || !query) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Consultando IA...';
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '<p style="font-size: 0.85rem; color: #94a3b8;">Generando paleta y formulación con IA...</p>';
+
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    const authHeaders = {
+      'Content-Type': 'application/json',
+      'X-Tenant-Slug': '${config.tenantSlug}'
+    };
+    if (currentToken) {
+      authHeaders['Authorization'] = 'Bearer ' + currentToken;
+    }
+
+    try {
+      const res = await fetch(apiBase + '/api/v1/paints/ai/recipe', {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ query })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Error al generar receta');
+      }
+
+      const data = await res.json();
+      const paletteHtml = (data.colorPaletteHex || []).map(hex => 
+        '<div style="width: 28px; height: 28px; border-radius: 6px; background: ' + hex + '; border: 1px solid rgba(255,255,255,0.2);" title="' + hex + '"></div>'
+      ).join('');
+
+      const componentsHtml = (data.components || []).map(c => {
+        const inRackBadge = c.inUserRack 
+          ? '<span style="font-size: 0.7rem; color: #4ade80;">✓ En tu Rack</span>' 
+          : '<span style="font-size: 0.7rem; color: #94a3b8;">Frasco sugerido</span>';
+
+        return '<div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.5rem 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem;">' +
+          '<div style="display: flex; align-items: center; gap: 0.6rem;">' +
+            '<div style="width: 18px; height: 18px; border-radius: 50%; background: ' + c.hexColor + '; flex-shrink: 0;"></div>' +
+            '<div>' +
+              '<div style="font-size: 0.8rem; font-weight: 600; color: #fff;">' + c.partOrTonalStep + ': ' + c.brand + ' ' + c.code + '</div>' +
+              '<div style="font-size: 0.72rem; color: #cbd5e1;">' + c.recommendedPaint + ' ' + inRackBadge + '</div>' +
+            '</div>' +
+          '</div>' +
+          (c.percentage ? '<div style="font-size: 0.85rem; font-weight: 700; color: var(--accent);">' + c.percentage + '%</div>' : '') +
+        '</div>';
+      }).join('');
+
+      const air = data.airbrushApplication || {};
+      const engineBadge = data.aiEngine === 'gemini-3.8-flash'
+        ? '<span style="font-size: 0.7rem; color: #38bdf8; background: rgba(56,189,248,0.15); padding: 0.15rem 0.4rem; border-radius: 4px;">⚡ Gemini 3.8 Flash AI</span>'
+        : '<span style="font-size: 0.7rem; color: #a855f7; background: rgba(168,85,247,0.15); padding: 0.15rem 0.4rem; border-radius: 4px;">🧠 Base Experta de Modelistas</span>';
+
+      resultBox.innerHTML = 
+        '<div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 0.5rem;">' +
+          '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">' +
+            '<h4 style="font-size: 1rem; font-weight: 700; color: #fff;">' + data.recipeName + '</h4>' +
+            engineBadge +
+          '</div>' +
+          '<p style="font-size: 0.8rem; color: #cbd5e1; margin-bottom: 0.75rem; line-height: 1.4;">' + data.description + '</p>' +
+          '<div style="display: flex; gap: 0.35rem; margin-bottom: 0.75rem;">' + paletteHtml + '</div>' +
+          '<div style="margin-bottom: 0.75rem;">' + componentsHtml + '</div>' +
+          '<div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem;">' +
+            '<div style="font-size: 0.78rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem;">⚖️ Mezcla y Proporciones:</div>' +
+            '<p style="font-size: 0.78rem; color: #cbd5e1; line-height: 1.4;">' + data.mixingInstructions + '</p>' +
+          '</div>' +
+          '<div style="background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.25); border-radius: 8px; padding: 0.75rem;">' +
+            '<div style="font-size: 0.78rem; font-weight: 700; color: #4ade80; margin-bottom: 0.25rem;">💨 Aplicación con Aerógrafo:</div>' +
+            '<div style="font-size: 0.75rem; color: #cbd5e1; line-height: 1.5;">' +
+              '• <strong>Imprimación:</strong> ' + air.primer + '<br>' +
+              '• <strong>Capa Base:</strong> ' + air.baseCoat + '<br>' +
+              '• <strong>Sombra / Realce:</strong> ' + air.shadingOrHighlight + '<br>' +
+              '• <strong>Barniz Final:</strong> ' + air.topCoat + '<br>' +
+              '• <strong>Dilución:</strong> ' + air.thinnerRatio + ' a ' + air.psi +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    } catch (err) {
+      resultBox.innerHTML = '<div style="color: #ef4444; font-size: 0.82rem; padding: 0.75rem; background: rgba(239,68,68,0.1); border-radius: 6px;">' + err.message + '</div>';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '✨ Generar Receta con IA';
     }
   }
 

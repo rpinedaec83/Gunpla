@@ -11,6 +11,11 @@ Current live state of the project.
 
 ## Live Capabilities
 
+- **Interactive Personal Workbench & Workshop (`Mi Taller`):**
+  - Integrated personal dashboard with live metric counters: Total Stash, Backlog (unbuilt), WIP (in progress), Built (completed), and Paint Rack inventory.
+  - **Stash Management:** Add kits from master catalog, track box status (`unbuilt`, `in_progress`, `built`, `for_trade`, `wishlist`), star ratings, acquisition prices, and notes.
+  - **Step-by-Step Build Logs:** Create build projects linked to kits, upload progress photos directly from browser/camera via `/api/v1/media/upload`, and add chronological stages (`unboxing`, `assembly`, `priming`, `painting`, `weathering`, `final_reveal`).
+  - **Paint Rack:** Inventory control with hex color swatches and instant quantity adjustment (`+` / `-`).
 - **Google OAuth 2.0 SSO & Interactive Identity Modal (`Slice 9 / DT9`):**
   - Integrated Google Identity Services (`gsi/client`) across `plamoscale.com` and `gunplajunkies.com`.
   - Interactive multi-tab Auth Modal (`#auth-modal`): 1-click Google Sign-In, credentials login with quick-login buttons for the 4 founding builders, and new account registration.

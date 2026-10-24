@@ -924,7 +924,34 @@ async function runSmoketest() {
     console.log('[PASS] Legal Age Gate (Ley 29733 / INDECOPI) verified: <14 blocked (403), 14-17 allowed with Bazar restricted, 18+ full access.');
     console.log('[PASS] Google OAuth 2.0 / OIDC Identity Services, Auth Modal & Transparent API/Media Reverse Proxy verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 SMOKETEST CHECKS PASSED ===');
+    // --- Checking AI Paint Assistant & Airbrush Formulation Engine ---
+    console.log('\n--- Checking AI Paint Assistant & Conversion Engine ---');
+    // 1. Paint Conversion
+    const convertRes = await fetch(`${baseUrl}/api/v1/paints/ai/convert`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'plamoscale' },
+      body: JSON.stringify({ sourceCode: 'XF-1' })
+    });
+    assert.equal(convertRes.status, 200, 'Paint conversion endpoint must return 200 OK');
+    const convertData = await convertRes.json();
+    assert.ok(convertData.matches.length >= 3, 'Must match across Mr. Color, Tamiya, and Vallejo');
+    assert.ok(convertData.airbrushGuide.thinningRatio, 'Must include thinning ratio guide');
+
+    // 2. AI Color Recipe Generation
+    const recipeRes = await fetch(`${baseUrl}/api/v1/paints/ai/recipe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'gunplajunkies' },
+      body: JSON.stringify({ query: 'Verde Zaku II Militar' })
+    });
+    assert.equal(recipeRes.status, 200, 'AI Recipe generation must return 200 OK');
+    const recipeData = await recipeRes.json();
+    assert.ok(recipeData.recipeName.includes('Zaku'), 'Must generate Zaku-tailored recipe');
+    assert.ok(recipeData.components.length > 0, 'Must include components with percentages');
+    assert.ok(recipeData.airbrushApplication.psi, 'Must include airbrush application PSI guide');
+
+    console.log('[PASS] AI Paint Assistant verified: Cross-brand conversions, thinning ratios & AI color recipe generator.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + PAINTS-AI SMOKETEST CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();
