@@ -36,5 +36,37 @@ services:
       gunpla-db:
         condition: service_healthy
 
+  plamoscale-web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.plamoscale-web
+    container_name: plamoscale-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_URL: http://gunpla-api:8080
+      GUNPLAJUNKIES_WEB_URL: https://gunplajunkies.com
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gunpla-api
+
+  gunplajunkies-web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.gunplajunkies-web
+    container_name: gunplajunkies-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      API_URL: http://gunpla-api:8080
+      PLAMOSCALE_WEB_URL: https://plamoscale.com
+    ports:
+      - "3001:3001"
+    depends_on:
+      - gunpla-api
+
 volumes:
   pgdata:

@@ -389,6 +389,20 @@ export const openApiSpec = {
           '413': { description: 'Payload too large (> 15MB)' }
         }
       }
+    },
+    '/api/v1/contests': {
+      get: {
+        tags: ['Community'],
+        summary: 'List active and upcoming group builds and contests scoped by tenant',
+        responses: { '200': { description: 'Contests list' } }
+      }
+    },
+    '/api/v1/shops': {
+      get: {
+        tags: ['Community'],
+        summary: 'List trusted hobby shops directory with WhatsApp and product catalog links',
+        responses: { '200': { description: 'Shops list' } }
+      }
     }
   }
 };

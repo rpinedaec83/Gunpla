@@ -345,9 +345,41 @@ export interface UploadMediaResponse {
   fullUrl: string;
 }
 
+export interface ContestRecord {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  tenantSlug: 'plamoscale' | 'gunplajunkies' | 'all';
+  category: ScaleCategory;
+  bannerUrl: string;
+  startDate: string;
+  endDate: string;
+  status: 'upcoming' | 'active' | 'judging' | 'completed';
+  rules: string[];
+  prizes: string[];
+  participantsCount: number;
+}
+
+export interface ShopRecord {
+  id: string;
+  name: string;
+  description: string;
+  country: string;
+  city: string;
+  websiteUrl?: string;
+  catalogUrl?: string;
+  whatsappUrl?: string;
+  instagramUrl?: string;
+  specialties: string[];
+  isVerified: boolean;
+}
+
 export interface PaginatedResult<T> {
   items: T[];
   nextCursor: string | null;
   hasMore: boolean;
   totalCount: number;
 }
+
+export * from './ui-shell/app-shell';

@@ -4,13 +4,20 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **EVT (In Progress -- DT1, DT2, DT3 & DT4 Completed, DT5 Next)**
-- Overall state: Green -- DT1, DT2, DT3 & DT4 implemented and verified via `npm run smoketest` (`16/16 checks passed`).
-- Current branch or release line: `feature/dt4-build-logs-media` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **EVT Complete -- All Vertical Slices 1–5 Implemented & Verified**
+- Overall state: Green -- DT1, DT2, DT3, DT4 & DT5 implemented and verified via `npm run smoketest` (`19/19 checks passed`).
+- Current branch or release line: `feature/dt5-frontends-appshell` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-23
 
 ## Live Capabilities
 
+- **Frontends Web (`apps/plamoscale-web` & `apps/gunplajunkies-web`):**
+  - Implement **`UXP-01 Modern App Shell Layout`** with persistent left text-labeled sidebar, top utility bar with search & SSO status, breadcrumbs, and responsive mobile drawer.
+  - **PlamoScale (`apps/plamoscale-web` on port 3000):** General scale modeling hub (Military, Aviation, Automotive, Gunpla/Mecha, Figures, Naval, Diorama) with Studio Technical palette.
+  - **GunplaJunkies (`apps/gunplajunkies-web` on port 3001):** Gunpla & Mecha hub (HG, RG, MG, PG, SD, 30MM, Kotobukiya) with Cyberpunk dark aesthetic.
+  - Poptrox-inspired high-resolution lightbox modal allowing full-screen inspection of the 92 migrated photos from the 4 founding builders.
+  - Integrated portal switcher allowing instant one-click switching between `plamoscale.com` and `gunplajunkies.com`.
+  - Community sections: Contests (*Gunpla Open Cup Peru 2026* and *PlamoScale Masters 2026*), Founding Builders portfolios, and Trusted Shops directory (`bio.txt` & WhatsApp links).
 - **Monorepo TypeScript & Central API (`@gunpla/api` + `@gunpla/shared`):**
   - Multi-tenant resolution (`plamoscale` & `gunplajunkies` + custom B2B tenants via `GET /api/v1/tenants/current`).
   - Dual Authentication: Local Username/Email + Password (`POST /api/v1/auth/registrations`, `/sessions`) AND Google SSO (`POST /api/v1/auth/google-sessions`) with automatic email Account Linking and cross-tenant JWT SSO.

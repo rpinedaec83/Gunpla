@@ -22,6 +22,8 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { createApp } = require('../apps/api/dist/server.js');
 const { seedPlatformDatabase } = require('../apps/api/dist/seed/seed-legacy.js');
+const { app: plamoWebApp } = require('../apps/plamoscale-web/dist/server.js');
+const { app: gunplaWebApp } = require('../apps/gunplajunkies-web/dist/server.js');
 
 async function runSmoketest() {
   console.log('--- Running DT1 Vertical Slice Smoketest ---');
@@ -35,6 +37,9 @@ async function runSmoketest() {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
   const baseUrl = `http://127.0.0.1:${address.port}`;
+
+  let plamoServer;
+  let gunplaServer;
 
   try {
     // 1. Verify OpenAPI 3.1 & Swagger UI (/doc)
@@ -537,8 +542,75 @@ async function runSmoketest() {
     assert.equal(oversizedErr.status, 413);
     console.log('[PASS] Media Upload Pipeline & 15MB Size Cap verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 SMOKETEST CHECKS PASSED ===');
+    // 17. DT5 - Community Endpoints (Contests & Trusted Shops Directory)
+    console.log('\n--- Checking DT5: Community Endpoints (Contests & Trusted Shops) ---');
+    const contestsRes = await fetch(`${baseUrl}/api/v1/contests`, {
+      headers: { 'X-Tenant-Slug': 'gunplajunkies' }
+    });
+    assert.equal(contestsRes.status, 200);
+    const contestsData = await contestsRes.json();
+    assert.ok(contestsData.items.length > 0, 'GunplaJunkies should have active contests');
+    assert.ok(contestsData.items.some((c) => c.slug === 'gunpla-open-cup-2026'));
+
+    const shopsRes = await fetch(`${baseUrl}/api/v1/shops`);
+    assert.equal(shopsRes.status, 200);
+    const shopsData = await shopsRes.json();
+    assert.ok(shopsData.items.length >= 3, 'Should have verified shops from bio.txt');
+    assert.ok(shopsData.items.some((s) => s.isVerified && s.catalogUrl));
+    console.log(`[PASS] Community endpoints verified (Contests: ${contestsData.items.length}, Shops: ${shopsData.items.length}).`);
+
+    // 18. DT5 - PlamoScale Web Frontend (UXP-01 Modern App Shell)
+    console.log('\n--- Checking DT5: PlamoScale Web Frontend (UXP-01 Shell) ---');
+    process.env.API_URL = baseUrl;
+    plamoServer = http.createServer(plamoWebApp);
+    await new Promise((resolve) => plamoServer.listen(0, '127.0.0.1', resolve));
+    const plamoPort = plamoServer.address().port;
+    const plamoUrl = `http://127.0.0.1:${plamoPort}`;
+
+    const plamoHealthRes = await fetch(`${plamoUrl}/health`);
+    assert.equal(plamoHealthRes.status, 200);
+    const plamoHealth = await plamoHealthRes.json();
+    assert.equal(plamoHealth.tenant, 'plamoscale');
+
+    const plamoPageRes = await fetch(`${plamoUrl}/`);
+    assert.equal(plamoPageRes.status, 200);
+    const plamoHtml = await plamoPageRes.text();
+    assert.ok(plamoHtml.includes('PlamoScale'), 'Should contain PlamoScale brand');
+    assert.ok(plamoHtml.includes('Galería Showcase'), 'Should contain persistent sidebar Showcase');
+    assert.ok(plamoHtml.includes('Catálogo de Kits'), 'Should contain persistent sidebar Kit Catalog');
+    assert.ok(plamoHtml.includes('Pinturas & Suministros'), 'Should contain persistent sidebar Paint Rack');
+    assert.ok(plamoHtml.includes('Banco de Trabajo & Stash'), 'Should contain Workbench section');
+    assert.ok(plamoHtml.includes('Modelistas Fundadores'), 'Should contain Founders section');
+    assert.ok(plamoHtml.includes('Tiendas de Confianza'), 'Should contain Trusted Shops directory');
+    assert.ok(plamoHtml.includes('Ir a <strong>GunplaJunkies</strong>'), 'Should contain Portal Switcher to GunplaJunkies');
+    console.log('[PASS] PlamoScale Web Frontend (UXP-01 Shell) verified successfully.');
+
+    // 19. DT5 - GunplaJunkies Web Frontend (UXP-01 Shell)
+    console.log('\n--- Checking DT5: GunplaJunkies Web Frontend (UXP-01 Shell) ---');
+    gunplaServer = http.createServer(gunplaWebApp);
+    await new Promise((resolve) => gunplaServer.listen(0, '127.0.0.1', resolve));
+    const gunplaPort = gunplaServer.address().port;
+    const gunplaUrl = `http://127.0.0.1:${gunplaPort}`;
+
+    const gunplaHealthRes = await fetch(`${gunplaUrl}/health`);
+    assert.equal(gunplaHealthRes.status, 200);
+    const gunplaHealth = await gunplaHealthRes.json();
+    assert.equal(gunplaHealth.tenant, 'gunplajunkies');
+
+    const gunplaPageRes = await fetch(`${gunplaUrl}/`);
+    assert.equal(gunplaPageRes.status, 200);
+    const gunplaHtml = await gunplaPageRes.text();
+    assert.ok(gunplaHtml.includes('GunplaJunkies'), 'Should contain GunplaJunkies brand');
+    assert.ok(gunplaHtml.includes('Todos los Grados'), 'Should contain Gunpla grade taxonomy');
+    assert.ok(gunplaHtml.includes('High Grade (HG)'), 'Should contain HG pill');
+    assert.ok(gunplaHtml.includes('Master Grade (MG)'), 'Should contain MG pill');
+    assert.ok(gunplaHtml.includes('Ir a <strong>PlamoScale</strong>'), 'Should contain Portal Switcher to PlamoScale');
+    console.log('[PASS] GunplaJunkies Web Frontend (UXP-01 Shell) verified successfully.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 SMOKETEST CHECKS PASSED ===');
   } finally {
+    if (plamoServer) plamoServer.close();
+    if (gunplaServer) gunplaServer.close();
     server.close();
   }
 }

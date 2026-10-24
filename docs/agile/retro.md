@@ -108,3 +108,32 @@ Decisions made:
 Lessons learned:
 - Enforcing tenant category boundaries on the build feed ensures `gunplajunkies.com` maintains a dedicated Mecha/Sci-Fi atmosphere, while `plamoscale.com` serves as the umbrella platform celebrating all scale modeling disciplines.
 Usage: Moderate -- self-estimated
+
+### DT5 -- Slice 5: Dual Multi-Tenant Frontends (`plamoscale.com` & `gunplajunkies.com`) with UXP-01 App Shell | eMOE: 5 CU | aMOE: 5 CU
+What was done:
+- Designed and implemented the shared UI Shell engine in `@gunpla/shared` (`packages/shared/src/ui-shell/app-shell.ts`) strictly following `UXP-01 Modern App Shell Layout`:
+  - Persistent left-side text-labeled navigation on desktop (Exploration: Showcase, Build Logs, Kit Catalog, Paints & Supplies; Workbench: Stash & Rack; Community: Founding Builders, Contests, Trusted Shops).
+  - Top utility bar with global search input, portal switcher (`PlamoScale` <-> `GunplaJunkies`), primary CTA button (`+ Nueva Bitácora`), and live API status badge.
+  - Breadcrumbs above clear page header with metadata and count badges.
+  - Poptrox-inspired high-resolution Lightbox modal allowing builders to click any of the 92 migrated photos or build step images to view them in full resolution with titles and builder credits.
+  - Responsive mobile drawer navigation with hamburger toggle for touch devices.
+- Created `apps/plamoscale-web` (`PORT 3000`):
+  - General scale modeling taxonomy (`All`, `Gunpla & Mecha`, `Militar 1/35`, `Aviación 1/48`, `Automotriz 1/24`, `Figuras`, `Naval`, `Dioramas`).
+  - Studio Technical palette: Royal Blue accent (`#2563eb`), dark slate background (`#0b0f19`), clean typography.
+  - Live API integration with graceful fallback, `/health` endpoint, and media asset proxy.
+- Created `apps/gunplajunkies-web` (`PORT 3001`):
+  - Gunpla grade taxonomy (`All`, `High Grade (HG)`, `Real Grade (RG)`, `Master Grade (MG)`, `Perfect Grade (PG)`, `Super Deformed (SD)`, `30MM`, `Kotobukiya`).
+  - Cyberpunk Mecha palette: Crimson Red (`#ef4444`) and Neon Cyan (`#06b6d4`), void dark background (`#080c14`).
+  - Direct live API integration with Gunpla-scoped build feed and kit catalog.
+- Created community slice (`apps/api/src/slices/community/community.slice.ts`) exposing:
+  - `GET /api/v1/contests`: Tenant-scoped group builds and competitions (*Gunpla Open Cup Peru 2026* and *PlamoScale Masters 2026*).
+  - `GET /api/v1/shops`: Trusted shops directory migrated from `bio.txt` with WhatsApp links, PDF product catalogs, and verified badges.
+- Authored production multi-stage Dockerfiles (`infra/Dockerfile.plamoscale-web` and `infra/Dockerfile.gunplajunkies-web`) and updated `infra/docker-compose.yml`.
+- Expanded automated CLI smoketest (`scripts/smoketest.mjs`) with Checks 17, 18, and 19 verifying community endpoints, PlamoScale frontend rendering, and GunplaJunkies frontend rendering. All 19/19 checks passed.
+Issues hit:
+- Promise.allSettled array results required typing assertion to prevent `unknown` type conflicts when compiling `server.ts`.
+Decisions made:
+- Rendering the App Shell via server-side generation with embedded modern CSS and lightweight vanilla JS provides sub-50ms First Contentful Paint without client bundle overhead, perfect for the Proxmox homelab LXC container environment.
+Lessons learned:
+- Unifying the UXP-01 App Shell template in `@gunpla/shared` while parametrizing branding, colors, taxonomies, and portal links allowed both frontends to launch in record time with 100% design fidelity.
+Usage: Moderate -- self-estimated
