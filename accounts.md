@@ -21,16 +21,22 @@ Do not store credentials, keys, tokens, passwords, connection strings, or deploy
 
 ## Google Cloud
 
-- Organization ID or name: Not used
+- Organization ID or name: x-codec (Google Identity / OAuth 2.0 SSO Provider)
+- Billing account reference: Free tier (Google Identity Services / OAuth 2.0)
+- Project ID: TBD (`gunpla-plamoscale-sso`)
+- Project name: PlamoScale & GunplaJunkies SSO
+- Region: Global
+- Service account name: OAuth 2.0 Web Client (`GOOGLE_CLIENT_ID`)
+- Deployment environment notes: Authorized JavaScript origins and redirect URIs configured for `https://plamoscale.com`, `https://gunplajunkies.com`, `https://api.plamoscale.com`, and `http://localhost:*`.
 
 ## Cloudflare
 
 - Account ID: TBD (x-codec Cloudflare account)
 - Account name: x-codec
-- Zone ID or zone name: `plamoscale.com`, `gunplajunkies.com`
+- Zone ID or zone name: `plamoscale.com` (Pending Nameserver migration to Cloudflare), `gunplajunkies.com` (Pending Nameserver migration to Cloudflare)
 - Pages project: Optional edge static caching / DNS proxy
 - Workers service: Optional image resizing / CDN edge caching
-- Deployment environment notes: Cloudflare R2 bucket (`plamoscale-media-prod` / `plamoscale-media-dev`) used for storing full-resolution build photos, thumbnails, boxart, and PDF manuals with zero egress fees.
+- Deployment environment notes: Both `plamoscale.com` and `gunplajunkies.com` domains will be migrated to Cloudflare DNS/Proxy (Full Strict SSL/TLS) and linked to Cloudflare R2 bucket (`plamoscale-media-prod` / `plamoscale-media-dev`) for zero-egress high-resolution image delivery.
 
 ## GitHub
 

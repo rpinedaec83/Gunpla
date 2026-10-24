@@ -79,7 +79,7 @@ flowchart TD
 
 - `[MANDATORY]` **Key entities:**
   1. `tenants`: `id (UUID PK)`, `slug (unique: 'plamoscale', 'gunplajunkies', ...)`, `name`, `domain`, `theme_config (JSONB)`, `allowed_categories (TEXT[])`, `created_at`.
-  2. `users`: `id (UUID PK)`, `username (unique)`, `display_name`, `email (unique)`, `password_hash`, `bio`, `avatar_url`, `social_links (JSONB: instagram, tiktok, facebook, youtube, scalemates)`, `primary_tenant_id (FK)`, `created_at`.
+  2. `users`: `id (UUID PK)`, `username (unique)`, `display_name`, `email (unique)`, `password_hash (nullable for pure Google SSO accounts)`, `google_id (unique nullable)`, `auth_providers (TEXT[]: ['local', 'google'])`, `bio`, `avatar_url`, `social_links (JSONB: instagram, tiktok, facebook, youtube, scalemates)`, `primary_tenant_id (FK)`, `created_at`.
   3. `roles` & `user_roles`: `user`, `moderator`, `tenant_admin`, `admin` (evolves legacy `gunplajunkies.com/app/models/role.model.js`).
   4. `brands`: `id`, `name` (e.g., Bandai Spirits, Tamiya, Hasegawa, Kotobukiya, Eduard, Vallejo, Mr. Hobby), `type` (`kit`, `paint`, `tool`, `both`), `country`.
   5. `scale_kits`: `id (UUID PK)`, `brand_id (FK)`, `name`, `kit_number`, `scale` (e.g., `1/144`, `1/100`, `1/60`, `1/35`, `1/48`, `1/72`), `category` (`gunpla-mecha`, `military`, `aviation`, `automotive`, `naval`, `figures`, `scifi`, `diorama`), `grade` (e.g., `HG`, `RG`, `MG`, `PG`, `Standard`), `release_year`, `boxart_url`, `manual_url`, `scalemates_url (unique nullable)`, `barcode_ean`, `created_by (FK)`.
@@ -106,11 +106,15 @@ flowchart TD
 ## API Contracts
 
 - `[CONDITIONAL]` **External APIs used:**
-  1. **Scalemates Web Metadata Connector:** Performs rate-limited, cached HTTP `GET` requests when a builder submits a Scalemates URL (e.g., `https://www.scalemates.com/kits/...`), parsing OpenGraph, JSON-LD, and structured kit fields (`brand`, `scale`, `kit_number`, `year`, `boxart`).
-  2. **Cloudflare R2 (S3 REST API):** Pre-signed `PUT` or server-side `PutObjectCommand` for uploading `thumbs/` and `fulls/`.
-  3. **Mailchimp Form Action:** Preserves subscription integration (`plamoscale.us14.list-manage.com/subscribe/post`).
+  1. **Google Identity Services / OAuth 2.0 & OIDC (`https://oauth2.googleapis.com/tokeninfo` / JWKS):** Verifies Google ID tokens or OAuth authorization codes when users click "Continue with Google".
+  2. **Scalemates Web Metadata Connector:** Performs rate-limited, cached HTTP `GET` requests when a builder submits a Scalemates URL (e.g., `https://www.scalemates.com/kits/...`), parsing OpenGraph, JSON-LD, and structured kit fields (`brand`, `scale`, `kit_number`, `year`, `boxart`).
+  3. **Cloudflare R2 (S3 REST API):** Pre-signed `PUT` or server-side `PutObjectCommand` for uploading `thumbs/` and `fulls/`.
+  4. **Mailchimp Form Action:** Preserves subscription integration (`plamoscale.us14.list-manage.com/subscribe/post`).
 - `[MANDATORY]` **Auth and authorization model:**
-  - Stateless **JWT (`HS256`)** issued on `POST /api/v1/auth/signin` and `POST /api/v1/auth/signup`, accepted via `Authorization: Bearer <token>` header or `httpOnly` cookie (`plamo_sso_token`), enabling single sign-on across `plamoscale.com`, `gunplajunkies.com`, and future client frontends.
+  - **Dual Authentication Modes (Both Valid):**
+    1. **Local Credentials (`POST /api/v1/auth/signup` & `POST /api/v1/auth/signin`):** Authenticates via `username` (or `email`) + `password` verified against `bcrypt` hash.
+    2. **Google SSO (`POST /api/v1/auth/google` & `GET /api/v1/auth/google/callback`):** Authenticates via Google OAuth 2.0 / OIDC ID Token or OAuth code. If an account with the verified Google email already exists, automatically links `google_id` and adds `'google'` to `auth_providers`; otherwise provisions a new builder account. Users can use either method interchangeably.
+  - **Unified Session Token:** Both login methods issue the same stateless **JWT (`HS256`)**, accepted via `Authorization: Bearer <token>` header or `httpOnly` cookie (`plamo_sso_token`), enabling single sign-on across `plamoscale.com`, `gunplajunkies.com`, and future client frontends.
   - Role guards: `requireAuth`, `requireRole(['moderator', 'admin'])`, `requireTenantAdmin`.
 - `[MANDATORY]` **Error handling approach:**
   All 4xx and 5xx responses conform to **IETF RFC 7807 Problem Details (`application/problem+json`)**:
@@ -315,6 +319,10 @@ flowchart TD
   - **SOP-01 (Adding a New White-Label Client / Tenant):** Insert tenant record via `POST /api/v1/tenants` (or seed config) with `slug`, `name`, `domain`, `theme_config`, and `allowed_categories`. No backend redeploy required.
   - **SOP-02 (Legacy Seed & Data Recovery):** Run `npm run db:seed` to verify and populate the 4 founding builders (`aperich`, `dcampos`, `cluna`, `fog1labs1`) and ~92 photos from `docs/reference/preexisting-root/plamoscale.com/`.
   - **SOP-03 (Database Backup & Restore):** Daily cron executes `pg_dump -Fc gunpla_prod > backup_$(date +%F).dump` and uploads encrypted archive to a separate R2 backup prefix with 30-day retention.
+  - **SOP-04 (Cloudflare Domain Migration for `plamoscale.com` & `gunplajunkies.com`):**
+    1. Add `plamoscale.com` and `gunplajunkies.com` zones in the `x-codec` Cloudflare account.
+    2. Replicate existing `A`, `CNAME`, `MX`, and `TXT` records pointing to the `x-codec` VPS IP and configure `media.plamoscale.com` custom domain on the Cloudflare R2 bucket.
+    3. Update Nameservers at the domain registrar to the assigned Cloudflare Nameservers and enable SSL/TLS `Full (Strict)` mode + Always Use HTTPS.
 - `[MANDATORY]` **On-call and incident model:**
   - Automated health checks alert Roberto Pineda (`rpineda@x-codec.net`).
   - Incident triage follows severity levels: `SEV-1` (Complete outage / auth broken — immediate rollback or fix within 2h), `SEV-2` (Single slice degraded, e.g., Scalemates external import slow — graceful fallback to manual entry, fix within 24h), `SEV-3` (UI cosmetic issue — scheduled as next `RDT` or `DT` in `docs/agile/devcycle.md`).

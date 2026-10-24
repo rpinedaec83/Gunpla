@@ -194,8 +194,9 @@
 
 ## Dependencies
 
-- `[MANDATORY]` **Dependency 1:** Access to `x-codec` VPS/Hosting environment, PostgreSQL database provisioning, and DNS management for `plamoscale.com` and `gunplajunkies.com`.
-- `[MANDATORY]` **Dependency 2:** Provisioning of S3-compatible object storage bucket (Cloudflare R2 or AWS S3) for media uploads and migration of the ~92 existing images.
+- `[MANDATORY]` **Dependency 1:** Access to `x-codec` VPS/Hosting environment, PostgreSQL database provisioning, and **migration of both `plamoscale.com` and `gunplajunkies.com` domains (Nameservers/DNS + SSL/Proxy) to Cloudflare**.
+- `[MANDATORY]` **Dependency 2:** Provisioning of S3-compatible object storage bucket (Cloudflare R2) for media uploads and migration of the ~92 existing images.
+- `[MANDATORY]` **Dependency 3:** Google Cloud Console OAuth 2.0 credentials (`GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`) to support dual login (Username/Password + Google SSO).
 - `[OPTIONAL]` **External dependency notes:** Mailchimp list (`830f22cd5a`) for newsletter subscriptions; public web access for Scalemates metadata lookup/import.
 
 ---
