@@ -91,7 +91,7 @@
 | **FR8** | P0 | The two web frontends (`plamoscale.com` and `gunplajunkies.com`) MUST implement the `UXP-01 Modern App Shell Layout` adapted to their brand identity and category filters (`plamoscale.com` = all scale modeling; `gunplajunkies.com` = Mecha/Gunpla/Sci-Fi). | EV4, SM2 | Delivers distinct community identities powered by shared UI components and a single API. | Both frontends render persistent left navigation, top utility bar, breadcrumbs, page header, and responsive mobile drawer, consuming the same API endpoints. | UI Smoketest & Pilot UAT | Draft |
 | **FR9** | P1 | The platform MUST support social portfolio interactions including public builder profiles (`/@username`), social network badges (IG, TikTok, FB), project likes, and moderated comments. | EV2, EV7, SM5 | Connects the builder's structured portfolio with their existing social media presence. | Visitors can view `/@aperich`, `/@dcampos`, `/@cluna`, `/@fog1labs1`, click their social links, and authenticated users can like/comment on builds. | API & UI Test | Draft |
 | **FR10** | P1 | The platform MUST support Tenant Group Builds and Contests, including contest creation, eligibility rules, builder entry submission, and winner showcases. | S3, SM5 | Enables clubs, events, and future B2B tenants to run modeling competitions directly on the platform. | `tenant_admin` can create a contest; builders can submit a build log; contest page lists entries and results. | API & UAT Test | Draft |
-| **FR11** | P1 | The platform MUST provide a Trusted Shops Directory & Community Marketplace (stores, kit buy/sell/trade, and painting commissions) seeded with the `bio.txt` community resources and Mailchimp newsletter opt-in. | EV1, S4, SM5 | Preserves and upgrades the commercial and community directory from `plamoscale.com`. | Users can browse verified shops, filter commission painters, and subscribe via the Mailchimp integration. | API & UI Smoketest | Draft |
+| **FR11** | P1 | The platform MUST provide a Trusted Shops Directory, Community Marketplace (stores, kit buy/sell/trade, painting commissions), and Tenant-Branded Email Notifications & Contact via **Resend.com** (`plamoscale.com` and `gunplajunkies.com` verified sender domains). | EV1, S4, SM5 | Preserves and upgrades the commercial directory and contact/notification flows from `plamoscale.com` using Resend multi-domain email delivery. | Users can browse verified shops, filter commission painters, and receive/send tenant-branded emails (`@plamoscale.com` or `@gunplajunkies.com`) via Resend API. | API & Email Adapter Smoketest | Draft |
 | **FR12** | P0 | The API MUST expose live OpenAPI 3.1 documentation (`/doc` and `/openapi.json`) and return standardized RFC 7807 Problem Details for all error responses. | EV3, Atlas API-First | Preserves and upgrades the `/doc` Swagger capability from `gunplajunkies.com` for AI Pair Programming and contract testing. | `GET /doc` renders Swagger UI; `GET /openapi.json` returns valid OpenAPI 3.1 JSON; error responses match `application/problem+json`. | Automated OpenAPI Smoketest | Draft |
 
 ---
@@ -148,7 +148,8 @@
 - `[CONDITIONAL]` **APIs consumed:**
   - Public Scalemates kit web pages (HTML/meta parser for on-demand kit import by URL/search).
   - S3-compatible API (Cloudflare R2) for object storage.
-  - Mailchimp subscribe endpoint (`plamoscale.us14.list-manage.com`).
+  - **Resend API (`https://api.resend.com/emails`)** for transactional emails (welcome, password reset, email verification, contest/comment notifications, and contact form) using tenant-specific verified domains (`plamoscale.com` and `gunplajunkies.com`).
+  - Google OAuth 2.0 / OpenID Connect API for Google SSO login.
 - `[MANDATORY]` **Auth and authorization expectations:** Bearer JWT + `httpOnly` cookie support for SSO across tenant domains, role-based middleware guards, and resource-ownership checks on mutations.
 - `[CONDITIONAL]` **Rate limits, quotas, or throttling needs:**
   - Global API: 120 req/min per IP.
@@ -191,6 +192,7 @@
 | **DEP3** | Migrate `plamoscale.com` and `gunplajunkies.com` domains (Nameservers/DNS + SSL/Proxy) to Cloudflare & configure reverse proxy to VPS | Rollout / Infra | Roberto Pineda | Blocks public multi-domain routing and CDN caching in production | Before PVT gate |
 | **DEP4** | Pilot UAT participation from the 4 founding builders (`aperich`, `dcampos`, `cluna`, `fog1labs1`) | Organizational | Roberto Pineda | Delays DVT -> PVT gate sign-off | DVT Stage |
 | **DEP5** | Google Cloud OAuth 2.0 Client credentials (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) for Google SSO | Technical / Vendor | Roberto Pineda | Local/dev uses mockable Google token verifier until production Client ID is configured | Before DVT deploy |
+| **DEP6** | Create and verify `plamoscale.com` and `gunplajunkies.com` domains in **Resend.com** (`RESEND_API_KEY` + Cloudflare DNS `DKIM`/`SPF`/`DMARC` records) | Vendor / Infra | Roberto Pineda | Local/dev uses mock/console email adapter until Resend API key and DNS verification are active | Before DVT deploy |
 
 ---
 

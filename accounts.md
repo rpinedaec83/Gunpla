@@ -51,15 +51,15 @@ Do not store credentials, keys, tokens, passwords, connection strings, or deploy
 
 ## Other Providers
 
-- Provider name: x-codec VPS / Hosting Infrastructure (Docker / cPanel / Phusion Passenger + PostgreSQL) & Mailchimp
-- Account, project, or tenant reference: `x-codec.net` (`d19423` legacy node app reference)
-- Region or location: Americas
+- Provider name: x-codec VPS / Hosting Infrastructure (Docker / cPanel / Phusion Passenger + PostgreSQL) & Resend.com (Transactional & Community Email)
+- Account, project, or tenant reference: `x-codec.net` (`d19423` legacy node app reference) | Resend.com (`x-codec`)
+- Region or location: Americas (`us-east-1` Resend default)
 - Deployment target names:
   - Central API: `api.plamoscale.com` / `api.gunplajunkies.com`
-  - Tenant Front 1 (General Scale Modeling): `plamoscale.com`
-  - Tenant Front 2 (Gunpla, Mecha & Sci-Fi): `gunplajunkies.com`
-  - Future White-Label Tenants: `*.plamoscale.com` or custom CNAME domains
-- Notes: Mailchimp audience list (`plamoscale.us14.list-manage.com`, u=`b693c008a9b1b7e4da36d681e`, id=`830f22cd5a`) preserved from `plamoscale.com`.
+  - Tenant Front 1 (General Scale Modeling): `plamoscale.com` (Resend verified domain: `plamoscale.com`, sender: `noreply@plamoscale.com` / `contacto@plamoscale.com`)
+  - Tenant Front 2 (Gunpla, Mecha & Sci-Fi): `gunplajunkies.com` (Resend verified domain: `gunplajunkies.com`, sender: `noreply@gunplajunkies.com` / `hello@gunplajunkies.com`)
+  - Future White-Label Tenants: `*.plamoscale.com` or custom CNAME/Resend verified domains
+- Notes: Both `plamoscale.com` and `gunplajunkies.com` must be created and verified in Resend.com using Cloudflare DNS records (`DKIM` TXT, `SPF` MX/TXT, and `DMARC` TXT). Legacy Mailchimp audience list (`plamoscale.us14.list-manage.com`, u=`b693c008a9b1b7e4da36d681e`, id=`830f22cd5a`) is also preserved in reference docs.
 
 ## Validation Rules
 

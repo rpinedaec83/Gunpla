@@ -78,7 +78,7 @@ flowchart TD
 ## Data Model
 
 - `[MANDATORY]` **Key entities:**
-  1. `tenants`: `id (UUID PK)`, `slug (unique: 'plamoscale', 'gunplajunkies', ...)`, `name`, `domain`, `theme_config (JSONB)`, `allowed_categories (TEXT[])`, `created_at`.
+  1. `tenants`: `id (UUID PK)`, `slug (unique: 'plamoscale', 'gunplajunkies', ...)`, `name`, `domain`, `email_from` (e.g., `'PlamoScale <noreply@plamoscale.com>'`, `'GunplaJunkies <noreply@gunplajunkies.com>'`), `theme_config (JSONB)`, `allowed_categories (TEXT[])`, `created_at`.
   2. `users`: `id (UUID PK)`, `username (unique)`, `display_name`, `email (unique)`, `password_hash (nullable for pure Google SSO accounts)`, `google_id (unique nullable)`, `auth_providers (TEXT[]: ['local', 'google'])`, `bio`, `avatar_url`, `social_links (JSONB: instagram, tiktok, facebook, youtube, scalemates)`, `primary_tenant_id (FK)`, `created_at`.
   3. `roles` & `user_roles`: `user`, `moderator`, `tenant_admin`, `admin` (evolves legacy `gunplajunkies.com/app/models/role.model.js`).
   4. `brands`: `id`, `name` (e.g., Bandai Spirits, Tamiya, Hasegawa, Kotobukiya, Eduard, Vallejo, Mr. Hobby), `type` (`kit`, `paint`, `tool`, `both`), `country`.
@@ -109,7 +109,7 @@ flowchart TD
   1. **Google Identity Services / OAuth 2.0 & OIDC (`https://oauth2.googleapis.com/tokeninfo` / JWKS):** Verifies Google ID tokens or OAuth authorization codes when users click "Continue with Google".
   2. **Scalemates Web Metadata Connector:** Performs rate-limited, cached HTTP `GET` requests when a builder submits a Scalemates URL (e.g., `https://www.scalemates.com/kits/...`), parsing OpenGraph, JSON-LD, and structured kit fields (`brand`, `scale`, `kit_number`, `year`, `boxart`).
   3. **Cloudflare R2 (S3 REST API):** Pre-signed `PUT` or server-side `PutObjectCommand` for uploading `thumbs/` and `fulls/`.
-  4. **Mailchimp Form Action:** Preserves subscription integration (`plamoscale.us14.list-manage.com/subscribe/post`).
+  4. **Resend Email API (`POST https://api.resend.com/emails`):** Sends transactional emails (welcome, password recovery, account verification, contest notifications, and contact inquiries) dynamically selecting the sender domain (`@plamoscale.com` or `@gunplajunkies.com`) based on the active tenant context (`tenant.email_from`). Includes a deterministic in-memory/log adapter when `RESEND_API_KEY` is absent in local/CI environments.
 - `[MANDATORY]` **Auth and authorization model:**
   - **Dual Authentication Modes (Both Valid):**
     1. **Local Credentials (`POST /api/v1/auth/signup` & `POST /api/v1/auth/signin`):** Authenticates via `username` (or `email`) + `password` verified against `bcrypt` hash.
@@ -150,8 +150,9 @@ flowchart TD
 
 - `[CONDITIONAL]` **Selected vendor or platform:**
   1. **Compute & DB Hosting:** `x-codec` existing VPS / Hosting infrastructure + PostgreSQL.
-  2. **Object Storage & CDN:** Cloudflare R2 + Cloudflare CDN.
-  3. **Source Control & CI/CD:** GitHub (`rpinedaec83/Gunpla`).
+  2. **Object Storage & CDN:** Cloudflare R2 + Cloudflare DNS/CDN.
+  3. **Transactional & Community Email:** **Resend.com** (with verified domains `plamoscale.com` and `gunplajunkies.com`).
+  4. **Source Control & CI/CD:** GitHub (`rpinedaec83/Gunpla`).
 - `[CONDITIONAL]` **Alternatives considered:**
   - *Alternative A — Full Hyperscaler Serverless (Azure Functions / AWS Lambda + Managed RDS):* Rejected for v1 because `x-codec` already operates paid VPS/hosting capacity (`gunplajunkies.com` / `plamoscale.com`), and serverless cold starts + NAT/egress fees increase monthly fixed costs.
   - *Alternative B — Storing images directly on VPS disk (status quo in `plamoscale.com`):* Rejected for user-generated uploads because high-resolution model photography will quickly exhaust VPS disk quotas; Cloudflare R2 provides 10 GB free/month and $0 egress bandwidth fees.
@@ -319,10 +320,15 @@ flowchart TD
   - **SOP-01 (Adding a New White-Label Client / Tenant):** Insert tenant record via `POST /api/v1/tenants` (or seed config) with `slug`, `name`, `domain`, `theme_config`, and `allowed_categories`. No backend redeploy required.
   - **SOP-02 (Legacy Seed & Data Recovery):** Run `npm run db:seed` to verify and populate the 4 founding builders (`aperich`, `dcampos`, `cluna`, `fog1labs1`) and ~92 photos from `docs/reference/preexisting-root/plamoscale.com/`.
   - **SOP-03 (Database Backup & Restore):** Daily cron executes `pg_dump -Fc gunpla_prod > backup_$(date +%F).dump` and uploads encrypted archive to a separate R2 backup prefix with 30-day retention.
-  - **SOP-04 (Cloudflare Domain Migration for `plamoscale.com` & `gunplajunkies.com`):**
-    1. Add `plamoscale.com` and `gunplajunkies.com` zones in the `x-codec` Cloudflare account.
-    2. Replicate existing `A`, `CNAME`, `MX`, and `TXT` records pointing to the `x-codec` VPS IP and configure `media.plamoscale.com` custom domain on the Cloudflare R2 bucket.
-    3. Update Nameservers at the domain registrar to the assigned Cloudflare Nameservers and enable SSL/TLS `Full (Strict)` mode + Always Use HTTPS.
+  - **SOP-04 (Cloudflare Domain Migration & Resend.com Email Domain Verification for `plamoscale.com` & `gunplajunkies.com`):**
+    1. **Cloudflare Zone Setup:** Add `plamoscale.com` and `gunplajunkies.com` zones in the `x-codec` Cloudflare account.
+    2. **DNS Records & R2:** Replicate existing `A`, `CNAME`, `MX`, and `TXT` records pointing to the `x-codec` VPS IP and configure `media.plamoscale.com` custom domain on the Cloudflare R2 bucket.
+    3. **Nameserver Cutover:** Update Nameservers at the domain registrar to the assigned Cloudflare Nameservers and enable SSL/TLS `Full (Strict)` mode + Always Use HTTPS.
+    4. **Resend.com Multi-Domain Setup:**
+       - Log into **Resend.com** -> **Domains** -> **Add Domain** for both `plamoscale.com` and `gunplajunkies.com`.
+       - Use Resend's automated "Configure with Cloudflare" integration (or manually add the `DKIM` (`resend._domainkey` TXT), `SPF` (`send` MX + TXT `v=spf1 include:amazonses.com ~all`), and `DMARC` (`_dmarc` TXT) records in each Cloudflare zone).
+       - Click **Verify DNS Records** in Resend until both domains show status `Verified`.
+       - Generate a Sending API Key (`RESEND_API_KEY`) with permission to send from all domains and store it in local `secrets.md` and production VPS environment variables.
 - `[MANDATORY]` **On-call and incident model:**
   - Automated health checks alert Roberto Pineda (`rpineda@x-codec.net`).
   - Incident triage follows severity levels: `SEV-1` (Complete outage / auth broken — immediate rollback or fix within 2h), `SEV-2` (Single slice degraded, e.g., Scalemates external import slow — graceful fallback to manual entry, fix within 24h), `SEV-3` (UI cosmetic issue — scheduled as next `RDT` or `DT` in `docs/agile/devcycle.md`).
