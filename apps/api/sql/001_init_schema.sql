@@ -89,6 +89,32 @@ CREATE TABLE IF NOT EXISTS paints (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS stash_items (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    kit_id VARCHAR(64) NOT NULL REFERENCES kits(id),
+    status VARCHAR(32) NOT NULL DEFAULT 'unbuilt',
+    rating INT,
+    notes TEXT,
+    price_paid NUMERIC(10, 2),
+    currency VARCHAR(8) DEFAULT 'USD',
+    acquired_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS paint_rack_items (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    paint_id VARCHAR(64) NOT NULL REFERENCES paints(id),
+    status VARCHAR(32) NOT NULL DEFAULT 'owned',
+    quantity INT NOT NULL DEFAULT 1,
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_media_assets_builder ON media_assets(builder_username);
 CREATE INDEX IF NOT EXISTS idx_media_assets_category ON media_assets(category);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -98,3 +124,8 @@ CREATE INDEX IF NOT EXISTS idx_kits_brand ON kits(brand);
 CREATE INDEX IF NOT EXISTS idx_kits_scalemates_url ON kits(scalemates_url);
 CREATE INDEX IF NOT EXISTS idx_paints_brand ON paints(brand);
 CREATE INDEX IF NOT EXISTS idx_paints_code ON paints(code);
+CREATE INDEX IF NOT EXISTS idx_stash_user_id ON stash_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_stash_kit_id ON stash_items(kit_id);
+CREATE INDEX IF NOT EXISTS idx_stash_status ON stash_items(status);
+CREATE INDEX IF NOT EXISTS idx_paint_rack_user_id ON paint_rack_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_paint_rack_paint_id ON paint_rack_items(paint_id);

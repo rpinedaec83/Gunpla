@@ -499,3 +499,146 @@ paths:
       responses:
         '200':
           description: Brand summaries
+  /api/v1/workbench/summary:
+    get:
+      tags: [Workbench]
+      summary: Get personal stash and paint rack statistics for the authenticated builder
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Workbench summary metrics
+        '401':
+          description: Unauthorized
+  /api/v1/workbench/stash:
+    get:
+      tags: [Workbench]
+      summary: List kits in personal stash
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [unbuilt, in_progress, built, wishlist, for_trade]
+      responses:
+        '200':
+          description: Stash items
+    post:
+      tags: [Workbench]
+      summary: Add kit to personal stash
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kitId]
+              properties:
+                kitId:
+                  type: string
+                status:
+                  type: string
+                rating:
+                  type: integer
+                notes:
+                  type: string
+                pricePaid:
+                  type: number
+      responses:
+        '201':
+          description: Kit added to stash
+  /api/v1/workbench/stash/{id}:
+    patch:
+      tags: [Workbench]
+      summary: Update kit in stash
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item updated
+        '403':
+          description: Forbidden (not the owner)
+    delete:
+      tags: [Workbench]
+      summary: Remove kit from stash
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item removed
+  /api/v1/workbench/paints:
+    get:
+      tags: [Workbench]
+      summary: List paints in personal paint rack
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Paint rack items
+    post:
+      tags: [Workbench]
+      summary: Add paint to paint rack
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paintId]
+              properties:
+                paintId:
+                  type: string
+                quantity:
+                  type: integer
+                status:
+                  type: string
+      responses:
+        '201':
+          description: Paint added to rack
+  /api/v1/workbench/paints/{id}:
+    patch:
+      tags: [Workbench]
+      summary: Update paint rack item
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item updated
+    delete:
+      tags: [Workbench]
+      summary: Remove paint from rack
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item deleted

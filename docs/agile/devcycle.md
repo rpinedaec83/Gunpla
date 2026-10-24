@@ -9,12 +9,6 @@ Goal: Deliver the TypeScript Monorepo foundation, Central API with OpenAPI 3.1 (
 
 ## Active Tasks
 
-### DT3 -- Slice 3: Personal Workbench (My Stash, Wishlist & Paint Rack) | eMOE: 3 CU
-- Goal: Implement the builder's personal inventory slice (`src/slices/workbench-stash`) allowing authenticated users to track their Stash (`unbuilt`, `in_progress`, `built`, `wishlist`, `for_trade`) and Paint Rack (`owned`, `low_stock`, `wishlist`) with summary statistics.
-- API Result: `GET /api/v1/workbench/stash`, `POST /api/v1/workbench/stash`, `PATCH /api/v1/workbench/stash/:id`, `DELETE /api/v1/workbench/stash/:id`, `GET /api/v1/workbench/paints`, `POST /api/v1/workbench/paints`.
-- Smoketest: Run `npm run smoketest` verifying authenticated CRUD on Stash and Paint Rack items, ownership authorization checks (`403` for other users), and OpenAPI schema coverage.
-- UAT: Add a kit to "My Stash" and 3 paints to "My Paint Rack", then toggle kit status from `unbuilt` to `in_progress`.
-
 ### DT4 -- Slice 4: Step-by-Step Build Logs, Paint Recipes & Media Upload Pipeline | eMOE: 5 CU
 - Goal: Implement the Build Logs slice (`src/slices/build-logs` and `src/slices/media-storage`) enabling builders to create WIP/Completed projects linked to a catalog kit, add chronological steps (`unboxing`, `assembly`, `modification`, `priming`, `painting`, `decals`, `weathering`, `final_reveal`), attach paint recipes from the catalog/rack, and upload photos to S3/Cloudflare R2 (with local dev fallback and thumbnail generation).
 - API Result: `GET /api/v1/builds`, `GET /api/v1/builds/:slugOrId`, `POST /api/v1/builds`, `PATCH /api/v1/builds/:id`, `POST /api/v1/builds/:id/steps`, `POST /api/v1/media/upload`, `POST /api/v1/builds/:id/like`, `POST /api/v1/builds/:id/comments`.

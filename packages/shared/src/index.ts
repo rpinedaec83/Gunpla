@@ -159,6 +159,84 @@ export interface ScalematesImportResponse {
   warnings?: string[];
 }
 
+export type StashStatus = 'unbuilt' | 'in_progress' | 'built' | 'wishlist' | 'for_trade';
+
+export interface StashItemRecord {
+  id: string;
+  userId: string;
+  kitId: string;
+  kit?: KitRecord;
+  status: StashStatus;
+  rating?: number;
+  notes?: string;
+  pricePaid?: number;
+  currency?: string;
+  acquiredAt?: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PaintRackStatus = 'owned' | 'low_stock' | 'wishlist';
+
+export interface PaintRackItemRecord {
+  id: string;
+  userId: string;
+  paintId: string;
+  paint?: PaintRecord;
+  status: PaintRackStatus;
+  quantity: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkbenchSummary {
+  totalStash: number;
+  unbuiltCount: number;
+  inProgressCount: number;
+  builtCount: number;
+  wishlistCount: number;
+  forTradeCount: number;
+  totalPaints: number;
+  ownedPaintsCount: number;
+  lowStockPaintsCount: number;
+  wishlistPaintsCount: number;
+}
+
+export interface CreateStashItemRequest {
+  kitId: string;
+  status?: StashStatus;
+  rating?: number;
+  notes?: string;
+  pricePaid?: number;
+  currency?: string;
+  acquiredAt?: string;
+}
+
+export interface UpdateStashItemRequest {
+  status?: StashStatus;
+  rating?: number;
+  notes?: string;
+  pricePaid?: number;
+  currency?: string;
+  acquiredAt?: string;
+  completedAt?: string;
+}
+
+export interface CreatePaintRackItemRequest {
+  paintId: string;
+  status?: PaintRackStatus;
+  quantity?: number;
+  notes?: string;
+}
+
+export interface UpdatePaintRackItemRequest {
+  status?: PaintRackStatus;
+  quantity?: number;
+  notes?: string;
+}
+
 export interface PaginatedResult<T> {
   items: T[];
   nextCursor: string | null;

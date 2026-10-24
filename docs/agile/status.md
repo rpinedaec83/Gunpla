@@ -4,9 +4,9 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **EVT (In Progress -- DT1 & DT2 Completed, DT3 Next)**
-- Overall state: Green -- DT1 & DT2 implemented and verified via `npm run smoketest` (`9/9 checks passed`).
-- Current branch or release line: `feature/dt2-catalog-scalemates` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **EVT (In Progress -- DT1, DT2 & DT3 Completed, DT4 Next)**
+- Overall state: Green -- DT1, DT2 & DT3 implemented and verified via `npm run smoketest` (`13/13 checks passed`).
+- Current branch or release line: `feature/dt3-workbench-stash` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-23
 
 ## Live Capabilities
@@ -21,6 +21,11 @@ Current live state of the project.
     - Scalemates on-demand kit importer (`POST /api/v1/catalog/kits/import-scalemates`) with deduplication, HTML/JSON-LD metadata extraction, and 4s graceful fallback.
     - Paints and supplies catalog (`GET /api/v1/catalog/paints`) with brand, line, type, finish and hex color swatches.
     - Brands summary (`GET /api/v1/catalog/brands`).
+  - **Personal Workbench — Stash, Wishlist & Paint Rack (`/api/v1/workbench/*`):**
+    - Stash tracking with status (`unbuilt`, `in_progress`, `built`, `wishlist`, `for_trade`), rating (1-5), price paid, notes, and populated kit details.
+    - Paint Rack management with status (`owned`, `low_stock`, `wishlist`), automatic bottle quantity incrementing, and populated hex swatches.
+    - Multi-user isolation and ownership verification (`403 Forbidden` protection).
+    - Summary metrics endpoint (`GET /api/v1/workbench/summary`).
   - OpenAPI 3.1 contract (`/openapi.json`) & interactive Swagger UI (`/doc`) + RFC 7807 Problem Details.
 
 ## Current Constraints
@@ -33,4 +38,4 @@ Current live state of the project.
 
 ## Next Focus
 
-- Execute **DT3** (`Slice 3: Personal Workbench -- My Stash, Wishlist & Paint Rack`) in [`docs/agile/devcycle.md`](file:///Users/rpineda/Sources/Gunpla/docs/agile/devcycle.md).
+- Execute **DT4** (`Slice 4: Step-by-Step Build Logs, Paint Recipes & Media Upload Pipeline`) in [`docs/agile/devcycle.md`](file:///Users/rpineda/Sources/Gunpla/docs/agile/devcycle.md).

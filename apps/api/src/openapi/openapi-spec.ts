@@ -201,6 +201,107 @@ export const openApiSpec = {
         summary: 'List all kit brands with kit counts and categories',
         responses: { '200': { description: 'Brands summary list' } }
       }
+    },
+    '/api/v1/workbench/summary': {
+      get: {
+        tags: ['Workbench'],
+        summary: 'Get personal stash and paint rack statistics for the authenticated builder',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '200': { description: 'Workbench summary metrics' },
+          '401': { description: 'Unauthorized' }
+        }
+      }
+    },
+    '/api/v1/workbench/stash': {
+      get: {
+        tags: ['Workbench'],
+        summary: 'List kits in personal stash with optional status filter',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['unbuilt', 'in_progress', 'built', 'wishlist', 'for_trade'] } }
+        ],
+        responses: { '200': { description: 'Stash kit items' } }
+      },
+      post: {
+        tags: ['Workbench'],
+        summary: 'Add a kit from the master catalog into personal stash',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '201': { description: 'Kit added to stash' },
+          '400': { description: 'Validation error' },
+          '404': { description: 'Kit not found in catalog' }
+        }
+      }
+    },
+    '/api/v1/workbench/stash/{id}': {
+      patch: {
+        tags: ['Workbench'],
+        summary: 'Update kit status, rating, or notes in personal stash',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Stash item updated' },
+          '403': { description: 'Forbidden (not the owner)' },
+          '404': { description: 'Item not found' }
+        }
+      },
+      delete: {
+        tags: ['Workbench'],
+        summary: 'Remove kit from personal stash',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Stash item removed' },
+          '403': { description: 'Forbidden' },
+          '404': { description: 'Item not found' }
+        }
+      }
+    },
+    '/api/v1/workbench/paints': {
+      get: {
+        tags: ['Workbench'],
+        summary: 'List paints in personal paint rack',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['owned', 'low_stock', 'wishlist'] } }
+        ],
+        responses: { '200': { description: 'Paint rack items' } }
+      },
+      post: {
+        tags: ['Workbench'],
+        summary: 'Add a paint from catalog to personal paint rack (or increment quantity)',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '201': { description: 'Paint added to rack' },
+          '200': { description: 'Paint quantity incremented' },
+          '404': { description: 'Paint not found in catalog' }
+        }
+      }
+    },
+    '/api/v1/workbench/paints/{id}': {
+      patch: {
+        tags: ['Workbench'],
+        summary: 'Update quantity or status in personal paint rack',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Rack item updated' },
+          '403': { description: 'Forbidden' },
+          '404': { description: 'Item not found' }
+        }
+      },
+      delete: {
+        tags: ['Workbench'],
+        summary: 'Remove paint from personal paint rack',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Paint removed from rack' },
+          '403': { description: 'Forbidden' },
+          '404': { description: 'Item not found' }
+        }
+      }
     }
   }
 };

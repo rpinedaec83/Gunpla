@@ -266,7 +266,129 @@ async function runSmoketest() {
     assert.ok(newData.kit.name.toLowerCase().includes('sazabi'));
     console.log(`[PASS] Scalemates Importer verified (Deduplication + Parsing for "${newData.kit.name}").`);
 
-    console.log('=== ALL DT1 + DT2 SMOKETEST CHECKS PASSED ===');
+    // 10. Verify DT3 Workbench Personal Stash CRUD
+    const addStashRes = await fetch(`${baseUrl}/api/v1/workbench/stash`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        kitId: 'kit-rg-hinu',
+        status: 'unbuilt',
+        pricePaid: 55.0,
+        currency: 'USD',
+        notes: 'Comprado en Akihabara. Incluye calcas de agua.'
+      })
+    });
+    assert.equal(addStashRes.status, 201, 'Should add kit to personal stash');
+    const stashItem = await addStashRes.json();
+    assert.equal(stashItem.kitId, 'kit-rg-hinu');
+    assert.equal(stashItem.status, 'unbuilt');
+    assert.equal(stashItem.kit.name, 'RG 1/144 Hi-Nu Gundam');
+
+    // Update stash status to 'in_progress', then 'built'
+    const updateStashRes = await fetch(`${baseUrl}/api/v1/workbench/stash/${stashItem.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        status: 'built',
+        rating: 5,
+        notes: 'Armado completado con panel line y acabado mate.'
+      })
+    });
+    assert.equal(updateStashRes.status, 200);
+    const updatedStash = await updateStashRes.json();
+    assert.equal(updatedStash.status, 'built');
+    assert.equal(updatedStash.rating, 5);
+    assert.ok(updatedStash.completedAt);
+    console.log('[PASS] Workbench Personal Stash CRUD (add, populate, update status to built) verified.');
+
+    // 11. Verify DT3 Workbench Paint Rack CRUD
+    const addPaintRes = await fetch(`${baseUrl}/api/v1/workbench/paints`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        paintId: 'pnt-mc-c1',
+        status: 'owned',
+        quantity: 2,
+        notes: 'Mr. Color White para armadura principal'
+      })
+    });
+    assert.equal(addPaintRes.status, 201);
+    const rackItem = await addPaintRes.json();
+    assert.equal(rackItem.paintId, 'pnt-mc-c1');
+    assert.equal(rackItem.quantity, 2);
+    assert.equal(rackItem.paint.hexColor, '#FFFFFF');
+
+    // Increment paint quantity (deduplication / rack aggregation)
+    const incPaintRes = await fetch(`${baseUrl}/api/v1/workbench/paints`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        paintId: 'pnt-mc-c1',
+        quantity: 1
+      })
+    });
+    assert.equal(incPaintRes.status, 200);
+    const updatedRack = await incPaintRes.json();
+    assert.equal(updatedRack.quantity, 3);
+    console.log('[PASS] Workbench Paint Rack CRUD (add, swatch join, increment quantity) verified.');
+
+    // 12. Verify Ownership Authorization (403 Forbidden for another user)
+    // Register second builder 'quattro_bajeena'
+    const regQuattroRes = await fetch(`${baseUrl}/api/v1/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Tenant-Slug': 'gunplajunkies'
+      },
+      body: JSON.stringify({
+        username: 'quattro',
+        displayName: 'Quattro Bajeena',
+        email: 'quattro@aeug.org',
+        password: 'Hyaku-Shiki-Password!'
+      })
+    });
+    assert.equal(regQuattroRes.status, 201);
+    const quattroData = await regQuattroRes.json();
+
+    // Quattro attempts to modify Amuro's stash item -> MUST return 403 Forbidden
+    const forbiddenPatchRes = await fetch(`${baseUrl}/api/v1/workbench/stash/${stashItem.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${quattroData.token}`
+      },
+      body: JSON.stringify({ notes: 'Intento de modificar stash ajeno' })
+    });
+    assert.equal(forbiddenPatchRes.status, 403, 'Modifying another user stash must return 403 Forbidden');
+    const forbiddenData = await forbiddenPatchRes.json();
+    assert.equal(forbiddenData.status, 403);
+    console.log('[PASS] Ownership Authorization verified (403 Forbidden for other users).');
+
+    // 13. Verify Workbench Summary Metrics
+    const summaryRes = await fetch(`${baseUrl}/api/v1/workbench/summary`, {
+      headers: { Authorization: `Bearer ${googleSsoData.token}` }
+    });
+    assert.equal(summaryRes.status, 200);
+    const summary = await summaryRes.json();
+    assert.equal(summary.totalStash, 1);
+    assert.equal(summary.builtCount, 1);
+    assert.equal(summary.totalPaints, 1);
+    assert.equal(summary.ownedPaintsCount, 1);
+    console.log(`[PASS] Workbench Summary Metrics verified (Stash: ${summary.totalStash}, Paints: ${summary.totalPaints}).`);
+
+    console.log('=== ALL DT1 + DT2 + DT3 SMOKETEST CHECKS PASSED ===');
   } finally {
     server.close();
   }

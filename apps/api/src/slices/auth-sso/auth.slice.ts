@@ -441,9 +441,11 @@ async function handleGoogleSso(req: Request, res: Response): Promise<void> {
 
 authRouter.post('/registrations', handleSignup);
 authRouter.post('/signup', handleSignup);
+authRouter.post('/register', handleSignup);
 
 authRouter.post('/sessions', handleSignin);
 authRouter.post('/signin', handleSignin);
+authRouter.post('/login', handleSignin);
 
 authRouter.post('/google-sessions', handleGoogleSso);
 authRouter.post('/google', handleGoogleSso);

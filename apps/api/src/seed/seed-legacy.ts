@@ -246,6 +246,8 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
     emailOutbox: db.emailOutbox || [],
     kits,
     paints,
+    stashItems: db.stashItems || [],
+    paintRackItems: db.paintRackItems || [],
     lastSeededAt: now
   };
 

@@ -6,7 +6,9 @@ import {
   MediaAsset,
   EmailOutboxItem,
   KitRecord,
-  PaintRecord
+  PaintRecord,
+  StashItemRecord,
+  PaintRackItemRecord
 } from '@gunpla/shared';
 
 export interface PlatformDatabaseState {
@@ -16,6 +18,8 @@ export interface PlatformDatabaseState {
   emailOutbox: EmailOutboxItem[];
   kits: KitRecord[];
   paints: PaintRecord[];
+  stashItems: StashItemRecord[];
+  paintRackItems: PaintRackItemRecord[];
   lastSeededAt: string | null;
 }
 
@@ -32,6 +36,8 @@ function createEmptyState(): PlatformDatabaseState {
     emailOutbox: [],
     kits: [],
     paints: [],
+    stashItems: [],
+    paintRackItems: [],
     lastSeededAt: null
   };
 }
@@ -51,6 +57,8 @@ export function getDb(): PlatformDatabaseState {
         emailOutbox: parsed.emailOutbox ?? [],
         kits: parsed.kits ?? [],
         paints: parsed.paints ?? [],
+        stashItems: parsed.stashItems ?? [],
+        paintRackItems: parsed.paintRackItems ?? [],
         lastSeededAt: parsed.lastSeededAt ?? null
       };
       return memoryState;

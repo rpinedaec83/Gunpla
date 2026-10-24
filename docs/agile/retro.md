@@ -57,3 +57,26 @@ Decisions made:
 Lessons learned:
 - Combining slug decomposition with HTML OpenGraph parsing provides a robust two-layer parser that succeeds whether Scalemates is online, offline, rate-limiting, or behind a Cloudflare challenge.
 Usage: Moderate -- self-estimated
+
+### DT3 -- Slice 3: Personal Workbench (My Stash, Wishlist & Paint Rack) | eMOE: 3 CU | aMOE: 3 CU
+What was done:
+- Designed Workbench data models in `@gunpla/shared` (`StashItemRecord`, `PaintRackItemRecord`, `WorkbenchSummary`, `StashStatus`, `PaintRackStatus`, request interfaces) and PostgreSQL schema (`apps/api/sql/001_init_schema.sql`).
+- Implemented Workbench slice (`apps/api/src/slices/workbench-stash/workbench.slice.ts`):
+  - `GET /api/v1/workbench/summary`: Aggregated metrics for authenticated user (stash counts: unbuilt, in_progress, built, wishlist, for_trade; paint rack counts: owned, low_stock, wishlist).
+  - `GET /api/v1/workbench/stash`: List builder's personal stash with populated catalog kit metadata, filterable by status.
+  - `POST /api/v1/workbench/stash`: Add catalog kit to personal stash with status, price paid, notes. Validates kit existence in catalog.
+  - `PATCH /api/v1/workbench/stash/:id`: Update status, rating (1-5 stars), completion date, notes. Strict ownership check (`403 Forbidden` if not owner).
+  - `DELETE /api/v1/workbench/stash/:id`: Remove kit from personal stash with ownership check.
+  - `GET /api/v1/workbench/paints`: List builder's paint rack with populated catalog paint details (brand, line, hex colors).
+  - `POST /api/v1/workbench/paints`: Add paint to rack with quantity, notes, status (or aggregate/increment existing paint quantity).
+  - `PATCH /api/v1/workbench/paints/:id`: Update rack quantity, status, notes with ownership check.
+  - `DELETE /api/v1/workbench/paints/:id`: Remove paint from rack with ownership check.
+- Added aliases in `auth.slice.ts` (`/register`, `/login`) to support both RESTful resources and frontend conveniences.
+- Expanded automated CLI smoketest (`scripts/smoketest.mjs`) with Checks 10, 11, 12, and 13 covering full CRUD on Stash, Paint Rack, 403 Forbidden ownership protection between builders, and Workbench summary metrics.
+Issues hit:
+- When testing authorization isolation between builders, verified that Attempting to patch another builder's stash item strictly triggers RFC 7807 `403 Forbidden`.
+Decisions made:
+- When adding an already owned paint to the Paint Rack, the endpoint automatically aggregates and increments quantity (`HTTP 200 OK`) instead of creating duplicate records for the same paint bottle.
+Lessons learned:
+- Joining catalog metadata (`kit`, `paint`) in workbench list and detail responses eliminates N+1 roundtrips for frontend clients and mobile apps.
+Usage: Moderate -- self-estimated

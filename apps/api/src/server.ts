@@ -12,6 +12,7 @@ import { authRouter } from './slices/auth-sso/auth.slice';
 import { buildersRouter } from './slices/builders/builders.slice';
 import { notificationsRouter } from './slices/notifications-resend/resend.slice';
 import { catalogRouter } from './slices/catalog-scalemates/catalog.slice';
+import { workbenchRouter } from './slices/workbench-stash/workbench.slice';
 import { openApiSpec } from './openapi/openapi-spec';
 
 dotenv.config();
@@ -56,6 +57,8 @@ export function createApp() {
       seededPhotosCount: db.mediaAssets.length,
       kitsCount: db.kits ? db.kits.length : 0,
       paintsCount: db.paints ? db.paints.length : 0,
+      stashItemsCount: db.stashItems ? db.stashItems.length : 0,
+      paintRackItemsCount: db.paintRackItems ? db.paintRackItems.length : 0,
       authModes: ['local-credentials', 'google-oauth-oidc-sso'],
       emailProvider: 'resend.com',
       lastSeededAt: db.lastSeededAt,
@@ -72,6 +75,7 @@ export function createApp() {
   app.use('/api/v1/builders', buildersRouter);
   app.use('/api/v1/notifications', notificationsRouter);
   app.use('/api/v1/catalog', catalogRouter);
+  app.use('/api/v1/workbench', workbenchRouter);
 
   // Fallback 404 in RFC 7807 Problem Details format
   app.use((req: Request, res: Response) => {
