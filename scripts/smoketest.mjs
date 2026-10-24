@@ -583,7 +583,7 @@ async function runSmoketest() {
     assert.ok(plamoHtml.includes('Banco de Trabajo & Stash'), 'Should contain Workbench section');
     assert.ok(plamoHtml.includes('Modelistas Fundadores'), 'Should contain Founders section');
     assert.ok(plamoHtml.includes('Tiendas de Confianza'), 'Should contain Trusted Shops directory');
-    assert.ok(plamoHtml.includes('Ir a <strong>GunplaJunkies</strong>'), 'Should contain Portal Switcher to GunplaJunkies');
+    assert.ok(plamoHtml.includes('Ir a <strong>Gunpla Collector</strong>'), 'Should contain Portal Switcher to Gunpla Collector');
     console.log('[PASS] PlamoScale Web Frontend (UXP-01 Shell) verified successfully.');
 
     // 19. DT5 - GunplaJunkies Web Frontend (UXP-01 Shell)
@@ -601,7 +601,7 @@ async function runSmoketest() {
     const gunplaPageRes = await fetch(`${gunplaUrl}/`);
     assert.equal(gunplaPageRes.status, 200);
     const gunplaHtml = await gunplaPageRes.text();
-    assert.ok(gunplaHtml.includes('GunplaJunkies'), 'Should contain GunplaJunkies brand');
+    assert.ok(gunplaHtml.includes('Gunpla Collector'), 'Should contain Gunpla Collector brand');
     assert.ok(gunplaHtml.includes('Todos los Grados'), 'Should contain Gunpla grade taxonomy');
     assert.ok(gunplaHtml.includes('High Grade (HG)'), 'Should contain HG pill');
     assert.ok(gunplaHtml.includes('Master Grade (MG)'), 'Should contain MG pill');

@@ -831,7 +831,24 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
   <!-- Left Persistent Text-Labeled Sidebar (UXP-01 Rule) -->
   <aside id="sidebar">
     <div class="sidebar-header">
-      <div class="brand-logo">${isGunpla ? 'GJ' : 'PS'}</div>
+      <div class="brand-logo" style="background: ${isGunpla ? '#080c14' : '#0b0f19'}; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; padding: 2px;">
+        ${isGunpla ? `
+        <svg width="26" height="26" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="6" width="88" height="88" rx="14" stroke="#ef4444" stroke-width="6" fill="#080c14" />
+          <path d="M6 26H22M6 74H22M94 26H78M94 74H78" stroke="#06b6d4" stroke-width="6" stroke-linecap="round"/>
+          <polygon points="50,16 62,44 50,39 38,44" fill="#ef4444" />
+          <polygon points="50,18 78,42 62,42 50,32" fill="#f87171" />
+          <polygon points="50,18 22,42 38,42 50,32" fill="#dc2626" />
+          <polygon points="50,44 68,54 50,84 32,54" fill="#0e131f" stroke="#06b6d4" stroke-width="4"/>
+          <polygon points="50,50 60,56 50,74 40,56" fill="#06b6d4" opacity="0.8"/>
+          <circle cx="50" cy="58" r="3" fill="#ffffff" />
+        </svg>` : `
+        <svg width="26" height="26" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="6" width="88" height="88" rx="14" stroke="#2563eb" stroke-width="6" fill="#0b0f19" />
+          <path d="M25 50H75M50 25V75" stroke="#38bdf8" stroke-width="6" stroke-linecap="round"/>
+          <circle cx="50" cy="50" r="14" stroke="#ffffff" stroke-width="4" fill="#2563eb"/>
+        </svg>`}
+      </div>
       <div>
         <div class="brand-title">${config.tenantName}</div>
       </div>

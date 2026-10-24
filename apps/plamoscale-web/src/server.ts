@@ -38,7 +38,7 @@ const config: AppShellConfig = {
   },
   apiUrl: PUBLIC_API_URL,
   otherTenantUrl: OTHER_TENANT_URL,
-  otherTenantName: 'GunplaJunkies',
+  otherTenantName: 'Gunpla Collector',
   googleClientId: process.env.GOOGLE_CLIENT_ID || ''
 };
 

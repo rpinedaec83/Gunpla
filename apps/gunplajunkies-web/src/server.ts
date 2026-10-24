@@ -27,8 +27,8 @@ app.use(express.json());
 
 const config: AppShellConfig = {
   tenantSlug: 'gunplajunkies',
-  tenantName: 'GunplaJunkies',
-  tenantTagline: 'Gunpla, Mecha & Sci-Fi Modeling Hub',
+  tenantName: 'Gunpla Collector',
+  tenantTagline: 'Build. Catalog. Showcase. El Santuario de tu Stash & Workbench',
   theme: {
     primaryColor: '#ef4444',
     accentColor: '#06b6d4',
