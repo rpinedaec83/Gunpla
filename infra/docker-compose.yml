@@ -1,0 +1,40 @@
+services:
+  gunpla-db:
+    image: postgres:16-alpine
+    container_name: gunpla-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-gunpla_usr}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-gunpla_homelab_pass_2026}
+      POSTGRES_DB: ${DB_NAME:-gunpla_prod}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../apps/api/sql/001_init_schema.sql:/docker-entrypoint-initdb.d/001_init_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-gunpla_usr} -d ${DB_NAME:-gunpla_prod}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  gunpla-api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    container_name: gunpla-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      DATABASE_URL: postgresql://${DB_USER:-gunpla_usr}:${DB_PASSWORD:-gunpla_homelab_pass_2026}@gunpla-db:5432/${DB_NAME:-gunpla_prod}
+      JWT_SECRET: ${JWT_SECRET:-gunpla-plamoscale-sso-dev-secret-2026}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+    ports:
+      - "8080:8080"
+    depends_on:
+      gunpla-db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
