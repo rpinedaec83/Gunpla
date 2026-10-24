@@ -33,7 +33,8 @@ Current live state of the project.
 - Production deployment targets `x-codec` VPS/Homelab + PostgreSQL + Cloudflare R2/S3 + Resend.com verified domains.
 - **Cloudflare & Resend Onboarding Status (2026-10-23):**
   - Nameservers for both `plamoscale.com` and `gunplajunkies.com` are delegated to Cloudflare: `cruz.ns.cloudflare.com` and `dylan.ns.cloudflare.com`.
-  - Further Cloudflare DNS record adjustments and Resend DKIM/SPF domain verification are temporarily paused by user instruction and will resume during staging/production cutover.
+  - Resend.com domain verification for both `plamoscale.com` and `gunplajunkies.com` is **100% VERIFIED** (DKIM + SPF + DMARC).
+  - Live transactional email dispatch confirmed from `noreply@plamoscale.com` and `noreply@gunplajunkies.com`.
   - Local development and CI smoketests remain 100% self-contained with offline mocks.
 
 ## Next Focus

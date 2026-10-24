@@ -41,7 +41,7 @@ Do not store credentials, keys, tokens, passwords, connection strings, or deploy
   2. `dylan.ns.cloudflare.com`
 - Pages project: Optional edge static caching / DNS proxy
 - Workers service: Optional image resizing / CDN edge caching
-- Deployment environment notes: Both `plamoscale.com` and `gunplajunkies.com` domains are bound to Cloudflare DNS/Proxy with assigned nameservers `cruz.ns.cloudflare.com` and `dylan.ns.cloudflare.com`. DNS record cutover and Resend domain verification are paused by user decision (2026-10-23) and will be resumed during final production deployment. Both zones will link to Cloudflare R2 bucket (`plamoscale-media-prod` / `plamoscale-media-dev`) for zero-egress high-resolution image delivery.
+- Deployment environment notes: Both `plamoscale.com` and `gunplajunkies.com` domains are bound to Cloudflare DNS/Proxy with assigned nameservers `cruz.ns.cloudflare.com` and `dylan.ns.cloudflare.com`. Resend DKIM/SPF domain verification is 100% completed and verified (2026-10-23). Both zones will link to Cloudflare R2 bucket (`plamoscale-media-prod` / `plamoscale-media-dev`) for zero-egress high-resolution image delivery.
 
 ## GitHub
 
