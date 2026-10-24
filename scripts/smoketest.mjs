@@ -497,8 +497,15 @@ async function runSmoketest() {
     assert.equal(detailedBuild.comments.length, 1);
     console.log(`[PASS] Build project lifecycle verified (Slug: ${detailedBuild.slug}, Steps: 1, Likes: 1, Comments: 1).`);
 
-    // 16. DT4 - Media Upload Pipeline & 15MB Size Guardrail
-    console.log('\n--- Checking DT4: Media Upload Pipeline & 15MB File Size Cap ---');
+    // 16. DT4 - Media Upload Pipeline (Cloudflare R2 / Local Disk & 15MB Size Guardrail)
+    console.log('\n--- Checking DT4: Media Upload Pipeline & Storage Diagnostics ---');
+    // Storage diagnostics endpoint check
+    const diagRes = await fetch(`${baseUrl}/api/v1/media/storage-diagnostics`);
+    assert.equal(diagRes.status, 200, 'GET /api/v1/media/storage-diagnostics must return 200');
+    const diagData = await diagRes.json();
+    assert.ok(['local-disk', 'cloudflare-r2'].includes(diagData.provider), 'Storage provider must be local-disk or cloudflare-r2');
+    console.log(`[PASS] Storage Diagnostics verified (Current engine: ${diagData.provider}, Bucket: ${diagData.bucket}).`);
+
     // Valid small 1x1 transparent PNG upload
     const samplePngBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
     const uploadRes = await fetch(`${baseUrl}/api/v1/media/upload`, {
@@ -517,13 +524,16 @@ async function runSmoketest() {
     });
     assert.equal(uploadRes.status, 201);
     const uploadData = await uploadRes.json();
-    assert.ok(uploadData.thumbUrl.startsWith('/uploads/'));
-    assert.ok(uploadData.fullUrl.startsWith('/uploads/'));
+    assert.ok(uploadData.thumbUrl);
+    assert.ok(uploadData.fullUrl);
+    assert.ok(['local-disk', 'cloudflare-r2'].includes(uploadData.storageProvider));
 
-    // Verify static serving of uploaded image
-    const staticServeRes = await fetch(`${baseUrl}${uploadData.fullUrl}`);
-    assert.equal(staticServeRes.status, 200);
-    assert.equal(staticServeRes.headers.get('content-type'), 'image/png');
+    // Verify static serving of uploaded image if on local-disk
+    if (uploadData.storageProvider === 'local-disk') {
+      const staticServeRes = await fetch(`${baseUrl}${uploadData.fullUrl}`);
+      assert.equal(staticServeRes.status, 200);
+      assert.equal(staticServeRes.headers.get('content-type'), 'image/png');
+    }
 
     // Test rejection of payload exceeding 15MB
     const oversizedBase64 = 'data:image/png;base64,' + 'A'.repeat(21 * 1024 * 1024);

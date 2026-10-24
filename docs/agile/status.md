@@ -11,6 +11,10 @@ Current live state of the project.
 
 ## Live Capabilities
 
+- **Cloudflare R2 / S3 Object Storage & Media Engine (`POST /api/v1/media/upload`, `GET /api/v1/media/storage-diagnostics`):**
+  - **Dual-Engine Architecture:** High-resolution photo upload pipeline powered by Cloudflare R2 (S3 API via `@aws-sdk/client-s3`) for zero-egress permanent cloud storage; graceful automatic fallback to local disk (`data/uploads/`) for development and smoketests when credentials are absent.
+  - **Security & Integrity:** 15MB file size cap guardrail, MIME type validation, SHA/UUID clean key generation, immutable HTTP cache headers (`max-age=31536000`), and public CDN URL prefixing.
+  - **Diagnostic Endpoint:** `GET /api/v1/media/storage-diagnostics` reporting active storage engine (`cloudflare-r2` vs `local-disk`), bucket name, obfuscated account ID, and public CDN base URL.
 - **AI Paint Assistant & Formulation Engine (`/api/v1/paints/ai/*`):**
   - **4-Way Chemical Medium Division:** Interactive medium selector allowing modelers to choose between **Laca** (*Mr. Color, Gaia Notes*), **Acrílico** (*Tamiya X/XF*), **Poliuretano** (*Vallejo Mecha/Model Color*), and **Montana Colors** (*MTN 94, MTN Water Based, MTN PRO* - https://www.montanacolors.com/graffiti/spray/).
   - **Cross-Brand & Spray Conversion:** Instant color matching across all 4 chemical mediums with hex swatches, line details, finish type, user Paint Rack cross-referencing (`ownedInRack`), and prioritization of the user's selected medium.

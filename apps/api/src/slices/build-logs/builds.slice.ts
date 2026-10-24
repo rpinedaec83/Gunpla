@@ -20,6 +20,7 @@ import {
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
 import { requireAuth } from '../auth-sso/auth.slice';
+import { uploadMedia, getStorageDiagnostics } from '../../core/storage';
 
 export const buildsRouter = Router();
 export const mediaRouter = Router();
@@ -37,10 +38,10 @@ function slugify(text: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Media Upload Pipeline (Cap: 15MB)
+// Media Upload Pipeline (Cap: 15MB) - Dual Engine: Cloudflare R2 / Local Disk
 // ---------------------------------------------------------------------------
 
-function handleUpload(req: Request, res: Response) {
+async function handleUpload(req: Request, res: Response) {
   const user = req.user!;
   const { fileName, dataBase64, category, title, altText, buildId } = req.body;
 
@@ -71,15 +72,20 @@ function handleUpload(req: Request, res: Response) {
   const matches = dataBase64.match(/^data:image\/([a-zA-Z0-9-+]+);base64,(.+)$/);
   const ext = matches ? matches[1].replace('jpeg', 'jpg') : 'jpg';
   const rawBase64 = matches ? matches[2] : dataBase64;
+  const mimeType = matches ? `image/${matches[1]}` : (ext === 'png' ? 'image/png' : 'image/jpeg');
 
   const mediaId = `media-${randomUUID().slice(0, 8)}`;
   const cleanFileName = `${mediaId}.${ext}`;
+  const buffer = Buffer.from(rawBase64, 'base64');
 
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-  const filePath = path.join(UPLOADS_DIR, cleanFileName);
-  fs.writeFileSync(filePath, Buffer.from(rawBase64, 'base64'));
+  // Cloudflare R2 / S3 upload with local fallback
+  const uploadResult = await uploadMedia(
+    buffer,
+    cleanFileName,
+    mimeType,
+    (category as string) || 'gunpla-mecha'
+  );
 
-  const publicUrl = `/uploads/${cleanFileName}`;
   const now = new Date().toISOString();
 
   const mediaAsset: MediaAsset = {
@@ -87,8 +93,8 @@ function handleUpload(req: Request, res: Response) {
     builderUsername: user.username,
     buildId: buildId || undefined,
     fileName: fileName || cleanFileName,
-    thumbUrl: publicUrl,
-    fullUrl: publicUrl,
+    thumbUrl: uploadResult.thumbUrl,
+    fullUrl: uploadResult.publicUrl,
     category: (category as ScaleCategory) || 'gunpla-mecha',
     title: title || `${user.username} - Upload`,
     altText: altText || `Scale model photo uploaded by ${user.username}`,
@@ -101,10 +107,18 @@ function handleUpload(req: Request, res: Response) {
 
   return res.status(201).json({
     media: mediaAsset,
-    thumbUrl: publicUrl,
-    fullUrl: publicUrl
+    thumbUrl: uploadResult.thumbUrl,
+    fullUrl: uploadResult.publicUrl,
+    storageProvider: uploadResult.provider
   });
 }
+
+/**
+ * Diagnostic & Status of storage engine (Cloudflare R2 or local disk)
+ */
+mediaRouter.get('/storage-diagnostics', (_req: Request, res: Response) => {
+  res.json(getStorageDiagnostics());
+});
 
 /**
  * POST /api/v1/media/upload or POST /api/v1/builds/upload
@@ -112,6 +126,9 @@ function handleUpload(req: Request, res: Response) {
  */
 mediaRouter.post('/upload', requireAuth, handleUpload);
 buildsRouter.post('/upload', requireAuth, handleUpload);
+buildsRouter.get('/storage-diagnostics', (_req: Request, res: Response) => {
+  res.json(getStorageDiagnostics());
+});
 
 // ---------------------------------------------------------------------------
 // Build Logs Feed & Queries
