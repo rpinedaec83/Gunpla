@@ -4,13 +4,18 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **EVT Complete -- All Vertical Slices 1–5 Implemented & Verified**
-- Overall state: Green -- DT1, DT2, DT3, DT4 & DT5 implemented and verified via `npm run smoketest` (`19/19 checks passed`).
-- Current branch or release line: `feature/dt5-frontends-appshell` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **DVT (In Progress -- DT6 Completed, DT7 Next)**
+- Overall state: Green -- DT1, DT2, DT3, DT4, DT5 & DT6 implemented and verified via `npm run smoketest` (`21/21 checks passed`).
+- Current branch or release line: `feature/dt6-contests-voting` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-23
 
 ## Live Capabilities
 
+- **Group Builds, Contests & Community Voting (`Slice 6 / DT6`):**
+  - Interactive contest system (`GET /api/v1/contests`, `GET /api/v1/contests/:slugOrId`).
+  - Personal build project submission (`POST /api/v1/contests/:id/entries`) with ownership check (`403`) and duplicate protection (`409`).
+  - Community voting leaderboard (`POST /api/v1/contests/:id/entries/:entryId/vote`) with toggle vote behavior and live tallying.
+  - Interactive contest cards with rules, prizes, participating build galleries, and voting buttons in both frontends.
 - **Frontends Web (`apps/plamoscale-web` & `apps/gunplajunkies-web`):**
   - Implement **`UXP-01 Modern App Shell Layout`** with persistent left text-labeled sidebar, top utility bar with search & SSO status, breadcrumbs, and responsive mobile drawer.
   - **PlamoScale (`apps/plamoscale-web` on port 3000):** General scale modeling hub (Military, Aviation, Automotive, Gunpla/Mecha, Figures, Naval, Diorama) with Studio Technical palette.

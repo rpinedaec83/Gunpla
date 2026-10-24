@@ -607,7 +607,77 @@ async function runSmoketest() {
     assert.ok(gunplaHtml.includes('Ir a <strong>PlamoScale</strong>'), 'Should contain Portal Switcher to PlamoScale');
     console.log('[PASS] GunplaJunkies Web Frontend (UXP-01 Shell) verified successfully.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 SMOKETEST CHECKS PASSED ===');
+    // 20. DT6 - Contest Entry Submission & Duplicate Prevention
+    console.log('\n--- Checking DT6: Contest Entry Submission ---');
+    const submitEntryRes = await fetch(`${baseUrl}/api/v1/contests/contest-gunpla-cup-2026/entries`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        buildId: newBuild.id
+      })
+    });
+    assert.equal(submitEntryRes.status, 201);
+    const entryData = await submitEntryRes.json();
+    assert.ok(entryData.id);
+    assert.equal(entryData.buildId, newBuild.id);
+    assert.equal(entryData.title, newBuild.title);
+
+    // Verify duplicate submission prevention (409 Conflict)
+    const duplicateRes = await fetch(`${baseUrl}/api/v1/contests/contest-gunpla-cup-2026/entries`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        buildId: newBuild.id
+      })
+    });
+    assert.equal(duplicateRes.status, 409);
+    console.log('[PASS] Contest entry submission & duplicate protection (409 Conflict) verified.');
+
+    // 21. DT6 - Community Voting on Contest Entries
+    console.log('\n--- Checking DT6: Community Voting System ---');
+    const voteRes = await fetch(`${baseUrl}/api/v1/contests/contest-gunpla-cup-2026/entries/${entryData.id}/vote`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${googleSsoData.token}`
+      }
+    });
+    assert.equal(voteRes.status, 200);
+    const voteData = await voteRes.json();
+    assert.equal(voteData.voted, true);
+    assert.equal(voteData.voteCount, 1);
+
+    // Toggle vote off
+    const unvoteRes = await fetch(`${baseUrl}/api/v1/contests/contest-gunpla-cup-2026/entries/${entryData.id}/vote`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${googleSsoData.token}`
+      }
+    });
+    assert.equal(unvoteRes.status, 200);
+    const unvoteData = await unvoteRes.json();
+    assert.equal(unvoteData.voted, false);
+    assert.equal(unvoteData.voteCount, 0);
+
+    // Vote back on to keep entry active on leaderboard
+    await fetch(`${baseUrl}/api/v1/contests/contest-gunpla-cup-2026/entries/${entryData.id}/vote`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${googleSsoData.token}` }
+    });
+
+    // Verify contest detail leaderboard
+    const contestDetailRes = await fetch(`${baseUrl}/api/v1/contests/gunpla-open-cup-2026`);
+    assert.equal(contestDetailRes.status, 200);
+    const detailedContest = await contestDetailRes.json();
+    assert.ok(detailedContest.entries.some((e) => e.id === entryData.id));
+    console.log(`[PASS] Community voting verified (Contest: ${detailedContest.title}, Entries: ${detailedContest.entries.length}).`);
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 SMOKETEST CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

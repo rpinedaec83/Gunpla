@@ -345,6 +345,32 @@ export interface UploadMediaResponse {
   fullUrl: string;
 }
 
+export interface ContestEntryRecord {
+  id: string;
+  contestId: string;
+  buildId: string;
+  build?: BuildProjectRecord;
+  userId: string;
+  username: string;
+  userDisplayName: string;
+  title: string;
+  category: ScaleCategory;
+  coverImageUrl?: string;
+  voteCount: number;
+  votedByUserIds: string[];
+  status: 'submitted' | 'approved' | 'disqualified';
+  createdAt: string;
+}
+
+export interface CreateContestEntryRequest {
+  buildId: string;
+}
+
+export interface VoteContestEntryResponse {
+  voted: boolean;
+  voteCount: number;
+}
+
 export interface ContestRecord {
   id: string;
   slug: string;
@@ -359,6 +385,7 @@ export interface ContestRecord {
   rules: string[];
   prizes: string[];
   participantsCount: number;
+  entries?: ContestEntryRecord[];
 }
 
 export interface ShopRecord {

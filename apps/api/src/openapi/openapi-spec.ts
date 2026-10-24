@@ -397,6 +397,48 @@ export const openApiSpec = {
         responses: { '200': { description: 'Contests list' } }
       }
     },
+    '/api/v1/contests/{slugOrId}': {
+      get: {
+        tags: ['Community'],
+        summary: 'Get contest details and participating build entries',
+        parameters: [{ name: 'slugOrId', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Contest details' },
+          '404': { description: 'Contest not found' }
+        }
+      }
+    },
+    '/api/v1/contests/{id}/entries': {
+      post: {
+        tags: ['Community'],
+        summary: 'Submit a personal build project to an active contest',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '201': { description: 'Build submitted to contest' },
+          '400': { description: 'Contest not active or invalid build' },
+          '403': { description: 'Forbidden (not build owner)' },
+          '404': { description: 'Contest or build not found' },
+          '409': { description: 'Build already submitted' }
+        }
+      }
+    },
+    '/api/v1/contests/{id}/entries/{entryId}/vote': {
+      post: {
+        tags: ['Community'],
+        summary: 'Cast or toggle community vote for a contest entry',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'entryId', in: 'path', required: true, schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': { description: 'Vote toggled' },
+          '401': { description: 'Unauthorized' },
+          '404': { description: 'Entry not found' }
+        }
+      }
+    },
     '/api/v1/shops': {
       get: {
         tags: ['Community'],

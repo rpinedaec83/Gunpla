@@ -251,6 +251,7 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
     stashItems: db.stashItems || [],
     paintRackItems: db.paintRackItems || [],
     builds,
+    contestEntries: db.contestEntries || [],
     lastSeededAt: now
   };
 

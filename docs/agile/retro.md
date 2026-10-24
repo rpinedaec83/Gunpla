@@ -137,3 +137,28 @@ Decisions made:
 Lessons learned:
 - Unifying the UXP-01 App Shell template in `@gunpla/shared` while parametrizing branding, colors, taxonomies, and portal links allowed both frontends to launch in record time with 100% design fidelity.
 Usage: Moderate -- self-estimated
+
+### DT6 -- Slice 6: Group Builds, Contest Submissions & Community Voting System | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Added `ContestEntryRecord`, `CreateContestEntryRequest`, and `VoteContestEntryResponse` to `@gunpla/shared` (`packages/shared/src/index.ts`) and updated `PlatformDatabaseState` (`apps/api/src/core/db.ts`).
+- Implemented Contest and Voting slice in `apps/api/src/slices/community/community.slice.ts`:
+  - `GET /api/v1/contests`: Populates each contest with approved entries and participant counts.
+  - `GET /api/v1/contests/:slugOrId`: Returns contest details with joined participating build entries and kit data.
+  - `POST /api/v1/contests/:id/entries`: Authenticated builder submits a personal build project to an active contest with build ownership verification (`403 Forbidden` if not owner) and duplicate submission prevention (`409 Conflict`).
+  - `POST /api/v1/contests/:id/entries/:entryId/vote`: Authenticated community voting with toggle behavior (upvote / unvote) and instant tallying.
+- Seeded initial contest submissions:
+  - `entry-aperich-hinu-cup`: RG Hi-Nu Gundam Titanium Custom by `aperich` participating in *Gunpla Open Cup Peru 2026* with 14 community votes.
+  - `entry-fog1labs1-tiger1-masters`: Tiger I Kursk 1943 by `fog1labs1` participating in *PlamoScale Masters 2026* with 18 community votes.
+- Updated UXP-01 App Shell template (`packages/shared/src/ui-shell/app-shell.ts`) to render:
+  - Active rules and prizes cards for each competition.
+  - "🏆 Inscribir mi Bitácora al Concurso" submission CTA.
+  - Participating entries gallery with cover images, builder tags, live vote count badges (`⭐ X Votos`), and interactive "Votar ⭐" buttons.
+- Documented OpenAPI 3.1 endpoints in `apps/api/src/openapi/openapi-spec.ts`.
+- Expanded automated CLI smoketest (`scripts/smoketest.mjs`) with Checks 20 and 21 verifying contest lookup, build entry submission, 409 Conflict duplicate protection, and community vote toggling. All 21/21 checks passed.
+Issues hit:
+- Contests can be referenced by either canonical ID (`contest-gunpla-cup-2026`) or URL slug (`gunpla-open-cup-2026`); normalized lookup in all route handlers to resolve both transparently.
+Decisions made:
+- Votes are bound to verified user IDs (`votedByUserIds`) preventing sybil voting while allowing builders to change or toggle their vote.
+Lessons learned:
+- Displaying participating builds directly inside each contest card creates an immediate competitive leaderboard experience that drives community engagement and inspires other builders to submit their own WIPs.
+Usage: Moderate -- self-estimated

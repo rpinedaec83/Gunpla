@@ -988,27 +988,79 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
 
     <!-- 7. CONTESTS TAB -->
     <section id="view-contests" class="view-section">
-      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+      <div style="display: flex; flex-direction: column; gap: 2rem;">
         ${data.contests
           .map(
             (c) => `
           <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden;">
-            <div style="padding: 1.5rem;">
+            <div style="padding: 1.5rem; border-bottom: 1px solid var(--border-color);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                 <span class="status-badge" style="background: rgba(37, 99, 235, 0.2); color: #60a5fa; border-color: rgba(37, 99, 235, 0.4);">
-                  ${c.status.toUpperCase()} • ${c.participantsCount} Participantes
+                  ${c.status.toUpperCase()} • ${c.participantsCount} Inscritos
                 </span>
                 <span style="font-size: 0.8rem; color: #94a3b8;">Finaliza: ${new Date(c.endDate).toLocaleDateString()}</span>
               </div>
               <h2 style="font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem;">${c.title}</h2>
               <p style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 1rem;">${c.description}</p>
               
-              <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 6px;">
-                <div style="font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 0.4rem;">Premios Destacados:</div>
-                <ul style="padding-left: 1.25rem; font-size: 0.84rem; color: #94a3b8;">
-                  ${c.prizes.map((p) => `<li>${p}</li>`).join('')}
-                </ul>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <div style="padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px solid var(--border-color);">
+                  <div style="font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 0.4rem;">Reglas de Participación:</div>
+                  <ul style="padding-left: 1.25rem; font-size: 0.82rem; color: #94a3b8;">
+                    ${c.rules.map((r) => `<li>${r}</li>`).join('')}
+                  </ul>
+                </div>
+                <div style="padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px solid var(--border-color);">
+                  <div style="font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 0.4rem;">Premios:</div>
+                  <ul style="padding-left: 1.25rem; font-size: 0.82rem; color: #94a3b8;">
+                    ${c.prizes.map((p) => `<li>${p}</li>`).join('')}
+                  </ul>
+                </div>
               </div>
+
+              <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+                <button class="btn-primary" onclick="submitToContest('${c.id}')">
+                  🏆 Inscribir mi Bitácora al Concurso
+                </button>
+              </div>
+            </div>
+
+            <!-- Participating Builds Gallery & Voting Leaderboard -->
+            <div style="padding: 1.5rem; background: rgba(0,0,0,0.15);">
+              <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 1rem;">
+                Obras Inscritas & Votación Comunitaria
+              </h3>
+              ${
+                c.entries && c.entries.length > 0
+                  ? `
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem;">
+                  ${c.entries
+                    .map(
+                      (e) => `
+                    <div style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;">
+                      <img src="${e.coverImageUrl}" alt="${e.title}" style="width: 100%; height: 180px; object-fit: cover;" loading="lazy" />
+                      <div style="padding: 0.85rem 1rem; display: flex; flex-direction: column; flex: 1;">
+                        <div style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem;">${e.title}</div>
+                        <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.75rem;">Por <strong>@${e.username}</strong></div>
+                        <div style="margin-top: auto; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 0.65rem;">
+                          <span style="font-size: 0.85rem; font-weight: 600; color: #fbbf24;">⭐ ${e.voteCount} Votos</span>
+                          <button class="filter-pill" style="padding: 0.25rem 0.75rem; font-size: 0.78rem;" onclick="voteEntry('${c.id}', '${e.id}')">
+                            Votar ⭐
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  `
+                    )
+                    .join('')}
+                </div>
+              `
+                  : `
+                <p style="font-size: 0.85rem; color: #64748b; font-style: italic;">
+                  Aún no hay obras inscritas. ¡Sé el primero en participar con tu bitácora!
+                </p>
+              `
+              }
             </div>
           </div>
         `
@@ -1145,6 +1197,14 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
 
   function likeBuild(buildId) {
     alert('Like registrado para la bitácora ' + buildId + '. (POST /api/v1/builds/' + buildId + '/like)');
+  }
+
+  function submitToContest(contestId) {
+    alert('Para inscribir tu proyecto en el concurso ' + contestId + ', ingresa el buildId de tu bitácora mediante POST /api/v1/contests/' + contestId + '/entries');
+  }
+
+  function voteEntry(contestId, entryId) {
+    alert('Voto registrado para la obra participante ' + entryId + ' en ' + contestId + '. (POST /api/v1/contests/' + contestId + '/entries/' + entryId + '/vote)');
   }
 </script>
 
