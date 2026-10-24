@@ -450,6 +450,36 @@ export interface VoteContestEntryResponse {
   voteCount: number;
 }
 
+export type SpecCardFormat = 'flat' | 'tent';
+export type SpecCardTheme = 'light_ink_saver' | 'dark_mecha';
+
+export interface GenerateSpecCardRequest {
+  buildIdOrSlug: string;
+  contestName?: string;
+  entryCode?: string;
+  widthMm: number;
+  heightMm: number;
+  format?: SpecCardFormat;
+  theme?: SpecCardTheme;
+  includeQr?: boolean;
+  includeCoverImage?: boolean;
+  includePaints?: boolean;
+  includeJudgeScoreBox?: boolean;
+  customNotes?: string;
+}
+
+export interface GenerateSpecCardResponse {
+  build: BuildProjectRecord;
+  qrDataUrl: string;
+  qrSvg: string;
+  targetUrl: string;
+  widthMm: number;
+  heightMm: number;
+  format: SpecCardFormat;
+  theme: SpecCardTheme;
+  htmlPreview: string;
+}
+
 export interface ContestRecord {
   id: string;
   slug: string;

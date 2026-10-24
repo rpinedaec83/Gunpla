@@ -964,7 +964,36 @@ async function runSmoketest() {
 
     console.log('[PASS] AI Paint Assistant verified: 4-Way Chemical Division (Laca, Acrílico, Poliuretano, Montana Colors) & Spray/Airbrush recommendations.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + PAINTS-AI SMOKETEST CHECKS PASSED ===');
+    // --- Checking Printable Contest Spec Cards with Configurable Dimensions & QR ---
+    console.log('\n--- Checking Printable Contest Spec Cards & Dynamic QR ---');
+    const specCardRes = await fetch(`${baseUrl}/api/v1/builds/mg-eclipse-gundam-custom-paint/spec-card`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'gunplajunkies' },
+      body: JSON.stringify({
+        widthMm: 150,
+        heightMm: 100,
+        format: 'tent',
+        theme: 'light_ink_saver',
+        contestName: 'Gunpla Open Cup Perú 2026',
+        entryCode: '#ENTRY-042',
+        includeQr: true,
+        includeCoverImage: true,
+        includePaints: true,
+        includeJudgeScoreBox: true
+      })
+    });
+    assert.equal(specCardRes.status, 200, 'Spec Card endpoint must return 200 OK');
+    const specCardData = await specCardRes.json();
+    assert.equal(specCardData.widthMm, 150, 'Must honor configured width in mm');
+    assert.equal(specCardData.heightMm, 100, 'Must honor configured height in mm');
+    assert.equal(specCardData.format, 'tent', 'Must honor foldable tent format');
+    assert.ok(specCardData.qrDataUrl.startsWith('data:image/png;base64,'), 'Must return valid QR base64 image');
+    assert.ok(specCardData.targetUrl.includes('mg-eclipse-gundam-custom-paint'), 'Target URL must point to build');
+    assert.ok(specCardData.build.title, 'Must return populated build title');
+
+    console.log('[PASS] Printable Contest Spec Cards verified: Configurable WxH dimensions, table-tent folding & vector QR code.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + PAINTS-AI + SPEC-CARDS CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

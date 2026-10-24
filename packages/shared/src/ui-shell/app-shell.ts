@@ -1063,7 +1063,10 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
                   Modelista: <strong>@${b.username}</strong> • Estado: <span style="color: #4ade80;">${b.status}</span> • Vistas: ${b.viewCount} • ❤️ ${b.likeCount}
                 </div>
               </div>
-              <button class="btn-primary" onclick="likeBuild('${b.id}')">❤️ Like</button>
+              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <button class="filter-pill" style="font-size: 0.78rem; padding: 0.4rem 0.75rem; background: rgba(56,189,248,0.15); color: #38bdf8; border-color: rgba(56,189,248,0.3);" onclick="openSpecCardModal('${b.id}')">🏷️ Ficha de Mesa & QR</button>
+                <button class="btn-primary" onclick="likeBuild('${b.id}')">❤️ Like</button>
+              </div>
             </div>
 
             <div class="build-steps-timeline">
@@ -2005,6 +2008,121 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
   </div>
 </div>
 
+<!-- Contest / Exhibition Spec Card Modal -->
+<div id="modal-spec-card" class="custom-modal" onclick="closeSpecCardModal(event)">
+  <div class="auth-box" style="max-width: 960px; width: 95%; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeSpecCardModal()">&times;</span>
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+      <span style="font-size: 1.4rem;">🏷️</span>
+      <h3 style="font-size: 1.3rem; font-weight: 700; color: #fff;">Ficha Técnica & Tarjeta de Mesa Imprimible</h3>
+    </div>
+    <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
+      Configura el largo y ancho exacto de tu tarjeta para concursos físicos y exhibiciones de modelismo con código QR dinámico hacia tu Bitácora.
+    </p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+      <!-- Panel de Controles -->
+      <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+        <!-- 1. Dimensiones Presets -->
+        <div class="auth-input-group" style="margin-bottom: 0;">
+          <label class="auth-label">Medidas Rápidas (Presets)</label>
+          <div id="spec-card-presets-bar" style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+            <button type="button" class="filter-pill active" onclick="setSpecCardPreset('10x15', this)">10 x 15 cm (Mesa)</button>
+            <button type="button" class="filter-pill" onclick="setSpecCardPreset('15x10', this)">15 x 10 cm (Vertical)</button>
+            <button type="button" class="filter-pill" onclick="setSpecCardPreset('9x5.5', this)">9 x 5.5 cm (Mini)</button>
+            <button type="button" class="filter-pill" onclick="setSpecCardPreset('14.8x21', this)">14.8 x 21 cm (A5)</button>
+            <button type="button" class="filter-pill" onclick="setSpecCardPreset('21x29.7', this)">21 x 29.7 cm (A4)</button>
+          </div>
+        </div>
+
+        <!-- 2. Inputs Numéricos de Ancho y Largo (cm) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="auth-input-group" style="margin-bottom: 0;">
+            <label class="auth-label">Ancho (cm)</label>
+            <input type="number" id="spec-card-width-input" class="auth-input" value="15" min="5" max="50" step="0.5" oninput="updateSpecCardPreview()">
+          </div>
+          <div class="auth-input-group" style="margin-bottom: 0;">
+            <label class="auth-label">Largo / Alto (cm)</label>
+            <input type="number" id="spec-card-height-input" class="auth-input" value="10" min="3" max="50" step="0.5" oninput="updateSpecCardPreview()">
+          </div>
+        </div>
+
+        <!-- 3. Formato & Tema de Tinta -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="auth-input-group" style="margin-bottom: 0;">
+            <label class="auth-label">Formato de Exhibición</label>
+            <select id="spec-card-format-select" class="auth-input" onchange="updateSpecCardPreview()">
+              <option value="flat">📄 Tarjeta Plana (Atril / Portarretrato)</option>
+              <option value="tent">⛺ Caballete Plegable (Table Tent - Doble cara)</option>
+            </select>
+          </div>
+          <div class="auth-input-group" style="margin-bottom: 0;">
+            <label class="auth-label">Estilo / Tinta</label>
+            <select id="spec-card-theme-select" class="auth-input" onchange="updateSpecCardPreview()">
+              <option value="light_ink_saver">⚪ Blanco / Ahorro Tinta (Impresora)</option>
+              <option value="dark_mecha">⚫ Modo Mecha Dark (Cyberpunk)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 4. Datos del Concurso -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 0.75rem;">
+          <div class="auth-input-group" style="margin-bottom: 0;">
+            <label class="auth-label">Nombre del Evento / Concurso</label>
+            <input type="text" id="spec-card-contest-input" class="auth-input" value="Gunpla Open Cup Perú 2026" oninput="updateSpecCardPreview()">
+          </div>
+          <div class="auth-input-group" style="margin-bottom: 0;">
+            <label class="auth-label">N° de Entrada / Mesa</label>
+            <input type="text" id="spec-card-entry-input" class="auth-input" placeholder="ej. #ENTRY-042" oninput="updateSpecCardPreview()">
+          </div>
+        </div>
+
+        <!-- 5. Casillas de Contenido -->
+        <div style="display: flex; flex-direction: column; gap: 0.45rem; background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-color);">
+          <label style="font-size: 0.8rem; color: #cbd5e1; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="spec-card-chk-qr" checked onchange="updateSpecCardPreview()">
+            <span>Incluir Código QR (Escaneo directo al Build Log)</span>
+          </label>
+          <label style="font-size: 0.8rem; color: #cbd5e1; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="spec-card-chk-cover" checked onchange="updateSpecCardPreview()">
+            <span>Incluir Foto Miniatura de la Maqueta</span>
+          </label>
+          <label style="font-size: 0.8rem; color: #cbd5e1; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="spec-card-chk-paints" checked onchange="updateSpecCardPreview()">
+            <span>Incluir Desglose de Pinturas (Laca, Tamiya, Vallejo, MTN)</span>
+          </label>
+          <label style="font-size: 0.8rem; color: #cbd5e1; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="spec-card-chk-judges" onchange="updateSpecCardPreview()">
+            <span>Incluir Casillero de Puntuación para Jueces</span>
+          </label>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+          <button type="button" class="btn-primary" style="flex: 1; justify-content: center; padding: 0.75rem;" onclick="printSpecCard()">
+            🖨️ Imprimir / Guardar como PDF
+          </button>
+          <button type="button" class="filter-pill" style="padding: 0.75rem 1rem;" onclick="closeSpecCardModal()">
+            Cerrar
+          </button>
+        </div>
+      </div>
+
+      <!-- Panel de Previsualización en Vivo -->
+      <div style="display: flex; flex-direction: column; align-items: center; overflow: hidden;">
+        <div style="font-size: 0.8rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.5rem; align-self: flex-start;">
+          👁️ Vista Previa en Escala (<span id="spec-card-dims-label">15 x 10 cm</span>):
+        </div>
+        <div id="spec-card-preview-viewport" style="width: 100%; min-height: 280px; max-height: 480px; display: flex; justify-content: center; align-items: flex-start; background: #000; padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color); overflow: auto;">
+          <div id="spec-card-preview-container">
+            <p style="color: #94a3b8; font-size: 0.85rem; padding: 2rem;">Cargando vista previa de la tarjeta...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   function switchTab(tabId, el) {
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -2587,6 +2705,7 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       const buildsRes = await fetch(apiBase + '/api/v1/builds?username=' + encodeURIComponent(currentUser.username), { headers: authHeaders });
       const buildsData = buildsRes.ok ? await buildsRes.json() : { items: [] };
       const buildItems = buildsData.items || [];
+      window.__WB_BUILDS = buildItems;
 
       // Update Metrics
       const totalKits = stashItems.length;
@@ -2692,7 +2811,10 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
                     (b.subtitle ? '<div style="font-size: 0.82rem; color: #94a3b8;">' + b.subtitle + '</div>' : '') +
                   '</div>' +
                 '</div>' +
-                '<button class="btn-primary" style="font-size: 0.78rem; padding: 0.45rem 0.8rem;" onclick="openAddStepModal(&quot;' + b.id + '&quot;)">+ Agregar Paso / Foto</button>' +
+                '<div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">' +
+                  '<button class="filter-pill" style="font-size: 0.78rem; padding: 0.45rem 0.8rem; background: rgba(56,189,248,0.15); color: #38bdf8; border-color: rgba(56,189,248,0.3);" onclick="openSpecCardModal(&quot;' + b.id + '&quot;)">🏷️ Ficha de Mesa & QR</button>' +
+                  '<button class="btn-primary" style="font-size: 0.78rem; padding: 0.45rem 0.8rem;" onclick="openAddStepModal(&quot;' + b.id + '&quot;)">+ Agregar Paso</button>' +
+                '</div>' +
               '</div>' +
               '<div style="padding-top: 0.75rem; border-top: 1px solid var(--border-color);">' +
                 '<div style="font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.5rem;">Pasos de Construcción (' + steps.length + '):</div>' +
@@ -2984,6 +3106,261 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     } catch (err) {
       console.warn('Paint qty update error:', err);
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Contest & Exhibition Spec Card Engine (Printable Table Tents with Custom Dimensions)
+  // ---------------------------------------------------------------------------
+  let currentSpecCardBuild = null;
+  let currentSpecCardData = null;
+
+  function openSpecCardModal(buildId) {
+    const allBuilds = [...(window.__ALL_BUILDS || []), ...(window.__WB_BUILDS || [])];
+    let found = allBuilds.find(b => b.id === buildId || b.slug === buildId);
+    
+    if (!found) {
+      const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+      fetch(apiBase + '/api/v1/builds/' + buildId)
+        .then(r => r.json())
+        .then(b => {
+          currentSpecCardBuild = b;
+          showSpecCardModalUI();
+        })
+        .catch(err => alert('No se pudo cargar la maqueta: ' + err.message));
+      return;
+    }
+
+    currentSpecCardBuild = found;
+    showSpecCardModalUI();
+  }
+
+  function showSpecCardModalUI() {
+    const modal = document.getElementById('modal-spec-card');
+    if (modal) modal.classList.add('active');
+    
+    const entryInput = document.getElementById('spec-card-entry-input');
+    if (entryInput && !entryInput.value) {
+      entryInput.value = '#ENTRY-' + (currentSpecCardBuild?.slug?.slice(0, 6) || '2026').toUpperCase();
+    }
+    
+    updateSpecCardPreview();
+  }
+
+  function closeSpecCardModal(e) {
+    if (e && e.target !== e.currentTarget && !e.target.classList.contains('auth-close')) return;
+    const modal = document.getElementById('modal-spec-card');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function setSpecCardPreset(preset, btn) {
+    if (btn) {
+      document.querySelectorAll('#spec-card-presets-bar .filter-pill').forEach(el => el.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    const widthInput = document.getElementById('spec-card-width-input');
+    const heightInput = document.getElementById('spec-card-height-input');
+
+    if (preset === '10x15') {
+      widthInput.value = '15';
+      heightInput.value = '10';
+    } else if (preset === '15x10') {
+      widthInput.value = '10';
+      heightInput.value = '15';
+    } else if (preset === '9x5.5') {
+      widthInput.value = '9';
+      heightInput.value = '5.5';
+    } else if (preset === '14.8x21') {
+      widthInput.value = '21';
+      heightInput.value = '14.8';
+    } else if (preset === '21x29.7') {
+      widthInput.value = '29.7';
+      heightInput.value = '21';
+    }
+
+    updateSpecCardPreview();
+  }
+
+  async function updateSpecCardPreview() {
+    if (!currentSpecCardBuild) return;
+
+    const widthCm = parseFloat(document.getElementById('spec-card-width-input').value) || 15;
+    const heightCm = parseFloat(document.getElementById('spec-card-height-input').value) || 10;
+    const widthMm = Math.round(widthCm * 10);
+    const heightMm = Math.round(heightCm * 10);
+    const format = document.getElementById('spec-card-format-select').value;
+    const theme = document.getElementById('spec-card-theme-select').value;
+    const contestName = document.getElementById('spec-card-contest-input').value.trim() || 'Gunpla & Scale Model Open Cup 2026';
+    const entryCode = document.getElementById('spec-card-entry-input').value.trim() || ('#ENTRY-' + (currentSpecCardBuild.slug?.slice(0, 6) || '2026').toUpperCase());
+    const includeQr = document.getElementById('spec-card-chk-qr').checked;
+    const includeCover = document.getElementById('spec-card-chk-cover').checked;
+    const includePaints = document.getElementById('spec-card-chk-paints').checked;
+    const includeJudges = document.getElementById('spec-card-chk-judges').checked;
+
+    const dimsLabel = document.getElementById('spec-card-dims-label');
+    if (dimsLabel) {
+      dimsLabel.textContent = widthCm + ' x ' + heightCm + ' cm' + (format === 'tent' ? ' (Plegable: ' + (heightCm * 2) + ' cm)' : '');
+    }
+
+    const container = document.getElementById('spec-card-preview-container');
+    if (!container) return;
+
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    try {
+      const res = await fetch(apiBase + '/api/v1/builds/' + currentSpecCardBuild.id + '/spec-card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': '${config.tenantSlug}' },
+        body: JSON.stringify({
+          widthMm,
+          heightMm,
+          format,
+          theme,
+          contestName,
+          entryCode,
+          includeQr,
+          includeCoverImage: includeCover,
+          includePaints,
+          includeJudgeScoreBox: includeJudges
+        })
+      });
+
+      if (!res.ok) throw new Error('Error al generar la ficha');
+      const data = await res.json();
+      currentSpecCardData = data;
+
+      const isLight = theme === 'light_ink_saver';
+      const bgColor = isLight ? '#FFFFFF' : '#0B0F17';
+      const textColor = isLight ? '#0F172A' : '#FFFFFF';
+      const subColor = isLight ? '#475569' : '#94A3B8';
+      const borderColor = isLight ? '#000000' : '#0284C7';
+      const badgeBg = isLight ? '#F1F5F9' : 'rgba(2,132,199,0.15)';
+      const badgeBorder = isLight ? '#000000' : 'rgba(2,132,199,0.4)';
+      const badgeColor = isLight ? '#0F172A' : '#38BDF8';
+
+      const b = data.build;
+      const steps = b.steps || [];
+      const coverUrl = b.coverImageUrl || (steps[0] && steps[0].photoUrls && steps[0].photoUrls[0]) || '/legacy-media/plamoscale/images/aperich/thumbs/01.jpg';
+
+      // Paints text & summary
+      const paintList = (steps.flatMap(s => s.paintUsages || []).map(u => u.paint ? (u.paint.code + ' ' + u.paint.name) : '').filter(Boolean));
+      const uniquePaintNames = Array.from(new Set(paintList)).slice(0, 5).join(', ');
+
+      const judgesHtml = includeJudges
+        ? '<div style="margin-top: 6px; padding: 4px; border: 1px dashed ' + borderColor + '; border-radius: 4px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; text-align: center; font-size: 8px;">' +
+            '<div><strong>Montaje</strong><br>___/25</div>' +
+            '<div><strong>Pintura</strong><br>___/35</div>' +
+            '<div><strong>Acabado</strong><br>___/20</div>' +
+            '<div><strong>Creatividad</strong><br>___/20</div>' +
+            '<div style="font-weight: 700; color: ' + (isLight ? '#000' : '#38bdf8') + ';"><strong>TOTAL</strong><br>___/100</div>' +
+          '</div>'
+        : '';
+
+      const frontFaceHtml = 
+        '<div style="width: 100%; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; background: ' + bgColor + '; color: ' + textColor + ';">' +
+          '<!-- Top Header: Contest & Entry Code -->' +
+          '<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; border-bottom: 2px solid ' + borderColor + '; padding-bottom: 6px; margin-bottom: 6px;">' +
+            '<div>' +
+              '<div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: ' + (isLight ? '#dc2626' : 'var(--primary)') + ';">' + escapeHtml(contestName) + '</div>' +
+              '<div style="font-size: 8px; color: ' + subColor + ';">Plataforma Oficial GunplaJunkies & PlamoScale</div>' +
+            '</div>' +
+            '<div style="text-align: right;">' +
+              '<span style="font-size: 11px; font-weight: 900; font-family: monospace; padding: 2px 6px; border: 1.5px solid ' + badgeBorder + '; border-radius: 4px; background: ' + badgeBg + '; color: ' + badgeColor + ';">' + escapeHtml(entryCode) + '</span>' +
+              '<div style="font-size: 8px; color: ' + subColor + '; margin-top: 2px;">' + escapeHtml(b.category?.toUpperCase() || 'MECHA') + '</div>' +
+            '</div>' +
+          '</div>' +
+
+          '<!-- Main Body -->' +
+          '<div style="display: flex; gap: 10px; flex: 1; align-items: center; justify-content: space-between;">' +
+            '<div style="flex: 1; min-width: 0;">' +
+              '<div style="font-size: 8px; font-weight: 700; text-transform: uppercase; color: ' + subColor + ';">' + escapeHtml((b.scale || '') + ' ' + (b.grade || '')) + '</div>' +
+              '<h2 style="font-size: 14px; font-weight: 800; line-height: 1.2; margin: 2px 0 4px 0; color: ' + textColor + '; white-space: normal; overflow: hidden;">' + escapeHtml(b.title) + '</h2>' +
+              '<div style="font-size: 9px; color: ' + subColor + ';">Modelista: <strong style="color: ' + textColor + ';">@' + escapeHtml(b.username) + '</strong></div>' +
+              (includePaints ? '<div style="font-size: 8px; color: ' + subColor + '; margin-top: 4px; line-height: 1.3;">🎨 <strong>Medios & Pinturas:</strong> ' + (uniquePaintNames || 'Laca / Acrílico / Poliuretano / MTN 94') + '</div>' : '') +
+              '<div style="font-size: 7.5px; color: ' + subColor + '; margin-top: 2px;">⚡ <em>Técnicas:</em> Aerografía • Preshading • Calcas al agua • Barniz sellado</div>' +
+            '</div>' +
+
+            '<!-- Media & QR Side -->' +
+            '<div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">' +
+              (includeCover ? '<img src="' + coverUrl + '" style="width: 58px; height: 58px; object-fit: cover; border-radius: 4px; border: 1px solid ' + borderColor + ';">' : '') +
+              (includeQr && data.qrDataUrl ? 
+                '<div style="text-align: center;">' +
+                  '<img src="' + data.qrDataUrl + '" style="width: 68px; height: 68px; border: 1px solid ' + borderColor + '; border-radius: 4px; display: block; background: #fff;">' +
+                  '<div style="font-size: 6.5px; color: ' + subColor + '; margin-top: 2px; max-width: 70px; line-height: 1.1;">Escanea para ver Bitácora & WIP</div>' +
+                '</div>' : '') +
+            '</div>' +
+          '</div>' +
+
+          judgesHtml +
+        '</div>';
+
+      if (format === 'tent') {
+        const backFlapHtml = 
+          '<div style="width: 100%; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 12px; background: ' + (isLight ? '#F8FAFC' : '#111827') + '; color: ' + textColor + '; border-bottom: 2px dashed #94a3b8; text-align: center;">' +
+            '<div style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: ' + subColor + '; margin-bottom: 2px;">' + escapeHtml(contestName) + '</div>' +
+            '<div style="font-size: 20px; font-weight: 900; font-family: monospace; color: ' + (isLight ? '#000' : 'var(--primary)') + '; letter-spacing: 0.05em;">' + escapeHtml(entryCode) + '</div>' +
+            '<div style="font-size: 11px; font-weight: 700; color: ' + textColor + '; margin-top: 2px;">' + escapeHtml(b.title) + '</div>' +
+            '<div style="font-size: 8px; color: ' + subColor + '; margin-top: 4px;">✂️ LÍNEA DE DOBLEZ / FOLD HERE PARA CABALLETE DE MESA ✂️</div>' +
+          '</div>';
+
+        container.innerHTML = 
+          '<div id="spec-card-print-target" style="width: ' + widthMm + 'mm; max-width: 100%; display: flex; flex-direction: column; border: 2px solid ' + borderColor + '; border-radius: 6px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">' +
+            '<div style="height: ' + heightMm + 'mm; max-height: 240px;">' + backFlapHtml + '</div>' +
+            '<div style="height: ' + heightMm + 'mm; max-height: 240px;">' + frontFaceHtml + '</div>' +
+          '</div>';
+      } else {
+        container.innerHTML = 
+          '<div id="spec-card-print-target" style="width: ' + widthMm + 'mm; height: ' + heightMm + 'mm; max-width: 100%; max-height: 380px; border: 2px solid ' + borderColor + '; border-radius: 6px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">' +
+            frontFaceHtml +
+          '</div>';
+      }
+    } catch (err) {
+      container.innerHTML = '<div style="color: #ef4444; font-size: 0.85rem; padding: 1.5rem;">' + err.message + '</div>';
+    }
+  }
+
+  function printSpecCard() {
+    const target = document.getElementById('spec-card-print-target');
+    if (!target) return;
+
+    const widthCm = parseFloat(document.getElementById('spec-card-width-input').value) || 15;
+    const heightCm = parseFloat(document.getElementById('spec-card-height-input').value) || 10;
+    const widthMm = Math.round(widthCm * 10);
+    const heightMm = Math.round(heightCm * 10);
+    const format = document.getElementById('spec-card-format-select').value;
+    const totalHeightMm = format === 'tent' ? heightMm * 2 : heightMm;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Por favor autoriza ventanas emergentes en tu navegador para imprimir la ficha.');
+      return;
+    }
+
+    const title = currentSpecCardBuild ? currentSpecCardBuild.title : 'Ficha de Concurso';
+
+    printWindow.document.write(
+      '<!DOCTYPE html>' +
+      '<html>' +
+      '<head>' +
+        '<meta charset="utf-8">' +
+        '<title>Ficha de Concurso - ' + escapeHtml(title) + '</title>' +
+        '<style>' +
+          '@page { size: ' + widthMm + 'mm ' + totalHeightMm + 'mm; margin: 0; }' +
+          '@media print {' +
+            'html, body { width: ' + widthMm + 'mm; height: ' + totalHeightMm + 'mm; margin: 0; padding: 0; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }' +
+            '#spec-card-print-target { box-shadow: none !important; width: ' + widthMm + 'mm !important; height: ' + totalHeightMm + 'mm !important; max-height: none !important; max-width: none !important; border: 2px solid #000 !important; }' +
+          '}' +
+          '* { box-sizing: border-box; margin: 0; padding: 0; }' +
+          'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; justify-content: center; align-items: center; background: #eee; min-height: 100vh; }' +
+        '</style>' +
+      '</head>' +
+      '<body>' +
+        target.outerHTML +
+        '<' + 'script>' +
+          'window.addEventListener("load", () => { setTimeout(() => { window.print(); }, 250); });' +
+        '<' + '/script>' +
+      '</body>' +
+      '</html>'
+    );
+    printWindow.document.close();
   }
 
   // AI Paint Assistant Sub-Tab Switching & 4-Way Medium Selector

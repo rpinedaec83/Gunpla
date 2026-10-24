@@ -20,6 +20,11 @@ Current live state of the project.
     - *Poliuretano:* Vallejo Thinner + Flow Improver (70:30), 18-22 PSI, zero-toxicity, maximum friction resistance for Gunpla joints.
     - *Montana Colors (Aerosoles):* Ready-to-spray canisters, recommended caps (*Pocket Cap* or *Skinny Universal Cap* for fine line misting on Gunpla), 20-25 cm spray distance with rapid sweep passes, and plastic primer precautions (MTN PRO) or MTN Water Based for indoor odorless painting.
   - **AI Recipe Generator:** Formulation engine supporting Gemini API (`gemini-3.8-flash`) and an expert local rules matrix for Gunpla anime & military palettes (*Verde Zaku II, Rojo Cometa Char, Azul Titán MK-II, Inner Frame Barbatos, Blanco RG RX-78*), generating mixing percentages or spray cans, cap recommendations, component swatches, and step-by-step airbrush/spray applications (primer, preshading, base, topcoat).
+- **Fichas Técnicas Imprimibles & Códigos QR de Mesa (`POST /api/v1/builds/:idOrSlug/spec-card`):**
+  - **Dimensiones 100% Configurables:** Selector de medidas con presets estándar (`10x15 cm`, `15x10 cm`, `9x5.5 cm mini`, `A5`, `A4`) o inputs numéricos libres de ancho y alto en centímetros.
+  - **Formato Doble o Plano:** Soporte para tarjeta plana (para atril o portarretrato) o caballete plegable de mesa (*Table Tent*) con línea de doblez central e información visible por el reverso para jueces y público.
+  - **Código QR Dinámico Vectorial:** Genera un código QR nítido que apunta directamente a la Bitácora de armado online del modelo (`#build-:slug`), permitiendo a jueces y asistentes escanear con su teléfono para ver fotos del esqueleto interno y fórmulas de pintura.
+  - **Estilos & Opciones:** Modo ahorro de tinta (*Light Ink-Saver*) para impresoras de concurso o modo *Mecha Dark*, foto de miniatura, desglose de químicas de pintura usadas y casillero de puntuación para jueces (Montaje / Pintura / Acabado / Creatividad).
 - **Interactive Personal Workbench & Workshop (`Mi Taller`):**
   - Integrated personal dashboard with live metric counters: Total Stash, Backlog (unbuilt), WIP (in progress), Built (completed), and Paint Rack inventory.
   - **Stash Management:** Add kits from master catalog, track box status (`unbuilt`, `in_progress`, `built`, `for_trade`, `wishlist`), star ratings, acquisition prices, and notes.

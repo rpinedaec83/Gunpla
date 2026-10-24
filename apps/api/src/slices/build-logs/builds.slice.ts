@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import QRCode from 'qrcode';
 import {
   BuildProjectRecord,
   BuildStep,
@@ -12,7 +13,9 @@ import {
   CreateBuildStepRequest,
   CreateBuildCommentRequest,
   MediaAsset,
-  ScaleCategory
+  ScaleCategory,
+  GenerateSpecCardRequest,
+  GenerateSpecCardResponse
 } from '@gunpla/shared';
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
@@ -207,6 +210,94 @@ buildsRouter.get('/:slugOrId', (req: Request, res: Response) => {
     kit: populatedKit,
     steps: populatedSteps
   });
+});
+
+/**
+ * POST /api/v1/builds/:slugOrId/spec-card
+ * Generate printable contest/exhibition spec card with custom dimensions and dynamic QR code
+ */
+buildsRouter.post('/:slugOrId/spec-card', async (req: Request, res: Response) => {
+  const db = getDb();
+  const build = db.builds.find(b => b.id === req.params.slugOrId || b.slug === req.params.slugOrId);
+
+  if (!build) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Bitácora No Encontrada',
+      `No se encontró el proyecto de construcción '${req.params.slugOrId}'.`,
+      'not-found'
+    );
+  }
+
+  const {
+    widthMm = 150,
+    heightMm = 100,
+    format = 'flat',
+    theme = 'light_ink_saver',
+    contestName = 'Gunpla & Scale Model Open Cup 2026',
+    entryCode,
+    includeQr = true,
+    includeCoverImage = true,
+    includePaints = true,
+    includeJudgeScoreBox = false,
+    customNotes = ''
+  } = req.body as Partial<GenerateSpecCardRequest>;
+
+  const cleanWidth = Math.max(50, Math.min(420, Number(widthMm) || 150));
+  const cleanHeight = Math.max(30, Math.min(297, Number(heightMm) || 100));
+
+  const tenant = req.tenant;
+  const domain = tenant?.domain || (req.headers.host ? req.headers.host.split(':')[0] : 'gunplajunkies.com');
+  const targetUrl = `https://${domain}/#build-${build.slug}`;
+
+  let qrDataUrl = '';
+  let qrSvg = '';
+  if (includeQr) {
+    try {
+      qrDataUrl = await QRCode.toDataURL(targetUrl, {
+        width: 300,
+        margin: 1,
+        color: {
+          dark: theme === 'dark_mecha' ? '#0F172A' : '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      qrSvg = await QRCode.toString(targetUrl, {
+        type: 'svg',
+        margin: 1
+      });
+    } catch (err) {
+      console.warn('[SpecCard QR Error]:', err);
+    }
+  }
+
+  const populatedKit = db.kits.find(k => k.id === build.kitId);
+  const paintUsages = build.steps.flatMap(s => s.paintUsages || []).map(usage => ({
+    ...usage,
+    paint: db.paints.find(p => p.id === usage.paintId)
+  }));
+  const uniquePaints = Array.from(new Map(paintUsages.filter(p => p.paint).map(p => [p.paintId, p.paint!])).values());
+
+  const populatedBuild: BuildProjectRecord = {
+    ...build,
+    kit: populatedKit
+  };
+
+  const response: GenerateSpecCardResponse = {
+    build: populatedBuild,
+    qrDataUrl,
+    qrSvg,
+    targetUrl,
+    widthMm: cleanWidth,
+    heightMm: cleanHeight,
+    format,
+    theme,
+    htmlPreview: ''
+  };
+
+  return res.json(response);
 });
 
 // ---------------------------------------------------------------------------

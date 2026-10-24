@@ -22,11 +22,13 @@ Future work queue. Keep this separate from the active burn-down.
 - eMOE: 3 CU
 - Dependencies: `DT1`, `DT5`
 
-## Parking Lot (Post-GA v2 Ideas)
+## Completed Parking Lot Items
 
-### P1 -- Printable QR Spec Cards for Physical IPMS / Gunpla Contests
-- Goal: Generate printable table tent cards with QR codes linking a physical contest model on a table to its online Build Log and Paint Recipe.
-- Why not now: Scheduled for post-pilot physical event partnerships.
+### P1 -- Printable QR Spec Cards for Physical IPMS / Gunpla Contests (COMPLETED)
+- Goal: Generate printable table tent cards with QR codes linking a physical contest model on a table to its online Build Log and Paint Recipe with configurable width and height dimensions.
+- Delivered: Endpoints `POST /api/v1/builds/:idOrSlug/spec-card`, modal with live preview, preset/custom cm dimensions, table-tent fold, vector QR code, and print stylesheet.
+
+## Parking Lot (Post-GA v2 Ideas)
 
 ### P2 -- AI Workbench Paint Equivalent & Mix Assistant
 - Goal: Suggest equivalent paint codes across brands (e.g., Mr. Color <-> Tamiya <-> Vallejo) based on what the builder already owns in their Paint Rack.
