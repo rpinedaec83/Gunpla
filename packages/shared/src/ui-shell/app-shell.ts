@@ -1684,9 +1684,11 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
   }
 
   async function handleGoogleCredentialResponse(response) {
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+
     try {
       const idToken = response.credential;
-      const res = await fetch('${config.apiUrl}/api/v1/auth/google-sessions', {
+      const res = await fetch(apiBase + '/api/v1/auth/google-sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': '${config.tenantSlug}' },
         body: JSON.stringify({ idToken })
@@ -1720,8 +1722,9 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     e.preventDefault();
     const username = document.getElementById('login-username').value.trim();
     const password = document.getElementById('login-password').value;
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
     try {
-      const res = await fetch('${config.apiUrl}/api/v1/auth/sessions', {
+      const res = await fetch(apiBase + '/api/v1/auth/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': '${config.tenantSlug}' },
         body: JSON.stringify({ username, password })
@@ -1757,8 +1760,9 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     const email = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value;
 
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
     try {
-      const res = await fetch('${config.apiUrl}/api/v1/auth/registrations', {
+      const res = await fetch(apiBase + '/api/v1/auth/registrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': '${config.tenantSlug}' },
         body: JSON.stringify({ username, displayName, email, password })

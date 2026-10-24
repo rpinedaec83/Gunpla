@@ -20,6 +20,7 @@ const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const API_URL = process.env.API_URL || 'http://localhost:8080';
 const OTHER_TENANT_URL = process.env.GUNPLAJUNKIES_WEB_URL || 'http://localhost:3001';
+const PUBLIC_API_URL = process.env.PUBLIC_API_URL || '';
 
 app.use(cors());
 app.use(express.json());
@@ -35,7 +36,7 @@ const config: AppShellConfig = {
     cardBg: '#111827',
     borderColor: 'rgba(255, 255, 255, 0.08)'
   },
-  apiUrl: API_URL,
+  apiUrl: PUBLIC_API_URL,
   otherTenantUrl: OTHER_TENANT_URL,
   otherTenantName: 'GunplaJunkies',
   googleClientId: process.env.GOOGLE_CLIENT_ID || ''
@@ -70,8 +71,8 @@ async function fetchTenantData(): Promise<AppShellData> {
     const mediaAssets: MediaAsset[] = builders.flatMap((b: any) => (b.recentMedia || []).map((m: any) => ({
       ...m,
       builderUsername: b.username,
-      thumbUrl: m.thumbUrl.startsWith('http') ? m.thumbUrl : `${API_URL}${m.thumbUrl}`,
-      fullUrl: m.fullUrl.startsWith('http') ? m.fullUrl : `${API_URL}${m.fullUrl}`
+      thumbUrl: m.thumbUrl,
+      fullUrl: m.fullUrl
     })));
 
     return {
@@ -99,13 +100,53 @@ async function fetchTenantData(): Promise<AppShellData> {
   }
 }
 
-// Proxy media assets so images resolve directly
-app.get('/legacy-media/*', (req: Request, res: Response) => {
-  res.redirect(`${API_URL}${req.originalUrl}`);
-});
+// Transparent Reverse Proxy for API & Media Assets
+app.all(['/api/*', '/legacy-media/*', '/uploads/*'], async (req: Request, res: Response) => {
+  try {
+    const targetUrl = `${API_URL}${req.originalUrl}`;
+    const headers: Record<string, string> = {};
+    for (const [key, value] of Object.entries(req.headers)) {
+      if (key !== 'host' && typeof value === 'string') {
+        headers[key] = value;
+      }
+    }
+    if (!headers['x-tenant-slug']) {
+      headers['x-tenant-slug'] = config.tenantSlug;
+    }
 
-app.get('/uploads/*', (req: Request, res: Response) => {
-  res.redirect(`${API_URL}${req.originalUrl}`);
+    const init: RequestInit = {
+      method: req.method,
+      headers
+    };
+
+    if (req.method !== 'GET' && req.method !== 'HEAD' && req.body && Object.keys(req.body).length > 0) {
+      init.body = JSON.stringify(req.body);
+      if (!headers['content-type']) {
+        headers['content-type'] = 'application/json';
+      }
+    }
+
+    const upstreamRes = await fetch(targetUrl, init);
+    res.status(upstreamRes.status);
+
+    upstreamRes.headers.forEach((val, key) => {
+      const lower = key.toLowerCase();
+      if (!['transfer-encoding', 'content-encoding', 'content-length'].includes(lower)) {
+        res.setHeader(key, val);
+      }
+    });
+
+    if (upstreamRes.body) {
+      const buffer = Buffer.from(await upstreamRes.arrayBuffer());
+      res.setHeader('Content-Length', buffer.length.toString());
+      res.send(buffer);
+    } else {
+      res.end();
+    }
+  } catch (err: any) {
+    console.error(`[PlamoScale Proxy Error] ${req.method} ${req.originalUrl}:`, err);
+    res.status(502).json({ error: 'Bad Gateway', message: err.message });
+  }
 });
 
 // Health check endpoint

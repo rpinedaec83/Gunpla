@@ -802,7 +802,30 @@ async function runSmoketest() {
     const gunplaScript = gunplaAuthHtml.match(/<script>([\s\S]*?)<\/script>/)[1];
     new vm.Script(gunplaScript, { filename: 'gunpla-inline.js' });
 
-    console.log('[PASS] Google OAuth 2.0 / OIDC Identity Services & interactive Auth Modal verified on both frontends (zero JS syntax errors).');
+    // Verify transparent proxy: POST /api/v1/auth/google-sessions via plamoUrl
+    const demoPayload = {
+      sub: 'google-pilot-user-proxy-test',
+      email: 'pilot.proxy@plamoscale.com',
+      name: 'Pilot Proxy Builder',
+      email_verified: true
+    };
+    const demoToken = 'google-test-token:' + Buffer.from(JSON.stringify(demoPayload)).toString('base64');
+    const proxyAuthRes = await fetch(`${plamoUrl}/api/v1/auth/google-sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken: demoToken })
+    });
+    assert.equal(proxyAuthRes.status, 200, 'Frontend proxy must forward /api/v1/auth/google-sessions to central API');
+    const proxyAuthData = await proxyAuthRes.json();
+    assert.ok(proxyAuthData.token, 'Proxy response must contain token');
+    assert.equal(proxyAuthData.user.email, 'pilot.proxy@plamoscale.com');
+
+    // Verify media asset proxy returns 200
+    const mediaProxyRes = await fetch(`${plamoUrl}/legacy-media/plamoscale/images/aperich/fulls/1.JPG`);
+    assert.equal(mediaProxyRes.status, 200, 'Frontend proxy must stream /legacy-media/* without redirecting');
+    assert.equal(mediaProxyRes.headers.get('content-type'), 'image/jpeg');
+
+    console.log('[PASS] Google OAuth 2.0 / OIDC Identity Services, Auth Modal & Transparent API/Media Reverse Proxy verified.');
 
     console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 SMOKETEST CHECKS PASSED ===');
   } finally {
