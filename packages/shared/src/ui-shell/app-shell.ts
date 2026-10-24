@@ -1817,6 +1817,14 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     const birthYearInput = document.getElementById('google-birthyear');
     const birthYear = birthYearInput ? birthYearInput.value : '';
 
+    if (birthYear) {
+      const age = 2026 - Number(birthYear);
+      if (age < 14) {
+        alert('⛔ Acceso Denegado: La edad mínima legal para acceder a Gunpla Collector es de 14 años (Ley N° 29733).');
+        return;
+      }
+    }
+
     try {
       const idToken = response.credential;
       const res = await fetch(apiBase + '/api/v1/auth/google-sessions', {
@@ -1835,8 +1843,8 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       currentToken = data.token;
       renderAuthUI();
       closeAuthModal();
-      const ageMsg = data.user.isAdult ? ' (Acceso Mayor de Edad)' : ' (Acceso Menor de Edad 14-17)';
-      alert('¡Bienvenido, ' + data.user.displayName + ageMsg + '!');
+      const ageMsg = data.user.isAdult ? ' (Capacidad Plena 18+)' : ' (Acceso Comunitario 14-17)';
+      alert('¡Bienvenido a Gunpla Collector, ' + data.user.displayName + ageMsg + '!');
     } catch (err) {
       alert('Error en Google Sign-In: ' + err.message);
     }
@@ -1899,6 +1907,14 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     const birthYearInput = document.getElementById('reg-birthyear');
     const birthYear = birthYearInput ? birthYearInput.value : '';
 
+    if (birthYear) {
+      const age = 2026 - Number(birthYear);
+      if (age < 14) {
+        alert('⛔ Acceso Denegado: La edad mínima legal para registrarse es de 14 años (Ley N° 29733).');
+        return;
+      }
+    }
+
     const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
     try {
       const res = await fetch(apiBase + '/api/v1/auth/registrations', {
@@ -1917,7 +1933,7 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       currentToken = data.token;
       renderAuthUI();
       closeAuthModal();
-      const ageMsg = data.user.isAdult ? ' (Acceso Mayor de Edad)' : ' (Acceso Menor de Edad 14-17)';
+      const ageMsg = data.user.isAdult ? ' (Capacidad Plena 18+)' : ' (Acceso Comunitario 14-17)';
       alert('¡Cuenta creada con éxito para @' + data.user.username + ageMsg + '!');
     } catch (err) {
       alert('Error al registrar: ' + err.message);

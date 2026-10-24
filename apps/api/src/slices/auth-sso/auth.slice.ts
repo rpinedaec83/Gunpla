@@ -369,6 +369,19 @@ async function handleSignin(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  const currentYear = new Date().getFullYear();
+  if (user.birthYear !== undefined && (currentYear - user.birthYear) < 14) {
+    sendProblem(
+      req,
+      res,
+      403,
+      'Acceso Restringido por Edad',
+      'De conformidad con el Artículo 27 del Reglamento de la Ley N° 29733 (Protección de Datos Personales de Perú), la edad mínima para acceder a la plataforma es de 14 años.',
+      'underage-restriction'
+    );
+    return;
+  }
+
   const token = issueSsoToken(user, tenant.slug);
   res.status(200).json({
     token,
@@ -447,6 +460,18 @@ async function handleGoogleSso(req: Request, res: Response): Promise<void> {
   );
 
   if (user) {
+    if (user.birthYear !== undefined && (currentYear - user.birthYear) < 14) {
+      sendProblem(
+        req,
+        res,
+        403,
+        'Acceso Restringido por Edad',
+        'De conformidad con el Artículo 27 del Reglamento de la Ley N° 29733 (Protección de Datos Personales de Perú), la edad mínima para acceder a la plataforma es de 14 años.',
+        'underage-restriction'
+      );
+      return;
+    }
+
     // Automatic Account Linking if user previously signed up with Username/Password or is a Founding Builder
     if (!user.googleId) {
       user.googleId = googleProfile.sub;
