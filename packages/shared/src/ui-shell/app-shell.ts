@@ -69,6 +69,8 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       ];
 
   const founders = data.builders.filter((b) => b.isFounder && b.username !== 'rpineda');
+  const kitOptions = (data.kits || []).map(k => `<option value="${k.id}">[${k.brand} ${k.scale || ''}] ${k.name} (${k.grade || k.category})</option>`).join('');
+  const paintOptions = (data.paints || []).map(p => `<option value="${p.id}">[${p.brand}] ${p.code} - ${p.name} (${p.line})</option>`).join('');
 
   return `<!DOCTYPE html>
 <html lang="es" class="dark">
@@ -374,8 +376,8 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       color: #fff;
     }
 
-    /* Auth Modal */
-    #auth-modal {
+    /* Auth & Custom Modals */
+    #auth-modal, .custom-modal {
       display: none;
       position: fixed;
       inset: 0;
@@ -384,8 +386,10 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       z-index: 1000;
       align-items: center;
       justify-content: center;
+      padding: 1rem;
+      overflow-y: auto;
     }
-    #auth-modal.active { display: flex; animation: fadeIn 0.2s ease; }
+    #auth-modal.active, .custom-modal.active { display: flex; animation: fadeIn 0.2s ease; }
     .auth-box {
       background: #111827;
       border: 1px solid var(--border-color);
@@ -1121,15 +1125,110 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
 
     <!-- 5. WORKBENCH TAB -->
     <section id="view-workbench" class="view-section">
-      <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 2rem; text-align: center;">
-        <h2 style="font-size: 1.5rem; color: #fff; margin-bottom: 0.5rem;">Mi Banco de Trabajo Personal (Stash & Rack)</h2>
-        <p style="color: #94a3b8; max-width: 600px; margin: 0 auto 1.5rem;">
-          Controla tus maquetas pendientes de armado (Backlog), proyectos en progreso (WIP), terminados y tu inventario de frascos de pintura.
+      <!-- Unauthenticated State -->
+      <div id="workbench-unauth-view" style="display: none; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 3rem 2rem; text-align: center; max-width: 720px; margin: 2rem auto;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🛠️</div>
+        <h2 style="font-size: 1.75rem; color: #fff; font-weight: 700; margin-bottom: 0.75rem;">Tu Banco de Trabajo & Taller Personal</h2>
+        <p style="color: #94a3b8; font-size: 0.95rem; line-height: 1.6; margin-bottom: 2rem;">
+          Inicia sesión con tu cuenta de Google o con tus credenciales de modelista para registrar maquetas en tu <strong>Stash</strong>, organizar tu <strong>Rack de pinturas</strong> y publicar tus <strong>Bitácoras de armado</strong> paso a paso.
         </p>
-        <div style="display: flex; justify-content: center; gap: 1rem;">
-          <button class="btn-primary" onclick="alert('Conectado a /api/v1/workbench/stash. Inicia sesión con SSO o ingresa con tus credenciales locales.')">
-            Acceder a Mi Stash
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
+          <button class="btn-primary" onclick="openAuthModal()" style="padding: 0.75rem 1.5rem; font-size: 0.95rem;">
+            🚀 Iniciar Sesión con Google SSO
           </button>
+          <button class="filter-pill" onclick="quickLoginFounder('aperich')" style="padding: 0.75rem 1.25rem; font-size: 0.85rem;">
+            ⚡ Probar Demo (Aldo Perich)
+          </button>
+        </div>
+      </div>
+
+      <!-- Authenticated State -->
+      <div id="workbench-auth-view" style="display: none;">
+        <!-- Header Banner with Metrics & Quick Actions -->
+        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.75rem; margin-bottom: 1.75rem;">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div id="wb-user-avatar-slot"></div>
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <h2 id="wb-user-title" style="font-size: 1.4rem; font-weight: 700; color: #fff;">Mi Taller</h2>
+                  <span id="wb-age-badge" class="status-badge">Verificado</span>
+                </div>
+                <div id="wb-user-subtitle" style="font-size: 0.82rem; color: #94a3b8;">Inventario personal de modelismo</div>
+              </div>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div style="display: flex; flex-wrap: wrap; gap: 0.6rem;">
+              <button class="btn-primary" onclick="openAddStashModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem;">
+                + Agregar Kit al Stash
+              </button>
+              <button class="btn-primary" onclick="openNewBuildModal()" style="background: #0284c7; border-color: #0284c7; font-size: 0.82rem; padding: 0.5rem 0.9rem;">
+                + Nueva Bitácora (WIP)
+              </button>
+              <button class="filter-pill" onclick="openAddPaintModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem;">
+                + Registrar Pintura
+              </button>
+            </div>
+          </div>
+
+          <!-- Real-Time Metrics Strip -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <div style="background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;">Stash Total</div>
+              <div id="wb-stat-stash" style="font-size: 1.4rem; font-weight: 700; color: #fff; margin-top: 0.2rem;">0</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.75rem; color: #38bdf8; text-transform: uppercase;">Backlog (Sin armar)</div>
+              <div id="wb-stat-unbuilt" style="font-size: 1.4rem; font-weight: 700; color: #38bdf8; margin-top: 0.2rem;">0</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.75rem; color: #f59e0b; text-transform: uppercase;">En Armado (WIP)</div>
+              <div id="wb-stat-wip" style="font-size: 1.4rem; font-weight: 700; color: #f59e0b; margin-top: 0.2rem;">0</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.75rem; color: #4ade80; text-transform: uppercase;">Terminados</div>
+              <div id="wb-stat-built" style="font-size: 1.4rem; font-weight: 700; color: #4ade80; margin-top: 0.2rem;">0</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.75rem; color: #c084fc; text-transform: uppercase;">Paint Rack</div>
+              <div id="wb-stat-paints" style="font-size: 1.4rem; font-weight: 700; color: #c084fc; margin-top: 0.2rem;">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Workbench Sub-Tabs -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+          <button id="wb-subtab-btn-stash" class="filter-pill active" onclick="switchWorkbenchSubtab('stash')">
+            📦 Mi Stash de Maquetas
+          </button>
+          <button id="wb-subtab-btn-builds" class="filter-pill" onclick="switchWorkbenchSubtab('builds')">
+            📝 Mis Bitácoras de Armado
+          </button>
+          <button id="wb-subtab-btn-paints" class="filter-pill" onclick="switchWorkbenchSubtab('paints')">
+            🎨 Mi Rack de Pinturas
+          </button>
+        </div>
+
+        <!-- Sub-Tab 1: Stash Grid -->
+        <div id="wb-subtab-stash" class="wb-subtab-content">
+          <div id="wb-stash-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem;">
+            <!-- Dynamically populated via loadWorkbenchData() -->
+          </div>
+        </div>
+
+        <!-- Sub-Tab 2: Builds Grid -->
+        <div id="wb-subtab-builds" class="wb-subtab-content" style="display: none;">
+          <div id="wb-builds-list" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Dynamically populated via loadWorkbenchData() -->
+          </div>
+        </div>
+
+        <!-- Sub-Tab 3: Paint Rack Grid -->
+        <div id="wb-subtab-paints" class="wb-subtab-content" style="display: none;">
+          <div id="wb-paints-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;">
+            <!-- Dynamically populated via loadWorkbenchData() -->
+          </div>
         </div>
       </div>
     </section>
@@ -1493,8 +1592,199 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
   </div>
 </div>
 
+<!-- Workbench Modal: Add Kit to Stash -->
+<div id="modal-add-stash" class="custom-modal" onclick="closeAddStashModal(event)">
+  <div class="auth-box" style="max-width: 520px;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeAddStashModal()">&times;</span>
+    <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;">+ Agregar Kit a Mi Stash</h3>
+    <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
+      Registra una maqueta en tu inventario personal para llevar su seguimiento de armado.
+    </p>
+    <form onsubmit="handleAddStashSubmit(event)">
+      <div class="auth-input-group">
+        <label class="auth-label">Seleccionar Kit del Catálogo Maestro</label>
+        <select id="stash-kit-select" class="auth-input" required>
+          <option value="">Selecciona una maqueta...</option>
+          ${kitOptions}
+        </select>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="auth-input-group">
+          <label class="auth-label">Estado en Taller</label>
+          <select id="stash-status-select" class="auth-input">
+            <option value="unbuilt">⏳ Sin Armar (Backlog)</option>
+            <option value="in_progress">🛠️ En Armado (WIP)</option>
+            <option value="built">🏆 Terminado (Exhibición)</option>
+            <option value="wishlist">⭐ Lista de Deseos</option>
+          </select>
+        </div>
+        <div class="auth-input-group">
+          <label class="auth-label">Calificación Inicial</label>
+          <select id="stash-rating-select" class="auth-input">
+            <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
+            <option value="4">⭐⭐⭐⭐ (4/5)</option>
+            <option value="3">⭐⭐⭐ (3/5)</option>
+            <option value="2">⭐⭐ (2/5)</option>
+            <option value="1">⭐ (1/5)</option>
+          </select>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 0.75rem;">
+        <div class="auth-input-group">
+          <label class="auth-label">Precio Pagado (Opcional)</label>
+          <input type="number" id="stash-price-input" class="auth-input" placeholder="ej. 180" step="any">
+        </div>
+        <div class="auth-input-group">
+          <label class="auth-label">Moneda</label>
+          <select id="stash-currency-select" class="auth-input">
+            <option value="PEN">PEN (S/)</option>
+            <option value="USD">USD ($)</option>
+          </select>
+        </div>
+      </div>
+      <div class="auth-input-group">
+        <label class="auth-label">Notas Personales</label>
+        <textarea id="stash-notes-input" class="auth-input" style="height: 60px; resize: none;" placeholder="ej. Comprado en tienda local, versión con calcas al agua."></textarea>
+      </div>
+      <button type="submit" id="stash-submit-btn" class="btn-primary" style="width: 100%; justify-content: center; padding: 0.65rem; margin-top: 0.5rem;">
+        Guardar en Mi Stash
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Workbench Modal: New Build Project -->
+<div id="modal-new-build" class="custom-modal" onclick="closeNewBuildModal(event)">
+  <div class="auth-box" style="max-width: 560px;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeNewBuildModal()">&times;</span>
+    <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;">+ Nueva Bitácora de Armado (Build Log)</h3>
+    <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
+      Inicia un proyecto de construcción para documentar tus técnicas, fotos y avances.
+    </p>
+    <form onsubmit="handleNewBuildSubmit(event)">
+      <div class="auth-input-group">
+        <label class="auth-label">Vincular a Maqueta</label>
+        <select id="build-kit-select" class="auth-input">
+          <option value="">(Opcional) Selecciona kit...</option>
+          ${kitOptions}
+        </select>
+      </div>
+      <div class="auth-input-group">
+        <label class="auth-label">Título del Proyecto</label>
+        <input type="text" id="build-title-input" class="auth-input" placeholder="ej. RG Hi-Nu Gundam - Custom Titán & Weathering" required>
+      </div>
+      <div class="auth-input-group">
+        <label class="auth-label">Subtítulo o Resumen de Técnicas</label>
+        <input type="text" id="build-subtitle-input" class="auth-input" placeholder="ej. Pre-shading con aerógrafo, calcas al agua y acabado mate">
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="auth-input-group">
+          <label class="auth-label">Categoría</label>
+          <select id="build-category-select" class="auth-input">
+            <option value="gunpla-mecha">Gunpla & Mecha</option>
+            <option value="military">Militar 1/35</option>
+            <option value="aviation">Aviación 1/48</option>
+            <option value="automotive">Automotriz 1/24</option>
+            <option value="naval">Naval</option>
+            <option value="figures">Figuras</option>
+            <option value="scifi">Sci-Fi</option>
+            <option value="diorama">Diorama</option>
+          </select>
+        </div>
+        <div class="auth-input-group">
+          <label class="auth-label">Foto de Portada</label>
+          <input type="file" id="build-cover-file" class="auth-input" accept="image/*" style="padding: 0.35rem 0.6rem; font-size: 0.75rem;">
+        </div>
+      </div>
+      <button type="submit" id="build-submit-btn" class="btn-primary" style="width: 100%; justify-content: center; padding: 0.65rem; margin-top: 0.5rem;">
+        Crear Bitácora
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Workbench Modal: Add Step to Build -->
+<div id="modal-add-step" class="custom-modal" onclick="closeAddStepModal(event)">
+  <div class="auth-box" style="max-width: 540px;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeAddStepModal()">&times;</span>
+    <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;">+ Agregar Paso a la Bitácora</h3>
+    <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
+      Registra una etapa del armado con fotos de tu avance y descripción de técnicas.
+    </p>
+    <form onsubmit="handleAddStepSubmit(event)">
+      <input type="hidden" id="step-build-id">
+      <div class="auth-input-group">
+        <label class="auth-label">Etapa de Construcción</label>
+        <select id="step-stage-select" class="auth-input">
+          <option value="unboxing">📦 Desempaquetado (Unboxing)</option>
+          <option value="assembly">🧩 Ensamblaje / Prueba en seco</option>
+          <option value="assembly_inner_frame">⚙️ Inner Frame (Esqueleto Interno)</option>
+          <option value="modification">✂️ Modificación / Plaplate / Scratchbuild</option>
+          <option value="priming">🎨 Imprimación (Primer)</option>
+          <option value="painting">🖌️ Pintura de Armadura & Camuflaje</option>
+          <option value="decals">🏷️ Calcas & Panel Line</option>
+          <option value="weathering">🌧️ Weathering, Óxido & Desconchones</option>
+          <option value="final_reveal">✨ Revelación Final / Sesión de Fotos</option>
+        </select>
+      </div>
+      <div class="auth-input-group">
+        <label class="auth-label">Título del Paso</label>
+        <input type="text" id="step-title-input" class="auth-input" placeholder="ej. Detallado del torso y hombros" required>
+      </div>
+      <div class="auth-input-group">
+        <label class="auth-label">Descripción del Avance</label>
+        <textarea id="step-desc-input" class="auth-input" style="height: 70px; resize: none;" placeholder="Describe qué herramientas usaste, presiones de aire o dilución de pintura..."></textarea>
+      </div>
+      <div class="auth-input-group">
+        <label class="auth-label">Foto del Avance (Sube una imagen)</label>
+        <input type="file" id="step-photo-file" class="auth-input" accept="image/*" style="padding: 0.35rem 0.6rem; font-size: 0.75rem;">
+      </div>
+      <button type="submit" id="step-submit-btn" class="btn-primary" style="width: 100%; justify-content: center; padding: 0.65rem; margin-top: 0.5rem;">
+        Guardar Paso de Armado
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Workbench Modal: Add Paint to Rack -->
+<div id="modal-add-paint" class="custom-modal" onclick="closeAddPaintModal(event)">
+  <div class="auth-box" style="max-width: 480px;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeAddPaintModal()">&times;</span>
+    <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;">+ Registrar Pintura en Rack</h3>
+    <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
+      Añade frascos a tu inventario de pintura personal.
+    </p>
+    <form onsubmit="handleAddPaintSubmit(event)">
+      <div class="auth-input-group">
+        <label class="auth-label">Seleccionar Pintura del Catálogo</label>
+        <select id="paint-id-select" class="auth-input" required>
+          <option value="">Selecciona una pintura...</option>
+          ${paintOptions}
+        </select>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="auth-input-group">
+          <label class="auth-label">Estado en Taller</label>
+          <select id="paint-status-select" class="auth-input">
+            <option value="owned">En Posesión (Normal)</option>
+            <option value="low_stock">Poco Stock (Por acabarse)</option>
+            <option value="wishlist">Lista de Deseos</option>
+          </select>
+        </div>
+        <div class="auth-input-group">
+          <label class="auth-label">Cantidad de Frascos</label>
+          <input type="number" id="paint-qty-input" class="auth-input" value="1" min="1" max="50">
+        </div>
+      </div>
+      <button type="submit" id="paint-submit-btn" class="btn-primary" style="width: 100%; justify-content: center; padding: 0.65rem; margin-top: 0.5rem;">
+        Guardar en Mi Rack
+      </button>
+    </form>
+  </div>
+</div>
+
 <script>
-  function switchTab(tabId) {
+  function switchTab(tabId, el) {
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.sidebar-nav .nav-item').forEach(el => el.classList.remove('active'));
 
@@ -1521,10 +1811,20 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     }
 
     // Set active sidebar item
-    event.currentTarget.classList.add('active');
+    document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
+      const clickAttr = item.getAttribute('onclick') || '';
+      if (clickAttr.indexOf(tabId) !== -1) {
+        item.classList.add('active');
+      }
+    });
 
     // Close mobile sidebar if open
-    document.getElementById('sidebar').classList.remove('open');
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.classList.remove('open');
+
+    if (tabId === 'workbench') {
+      loadWorkbenchData();
+    }
   }
 
   function filterShowcase(categoryId, btn) {
@@ -1940,12 +2240,537 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     }
   }
 
+  // Workbench sub-tab switching
+  function switchWorkbenchSubtab(subtab) {
+    document.querySelectorAll('#workbench-auth-view .wb-subtab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('#workbench-auth-view .filter-pill').forEach(el => el.classList.remove('active'));
+    
+    const targetContent = document.getElementById('wb-subtab-' + subtab);
+    if (targetContent) targetContent.style.display = 'block';
+
+    const targetBtn = document.getElementById('wb-subtab-btn-' + subtab);
+    if (targetBtn) targetBtn.classList.add('active');
+  }
+
+  // Modal open/close handlers
+  function openAddStashModal() {
+    const m = document.getElementById('modal-add-stash');
+    if (m) m.classList.add('active');
+  }
+  function closeAddStashModal(e) {
+    if (!e || e.target.id === 'modal-add-stash' || e.target.classList.contains('auth-close')) {
+      const m = document.getElementById('modal-add-stash');
+      if (m) m.classList.remove('active');
+    }
+  }
+
+  function openNewBuildModal(preselectedKitId) {
+    const m = document.getElementById('modal-new-build');
+    if (preselectedKitId) {
+      const select = document.getElementById('build-kit-select');
+      if (select) select.value = preselectedKitId;
+    }
+    if (m) m.classList.add('active');
+  }
+  function closeNewBuildModal(e) {
+    if (!e || e.target.id === 'modal-new-build' || e.target.classList.contains('auth-close')) {
+      const m = document.getElementById('modal-new-build');
+      if (m) m.classList.remove('active');
+    }
+  }
+
+  function openAddStepModal(buildId) {
+    const m = document.getElementById('modal-add-step');
+    const input = document.getElementById('step-build-id');
+    if (input) input.value = buildId;
+    if (m) m.classList.add('active');
+  }
+  function closeAddStepModal(e) {
+    if (!e || e.target.id === 'modal-add-step' || e.target.classList.contains('auth-close')) {
+      const m = document.getElementById('modal-add-step');
+      if (m) m.classList.remove('active');
+    }
+  }
+
+  function openAddPaintModal() {
+    const m = document.getElementById('modal-add-paint');
+    if (m) m.classList.add('active');
+  }
+  function closeAddPaintModal(e) {
+    if (!e || e.target.id === 'modal-add-paint' || e.target.classList.contains('auth-close')) {
+      const m = document.getElementById('modal-add-paint');
+      if (m) m.classList.remove('active');
+    }
+  }
+
+  // File to Base64 helper
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = err => reject(err);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Load and Render Workbench Data
+  async function loadWorkbenchData() {
+    const unauthView = document.getElementById('workbench-unauth-view');
+    const authView = document.getElementById('workbench-auth-view');
+    if (!unauthView || !authView) return;
+
+    if (!currentUser || !currentToken) {
+      unauthView.style.display = 'block';
+      authView.style.display = 'none';
+      return;
+    }
+
+    unauthView.style.display = 'none';
+    authView.style.display = 'block';
+
+    // Update User Header Info
+    const avatarSlot = document.getElementById('wb-user-avatar-slot');
+    if (avatarSlot) {
+      const initials = (currentUser.displayName || currentUser.username || 'U').slice(0, 2).toUpperCase();
+      avatarSlot.innerHTML = currentUser.avatarUrl 
+        ? '<img src="' + currentUser.avatarUrl + '" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);">'
+        : '<div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1.1rem;">' + initials + '</div>';
+    }
+    const titleSlot = document.getElementById('wb-user-title');
+    if (titleSlot) titleSlot.textContent = 'Taller de ' + (currentUser.displayName || '@' + currentUser.username);
+    const ageBadge = document.getElementById('wb-age-badge');
+    if (ageBadge) {
+      ageBadge.textContent = currentUser.isAdult ? 'Mayor de Edad (18+)' : 'Adolescente (14-17)';
+      ageBadge.style.color = currentUser.isAdult ? '#4ade80' : '#38bdf8';
+    }
+
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    const authHeaders = {
+      'Authorization': 'Bearer ' + currentToken,
+      'X-Tenant-Slug': '${config.tenantSlug}'
+    };
+
+    try {
+      // 1. Fetch Stash Items
+      const stashRes = await fetch(apiBase + '/api/v1/workbench/stash', { headers: authHeaders });
+      const stashData = stashRes.ok ? await stashRes.json() : { items: [] };
+      const stashItems = stashData.items || [];
+
+      // 2. Fetch Paint Rack Items
+      const paintsRes = await fetch(apiBase + '/api/v1/workbench/paints', { headers: authHeaders });
+      const paintsData = paintsRes.ok ? await paintsRes.json() : { items: [] };
+      const paintItems = paintsData.items || [];
+
+      // 3. Fetch User Build Projects
+      const buildsRes = await fetch(apiBase + '/api/v1/builds?username=' + encodeURIComponent(currentUser.username), { headers: authHeaders });
+      const buildsData = buildsRes.ok ? await buildsRes.json() : { items: [] };
+      const buildItems = buildsData.items || [];
+
+      // Update Metrics
+      const totalKits = stashItems.length;
+      const unbuiltKits = stashItems.filter(s => s.status === 'unbuilt').length;
+      const wipKits = stashItems.filter(s => s.status === 'in_progress').length;
+      const builtKits = stashItems.filter(s => s.status === 'built').length;
+      const totalPaints = paintItems.reduce((acc, p) => acc + (p.quantity || 1), 0);
+
+      const sTotal = document.getElementById('wb-stat-stash');
+      if (sTotal) sTotal.textContent = totalKits;
+      const sUnbuilt = document.getElementById('wb-stat-unbuilt');
+      if (sUnbuilt) sUnbuilt.textContent = unbuiltKits;
+      const sWip = document.getElementById('wb-stat-wip');
+      if (sWip) sWip.textContent = wipKits;
+      const sBuilt = document.getElementById('wb-stat-built');
+      if (sBuilt) sBuilt.textContent = builtKits;
+      const sPaints = document.getElementById('wb-stat-paints');
+      if (sPaints) sPaints.textContent = totalPaints;
+
+      // Render Stash Grid
+      const stashContainer = document.getElementById('wb-stash-grid');
+      if (stashContainer) {
+        if (stashItems.length === 0) {
+          stashContainer.innerHTML = 
+            '<div style="grid-column: 1 / -1; background: rgba(255,255,255,0.02); border: 1px dashed var(--border-color); border-radius: 10px; padding: 3rem 1.5rem; text-align: center;">' +
+              '<div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📦</div>' +
+              '<h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.4rem;">¡Tu Stash está vacío!</h3>' +
+              '<p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.25rem;">Agrega tu primera maqueta para empezar a registrar tu colección y avances.</p>' +
+              '<button class="btn-primary" onclick="openAddStashModal()">+ Agregar Mi Primer Kit</button>' +
+            '</div>';
+        } else {
+          stashContainer.innerHTML = stashItems.map(item => {
+            const kit = item.kit || {};
+            const kitName = kit.name || 'Maqueta Desconocida';
+            const brand = kit.brand || 'Bandai';
+            const scale = kit.scale ? kit.scale + ' • ' : '';
+            const grade = kit.grade || kit.category || '';
+            const boxArt = kit.boxartUrl || '/legacy-media/plamoscale/images/aperich/thumbs/01.jpg';
+            const stars = '⭐'.repeat(item.rating || 5);
+
+            return '<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;">' +
+              '<img src="' + boxArt + '" alt="' + kitName + '" style="width: 100%; height: 160px; object-fit: cover; background: #020617;">' +
+              '<div style="padding: 1rem; flex: 1; display: flex; flex-direction: column;">' +
+                '<div style="font-size: 0.72rem; color: var(--primary); font-weight: 600; text-transform: uppercase; margin-bottom: 0.2rem;">' + brand + ' • ' + scale + grade + '</div>' +
+                '<h4 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; line-height: 1.3;">' + kitName + '</h4>' +
+                '<div style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.75rem;">' + stars + (item.pricePaid ? ' • ' + (item.currency || 'PEN') + ' ' + item.pricePaid : '') + '</div>' +
+                (item.notes ? '<p style="font-size: 0.75rem; color: #94a3b8; font-style: italic; margin-bottom: 0.75rem;">"' + item.notes + '"</p>' : '') +
+                '<div style="margin-top: auto; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">' +
+                  '<label style="display: block; font-size: 0.7rem; color: #64748b; margin-bottom: 0.25rem;">Estado:</label>' +
+                  '<select class="auth-input" style="padding: 0.35rem 0.5rem; font-size: 0.78rem; margin-bottom: 0.6rem;" onchange="updateStashStatus(&quot;' + item.id + '&quot;, this.value)">' +
+                    '<option value="unbuilt"' + (item.status === 'unbuilt' ? ' selected' : '') + '>⏳ Sin Armar (Backlog)</option>' +
+                    '<option value="in_progress"' + (item.status === 'in_progress' ? ' selected' : '') + '>🛠️ En Armado (WIP)</option>' +
+                    '<option value="built"' + (item.status === 'built' ? ' selected' : '') + '>🏆 Terminado (Exhibición)</option>' +
+                    '<option value="for_trade"' + (item.status === 'for_trade' ? ' selected' : '') + '>🏷️ En Venta (Bazar)</option>' +
+                    '<option value="wishlist"' + (item.status === 'wishlist' ? ' selected' : '') + '>⭐ Lista de Deseos</option>' +
+                  '</select>' +
+                  '<div style="display: flex; gap: 0.4rem;">' +
+                    '<button class="btn-primary" style="font-size: 0.72rem; padding: 0.3rem 0.6rem; flex: 1; justify-content: center;" onclick="openNewBuildModal(&quot;' + (kit.id || '') + '&quot;)">🛠️ Bitácora</button>' +
+                    '<button class="filter-pill" style="font-size: 0.72rem; padding: 0.3rem 0.6rem; color: #ef4444;" onclick="deleteStashItem(&quot;' + item.id + '&quot;)">🗑️</button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+          }).join('');
+        }
+      }
+
+      // Render Builds List
+      const buildsContainer = document.getElementById('wb-builds-list');
+      if (buildsContainer) {
+        if (buildItems.length === 0) {
+          buildsContainer.innerHTML = 
+            '<div style="background: rgba(255,255,255,0.02); border: 1px dashed var(--border-color); border-radius: 10px; padding: 3rem 1.5rem; text-align: center;">' +
+              '<div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📝</div>' +
+              '<h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.4rem;">Aún no has creado bitácoras de armado</h3>' +
+              '<p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.25rem;">Documenta tus proyectos paso a paso con fotos de avance y pinturas usadas.</p>' +
+              '<button class="btn-primary" onclick="openNewBuildModal()">+ Crear Primera Bitácora</button>' +
+            '</div>';
+        } else {
+          buildsContainer.innerHTML = buildItems.map(b => {
+            const steps = b.steps || [];
+            const cover = b.coverImageUrl || (steps.length > 0 && steps[0].photoUrls && steps[0].photoUrls[0]) || '/legacy-media/plamoscale/images/aperich/thumbs/01.jpg';
+            const stepsHtml = steps.length > 0
+              ? steps.map((s, idx) => 
+                  '<div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem; padding: 0.6rem; background: rgba(255,255,255,0.02); border-radius: 6px;">' +
+                    '<div style="width: 24px; height: 24px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0;">' + (idx + 1) + '</div>' +
+                    '<div style="flex: 1;">' +
+                      '<div style="font-size: 0.82rem; font-weight: 600; color: #fff;">' + s.title + ' <span style="font-size: 0.7rem; color: var(--accent);">(' + s.stage + ')</span></div>' +
+                      (s.description ? '<p style="font-size: 0.78rem; color: #94a3b8; margin-top: 0.2rem;">' + s.description + '</p>' : '') +
+                      (s.photoUrls && s.photoUrls.length > 0 ? '<div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">' + s.photoUrls.map(u => '<img src="' + u + '" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer;" onclick="openLightbox(&quot;' + u + '&quot;, &quot;' + s.title.replace(/"/g, '') + '&quot;, &quot;@' + b.username + '&quot;)">').join('') + '</div>' : '') +
+                    '</div>' +
+                  '</div>'
+                ).join('')
+              : '<p style="font-size: 0.8rem; color: #64748b; font-style: italic;">Sin pasos registrados todavía.</p>';
+
+            return '<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem;">' +
+              '<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem;">' +
+                '<div style="display: flex; gap: 1rem; align-items: center;">' +
+                  '<img src="' + cover + '" style="width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-color);">' +
+                  '<div>' +
+                    '<div style="font-size: 0.75rem; color: var(--primary); font-weight: 600; text-transform: uppercase;">' + b.category + (b.scale ? ' • ' + b.scale : '') + '</div>' +
+                    '<h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">' + b.title + '</h3>' +
+                    (b.subtitle ? '<div style="font-size: 0.82rem; color: #94a3b8;">' + b.subtitle + '</div>' : '') +
+                  '</div>' +
+                '</div>' +
+                '<button class="btn-primary" style="font-size: 0.78rem; padding: 0.45rem 0.8rem;" onclick="openAddStepModal(&quot;' + b.id + '&quot;)">+ Agregar Paso / Foto</button>' +
+              '</div>' +
+              '<div style="padding-top: 0.75rem; border-top: 1px solid var(--border-color);">' +
+                '<div style="font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.5rem;">Pasos de Construcción (' + steps.length + '):</div>' +
+                stepsHtml +
+              '</div>' +
+            '</div>';
+          }).join('');
+        }
+      }
+
+      // Render Paint Rack Grid
+      const paintsContainer = document.getElementById('wb-paints-grid');
+      if (paintsContainer) {
+        if (paintItems.length === 0) {
+          paintsContainer.innerHTML = 
+            '<div style="grid-column: 1 / -1; background: rgba(255,255,255,0.02); border: 1px dashed var(--border-color); border-radius: 10px; padding: 3rem 1.5rem; text-align: center;">' +
+              '<div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎨</div>' +
+              '<h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.4rem;">Tu Rack de Pinturas está vacío</h3>' +
+              '<p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.25rem;">Registra los frascos que tienes en tu taller para usarlos en tus recetas.</p>' +
+              '<button class="btn-primary" onclick="openAddPaintModal()">+ Registrar Primera Pintura</button>' +
+            '</div>';
+        } else {
+          paintsContainer.innerHTML = paintItems.map(item => {
+            const p = item.paint || {};
+            const hex = p.colorHex || '#94a3b8';
+            return '<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; display: flex; align-items: center; gap: 0.75rem;">' +
+              '<div style="width: 32px; height: 32px; border-radius: 50%; background: ' + hex + '; border: 2px solid rgba(255,255,255,0.2); flex-shrink: 0;"></div>' +
+              '<div style="flex: 1; overflow: hidden;">' +
+                '<div style="font-size: 0.82rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (p.code || 'Pintura') + ' ' + (p.name || '') + '</div>' +
+                '<div style="font-size: 0.72rem; color: #94a3b8;">' + (p.brand || 'Mr. Color') + ' • Cantidad: ' + (item.quantity || 1) + '</div>' +
+              '</div>' +
+              '<div style="display: flex; gap: 0.25rem;">' +
+                '<button class="filter-pill" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;" onclick="updatePaintQty(&quot;' + item.id + '&quot;, ' + ((item.quantity || 1) + 1) + ')">+</button>' +
+                '<button class="filter-pill" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;" onclick="updatePaintQty(&quot;' + item.id + '&quot;, ' + Math.max(0, (item.quantity || 1) - 1) + ')">-</button>' +
+              '</div>' +
+            '</div>';
+          }).join('');
+        }
+      }
+    } catch (err) {
+      console.error('[Workbench load error]:', err);
+    }
+  }
+
+  // Mutation Handlers
+  async function handleAddStashSubmit(e) {
+    e.preventDefault();
+    const kitId = document.getElementById('stash-kit-select').value;
+    const status = document.getElementById('stash-status-select').value;
+    const rating = Number(document.getElementById('stash-rating-select').value);
+    const priceVal = document.getElementById('stash-price-input').value;
+    const pricePaid = priceVal ? Number(priceVal) : undefined;
+    const currency = document.getElementById('stash-currency-select').value;
+    const notes = document.getElementById('stash-notes-input').value.trim();
+
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    try {
+      const res = await fetch(apiBase + '/api/v1/workbench/stash', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': '${config.tenantSlug}'
+        },
+        body: JSON.stringify({ kitId, status, rating, pricePaid, currency, notes })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Error al agregar kit al stash');
+      }
+      closeAddStashModal();
+      loadWorkbenchData();
+      alert('¡Maqueta agregada con éxito a tu Stash personal!');
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+
+  async function updateStashStatus(itemId, newStatus) {
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    try {
+      const res = await fetch(apiBase + '/api/v1/workbench/stash/' + itemId, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': '${config.tenantSlug}'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        loadWorkbenchData();
+      }
+    } catch (err) {
+      console.warn('Stash status update error:', err);
+    }
+  }
+
+  async function deleteStashItem(itemId) {
+    if (!confirm('¿Seguro que deseas eliminar esta maqueta de tu Stash?')) return;
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    try {
+      const res = await fetch(apiBase + '/api/v1/workbench/stash/' + itemId, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': '${config.tenantSlug}'
+        }
+      });
+      if (res.ok) {
+        loadWorkbenchData();
+      }
+    } catch (err) {
+      alert('Error al eliminar: ' + err.message);
+    }
+  }
+
+  async function handleNewBuildSubmit(e) {
+    e.preventDefault();
+    const kitId = document.getElementById('build-kit-select').value || undefined;
+    const title = document.getElementById('build-title-input').value.trim();
+    const subtitle = document.getElementById('build-subtitle-input').value.trim();
+    const category = document.getElementById('build-category-select').value;
+    const fileInput = document.getElementById('build-cover-file');
+    const submitBtn = document.getElementById('build-submit-btn');
+
+    let coverImageUrl = undefined;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Subiendo portada...';
+
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    const authHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + currentToken,
+      'X-Tenant-Slug': '${config.tenantSlug}'
+    };
+
+    try {
+      if (fileInput && fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const base64 = await fileToBase64(file);
+        const uploadRes = await fetch(apiBase + '/api/v1/media/upload', {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify({
+            dataBase64: base64,
+            fileName: file.name,
+            title: title + ' - Portada',
+            category
+          })
+        });
+        if (uploadRes.ok) {
+          const upData = await uploadRes.json();
+          coverImageUrl = upData.fullUrl;
+        }
+      }
+
+      submitBtn.textContent = 'Creando bitácora...';
+      const res = await fetch(apiBase + '/api/v1/builds', {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ kitId, title, subtitle, category, coverImageUrl, status: 'in_progress' })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Error al crear bitácora');
+      }
+      closeNewBuildModal();
+      loadWorkbenchData();
+      switchWorkbenchSubtab('builds');
+      alert('¡Bitácora creada con éxito! Ahora puedes agregar pasos de armado y fotos.');
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Publicar Proyecto de Armado';
+    }
+  }
+
+  async function handleAddStepSubmit(e) {
+    e.preventDefault();
+    const buildId = document.getElementById('step-build-id').value;
+    const stage = document.getElementById('step-stage-select').value;
+    const title = document.getElementById('step-title-input').value.trim();
+    const description = document.getElementById('step-desc-input').value.trim();
+    const fileInput = document.getElementById('step-photo-file');
+    const submitBtn = document.getElementById('step-submit-btn');
+
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    const authHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + currentToken,
+      'X-Tenant-Slug': '${config.tenantSlug}'
+    };
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Guardando paso...';
+
+    try {
+      const photoUrls = [];
+      if (fileInput && fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const base64 = await fileToBase64(file);
+        const uploadRes = await fetch(apiBase + '/api/v1/media/upload', {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify({
+            dataBase64: base64,
+            fileName: file.name,
+            title: title,
+            category: 'gunpla-mecha'
+          })
+        });
+        if (uploadRes.ok) {
+          const upData = await uploadRes.json();
+          photoUrls.push(upData.fullUrl);
+        }
+      }
+
+      const res = await fetch(apiBase + '/api/v1/builds/' + buildId + '/steps', {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ stage, title, description, photoUrls, paintUsages: [] })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Error al agregar paso a la bitácora');
+      }
+      closeAddStepModal();
+      loadWorkbenchData();
+      alert('¡Paso de armado agregado con éxito!');
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Guardar Paso de Armado';
+    }
+  }
+
+  async function handleAddPaintSubmit(e) {
+    e.preventDefault();
+    const paintId = document.getElementById('paint-id-select').value;
+    const status = document.getElementById('paint-status-select').value;
+    const quantity = Number(document.getElementById('paint-qty-input').value) || 1;
+
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    try {
+      const res = await fetch(apiBase + '/api/v1/workbench/paints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': '${config.tenantSlug}'
+        },
+        body: JSON.stringify({ paintId, status, quantity })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Error al registrar pintura');
+      }
+      closeAddPaintModal();
+      loadWorkbenchData();
+      alert('¡Pintura registrada en tu Rack!');
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+
+  async function updatePaintQty(itemId, newQty) {
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    try {
+      if (newQty <= 0) {
+        await fetch(apiBase + '/api/v1/workbench/paints/' + itemId, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + currentToken, 'X-Tenant-Slug': '${config.tenantSlug}' }
+        });
+      } else {
+        await fetch(apiBase + '/api/v1/workbench/paints/' + itemId, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + currentToken,
+            'X-Tenant-Slug': '${config.tenantSlug}'
+          },
+          body: JSON.stringify({ quantity: newQty })
+        });
+      }
+      loadWorkbenchData();
+    } catch (err) {
+      console.warn('Paint qty update error:', err);
+    }
+  }
+
   function logout() {
     localStorage.removeItem('plamo_sso_token');
     localStorage.removeItem('plamo_sso_user');
     currentUser = null;
     currentToken = null;
     renderAuthUI();
+    loadWorkbenchData();
   }
 
   // Initialize auth state and Google One-Tap on page load
