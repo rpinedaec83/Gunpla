@@ -389,5 +389,95 @@ export const INITIAL_PAINTS: PaintRecord[] = [
     finish: 'metallic',
     hexColor: '#64748B',
     createdAt: new Date().toISOString()
+  },
+
+  // Montana Colors (MTN - Graffiti & Hobby Aerosols)
+  {
+    id: 'pnt-mtn-rv242',
+    brand: 'Montana Colors',
+    line: 'MTN 94',
+    code: 'RV-242',
+    name: 'Negro / Matt Black',
+    type: 'spray_graffiti',
+    finish: 'flat/matte',
+    hexColor: '#121212',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'pnt-mtn-rv01',
+    brand: 'Montana Colors',
+    line: 'MTN 94',
+    code: 'RV-01',
+    name: 'Blanco Blanco / White',
+    type: 'spray_graffiti',
+    finish: 'flat/matte',
+    hexColor: '#FFFFFF',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'pnt-mtn-rv3012',
+    brand: 'Montana Colors',
+    line: 'MTN 94',
+    code: 'RV-3012',
+    name: 'Rojo Madrid / Vivid Red',
+    type: 'spray_graffiti',
+    finish: 'flat/matte',
+    hexColor: '#C8102E',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'pnt-mtn-rv5005',
+    brand: 'Montana Colors',
+    line: 'MTN 94',
+    code: 'RV-5005',
+    name: 'Azul Profundo / Deep Blue',
+    type: 'spray_graffiti',
+    finish: 'flat/matte',
+    hexColor: '#002F6C',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'pnt-mtn-rv1021',
+    brand: 'Montana Colors',
+    line: 'MTN 94',
+    code: 'RV-1021',
+    name: 'Amarillo Canario / Yellow',
+    type: 'spray_graffiti',
+    finish: 'flat/matte',
+    hexColor: '#FFD100',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'pnt-mtn-rv6018',
+    brand: 'Montana Colors',
+    line: 'MTN 94',
+    code: 'RV-6018',
+    name: 'Verde Valle / Field Green',
+    type: 'spray_graffiti',
+    finish: 'flat/matte',
+    hexColor: '#48A23F',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'pnt-mtn-wb9011',
+    brand: 'Montana Colors',
+    line: 'MTN Water Based',
+    code: 'WB-9011',
+    name: 'Carbon Black (Water Based)',
+    type: 'spray_graffiti',
+    finish: 'flat/matte',
+    hexColor: '#1A1A1A',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'pnt-mtn-promatte',
+    brand: 'Montana Colors',
+    line: 'MTN PRO',
+    code: 'PRO-Matte',
+    name: 'Barniz Acrílico Mate Spray',
+    type: 'spray_graffiti',
+    finish: 'flat/matte',
+    hexColor: '#E2E8F0',
+    createdAt: new Date().toISOString()
   }
 ];

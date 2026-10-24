@@ -532,6 +532,49 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       color: #fff;
     }
 
+    /* 4-Way Paint Medium Selector Cards */
+    .medium-select-card {
+      background: var(--card-bg);
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      user-select: none;
+    }
+    .medium-select-card:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
+    }
+    .medium-select-card.active {
+      border-color: var(--accent);
+      background: rgba(2, 132, 199, 0.12);
+      box-shadow: 0 0 15px rgba(2, 132, 199, 0.25);
+    }
+    .medium-select-card.active.lacquer {
+      border-color: #a855f7;
+      background: rgba(168, 85, 247, 0.12);
+      box-shadow: 0 0 15px rgba(168, 85, 247, 0.25);
+    }
+    .medium-select-card.active.acrylic {
+      border-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.12);
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
+    }
+    .medium-select-card.active.polyurethane {
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.12);
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.25);
+    }
+    .medium-select-card.active.montana_colors {
+      border-color: #f97316;
+      background: rgba(249, 115, 22, 0.12);
+      box-shadow: 0 0 15px rgba(249, 115, 22, 0.25);
+    }
+
     /* Section Views */
     .view-section { display: none; }
     .view-section.active { display: block; animation: fadeIn 0.2s ease; }
@@ -1137,6 +1180,81 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
 
       <!-- Tab 2: AI Assistant -->
       <div id="paints-subtab-ai" style="display: none;">
+        <!-- 4-Way Paint Medium Selector Header -->
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem;">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1.2rem;">🧪</span>
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">1. Escoge tu Medio / Tipo de Pintura</h3>
+              </div>
+              <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.25rem;">
+                Selecciona la química base con la que deseas pintar. Las equivalencias, dilución, boquillas y recetas se adaptarán automáticamente.
+              </p>
+            </div>
+            <span id="selected-medium-badge" class="status-badge" style="background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); font-size: 0.82rem; padding: 0.3rem 0.75rem;">
+              🟣 Laca (Mr. Color)
+            </span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
+            <!-- 1. Laca -->
+            <div id="medium-card-lacquer" class="medium-select-card active lacquer" onclick="selectPaintMedium('lacquer')">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 1.2rem;">🟣</span>
+                <span style="font-size: 0.7rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: rgba(168,85,247,0.2); color: #c084fc; font-weight: 600;">Mr. Color / Gaia</span>
+              </div>
+              <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Laca (Solvente)</div>
+              <div style="font-size: 0.75rem; color: #94a3b8; line-height: 1.3;">Pigmento ultrafino, secado en minutos y máxima adherencia. Nivelado espejo.</div>
+            </div>
+
+            <!-- 2. Acrílico -->
+            <div id="medium-card-acrylic" class="medium-select-card acrylic" onclick="selectPaintMedium('acrylic')">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 1.2rem;">🔵</span>
+                <span style="font-size: 0.7rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: rgba(59,130,246,0.2); color: #60a5fa; font-weight: 600;">Tamiya X/XF</span>
+              </div>
+              <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Acrílico (Alcohólico)</div>
+              <div style="font-size: 0.75rem; color: #94a3b8; line-height: 1.3;">Bajo olor, versátil para aerógrafo y pincel, dilución limpia con IPA o X-20A.</div>
+            </div>
+
+            <!-- 3. Poliuretano -->
+            <div id="medium-card-polyurethane" class="medium-select-card polyurethane" onclick="selectPaintMedium('polyurethane')">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 1.2rem;">🟢</span>
+                <span style="font-size: 0.7rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: rgba(34,197,94,0.2); color: #4ade80; font-weight: 600;">Vallejo Mecha</span>
+              </div>
+              <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Poliuretano Acrílico</div>
+              <div style="font-size: 0.75rem; color: #94a3b8; line-height: 1.3;">Base acuosa de ultra resistencia al roce mecánico (ideal articulaciones Gunpla).</div>
+            </div>
+
+            <!-- 4. Montana Colors -->
+            <div id="medium-card-montana_colors" class="medium-select-card montana_colors" onclick="selectPaintMedium('montana_colors')">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 1.2rem;">🎨</span>
+                <span style="font-size: 0.7rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: rgba(249,115,22,0.2); color: #fb923c; font-weight: 600;">MTN 94 / WB / PRO</span>
+              </div>
+              <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Montana Colors (Spray)</div>
+              <div style="font-size: 0.75rem; color: #94a3b8; line-height: 1.3;">Aerosoles profesionales de baja presión (MTN 94), base agua sin olor (WB) y caps finos.</div>
+            </div>
+          </div>
+
+          <!-- Dynamic Chemistry & Safety Guide -->
+          <div id="medium-info-panel" style="background: rgba(168,85,247,0.06); border: 1px solid rgba(168,85,247,0.25); border-radius: 8px; padding: 0.85rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+              <span style="font-size: 0.9rem;">📌</span>
+              <strong id="medium-info-title" style="font-size: 0.85rem; color: #c084fc;">Química & Técnica: Laca (Mr. Color / Gaia Notes)</strong>
+            </div>
+            <div id="medium-info-body" style="font-size: 0.78rem; color: #cbd5e1; line-height: 1.5;">
+              • <strong>Solvente / Vehículo:</strong> Ésteres y solventes aromáticos orgánicos.<br>
+              • <strong>Dilución Óptima:</strong> 1:1.5 a 1:2 con Mr. Color Leveling Thinner (con retardante antiniebla).<br>
+              • <strong>Presión de Trabajo:</strong> 12 - 16 PSI (0.8 - 1.1 bar) con boquilla 0.2mm a 0.3mm.<br>
+              • <strong>Seguridad:</strong> Obligatorio uso de respirador para vapores orgánicos y cabina de extracción.<br>
+              • <strong>Compatibilidad Plástico:</strong> Aplicar sobre imprimación o en capas finas para no derretir poliestireno (PS).
+            </div>
+          </div>
+        </div>
+
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
           <!-- 1. Equivalencias entre Marcas -->
           <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
@@ -1145,25 +1263,39 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
               <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">Conversor de Equivalencias</h3>
             </div>
             <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
-              Cruza códigos entre <strong>Mr. Color (Laca)</strong>, <strong>Tamiya (Acrílico)</strong> y <strong>Vallejo (Mecha/Model)</strong>, calcula la dilución y verifica stock en tu Rack.
+              Cruza códigos entre <strong>Mr. Color (Laca)</strong>, <strong>Tamiya (Acrílico)</strong>, <strong>Vallejo (Poliuretano)</strong> y <strong>Montana Colors (MTN 94 / WB)</strong>.
             </p>
 
             <form onsubmit="handleAiConvertSubmit(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
               <div class="auth-input-group" style="margin-bottom: 0;">
                 <label class="auth-label">Pintura a Convertir</label>
                 <select id="ai-convert-code-select" class="auth-input">
-                  <option value="XF-1">Tamiya XF-1 (Flat Black)</option>
-                  <option value="XF-2">Tamiya XF-2 (Flat White)</option>
-                  <option value="C108">Mr. Color C108 (Character Red)</option>
-                  <option value="C110">Mr. Color C110 (Character Blue)</option>
-                  <option value="C113">Mr. Color C113 (RLM04 Yellow)</option>
-                  <option value="C28">Mr. Color C28 (Steel / Metallic)</option>
-                  <option value="C71">Mr. Color C71 (Midnight Blue)</option>
-                  <option value="XF-62">Tamiya XF-62 (Olive Drab)</option>
-                  <option value="XF-63">Tamiya XF-63 (German Grey)</option>
-                  <option value="70.950">Vallejo 70.950 (Black)</option>
-                  <option value="69.008">Vallejo Mecha 69.008 (Mecha Red)</option>
-                  <option value="69.011">Vallejo Mecha 69.011 (Mecha Dark Blue)</option>
+                  <optgroup label="Tamiya (Acrílico)">
+                    <option value="XF-1">Tamiya XF-1 (Flat Black)</option>
+                    <option value="XF-2">Tamiya XF-2 (Flat White)</option>
+                    <option value="XF-62">Tamiya XF-62 (Olive Drab)</option>
+                    <option value="XF-63">Tamiya XF-63 (German Grey)</option>
+                  </optgroup>
+                  <optgroup label="Mr. Color (Laca)">
+                    <option value="C108">Mr. Color C108 (Character Red)</option>
+                    <option value="C110">Mr. Color C110 (Character Blue)</option>
+                    <option value="C113">Mr. Color C113 (RLM04 Yellow)</option>
+                    <option value="C28">Mr. Color C28 (Steel / Metallic)</option>
+                    <option value="C71">Mr. Color C71 (Midnight Blue)</option>
+                  </optgroup>
+                  <optgroup label="Vallejo (Poliuretano)">
+                    <option value="70.950">Vallejo 70.950 (Black Model Color)</option>
+                    <option value="69.008">Vallejo Mecha 69.008 (Mecha Red)</option>
+                    <option value="69.011">Vallejo Mecha 69.011 (Mecha Dark Blue)</option>
+                  </optgroup>
+                  <optgroup label="Montana Colors (Sprays MTN 94 & WB)">
+                    <option value="RV-242">Montana MTN 94 RV-242 (Matt Black)</option>
+                    <option value="RV-01">Montana MTN 94 RV-01 (Blanco Blanco)</option>
+                    <option value="RV-3012">Montana MTN 94 RV-3012 (Rojo Madrid)</option>
+                    <option value="RV-5005">Montana MTN 94 RV-5005 (Azul Profundo)</option>
+                    <option value="RV-6018">Montana MTN 94 RV-6018 (Verde Valle)</option>
+                    <option value="WB-9011">Montana MTN Water Based WB-9011 (Carbon Black)</option>
+                  </optgroup>
                 </select>
               </div>
 
@@ -1183,7 +1315,7 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
               <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">Generador de Recetas & Tonos IA</h3>
             </div>
             <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
-              Describe el color o Mobile Suit que deseas pintar y la IA generará las proporciones exactas de mezcla y técnicas de aerógrafo.
+              Describe el color o modelo Gunpla y la IA generará la formulación de mezcla o los aerosoles y boquillas recomendadas para tu medio.
             </p>
 
             <form onsubmit="handleAiRecipeSubmit(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
@@ -2854,7 +2986,106 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     }
   }
 
-  // AI Paint Assistant Sub-Tab Switching
+  // AI Paint Assistant Sub-Tab Switching & 4-Way Medium Selector
+  let currentSelectedPaintMedium = 'lacquer';
+
+  const MEDIUM_INFO_MAP = {
+    lacquer: {
+      title: 'Química & Técnica: Laca (Mr. Color / Gaia Notes)',
+      badge: '🟣 Laca (Mr. Color)',
+      badgeColor: '#c084fc',
+      badgeBg: 'rgba(168,85,247,0.2)',
+      badgeBorder: 'rgba(168,85,247,0.3)',
+      panelBorder: 'rgba(168,85,247,0.25)',
+      panelBg: 'rgba(168,85,247,0.06)',
+      titleColor: '#c084fc',
+      body: '• <strong>Solvente / Vehículo:</strong> Ésteres y solventes aromáticos orgánicos.<br>' +
+            '• <strong>Dilución Óptima:</strong> 1:1.5 a 1:2 con Mr. Color Leveling Thinner (con retardante antiniebla).<br>' +
+            '• <strong>Presión de Trabajo:</strong> 12 - 16 PSI (0.8 - 1.1 bar) con boquilla 0.2mm a 0.3mm.<br>' +
+            '• <strong>Seguridad:</strong> Obligatorio uso de respirador para vapores orgánicos y cabina de extracción.<br>' +
+            '• <strong>Compatibilidad Plástico:</strong> Aplicar sobre imprimación o en capas finas para no derretir poliestireno (PS).'
+    },
+    acrylic: {
+      title: 'Química & Técnica: Acrílico (Tamiya X / XF)',
+      badge: '🔵 Acrílico (Tamiya)',
+      badgeColor: '#60a5fa',
+      badgeBg: 'rgba(59,130,246,0.2)',
+      badgeBorder: 'rgba(59,130,246,0.3)',
+      panelBorder: 'rgba(59,130,246,0.25)',
+      panelBg: 'rgba(59,130,246,0.06)',
+      titleColor: '#60a5fa',
+      body: '• <strong>Solvente / Vehículo:</strong> Resina acrílica con vehículo hidroalcohólico.<br>' +
+            '• <strong>Dilución Óptima:</strong> 1:1 con Tamiya X-20A o Alcohol Isopropílico (IPA 90%+). Para acabado nivelado se puede usar Mr. Leveling Thinner.<br>' +
+            '• <strong>Presión de Trabajo:</strong> 15 - 20 PSI con boquilla 0.3mm.<br>' +
+            '• <strong>Seguridad:</strong> Mascarilla para partículas de pintura. Olor moderado tolerable en interiores ventilados.<br>' +
+            '• <strong>Compatibilidad Plástico:</strong> 100% seguro con poliestireno, ABS y resina.'
+    },
+    polyurethane: {
+      title: 'Química & Técnica: Poliuretano Acrílico (Vallejo Mecha / Model Color)',
+      badge: '🟢 Poliuretano (Vallejo)',
+      badgeColor: '#4ade80',
+      badgeBg: 'rgba(34,197,94,0.2)',
+      badgeBorder: 'rgba(34,197,94,0.3)',
+      panelBorder: 'rgba(34,197,94,0.25)',
+      panelBg: 'rgba(34,197,94,0.06)',
+      titleColor: '#4ade80',
+      body: '• <strong>Solvente / Vehículo:</strong> Dispersión de resina de poliuretano en agua desionizada.<br>' +
+            '• <strong>Dilución Óptima:</strong> 70% pintura : 30% Vallejo Thinner (71.161) + 1 gota de Flow Improver. ¡NUNCA USAR ALCOHOL NI THINNER LACA!<br>' +
+            '• <strong>Presión de Trabajo:</strong> 18 - 22 PSI con boquilla 0.3mm a 0.4mm.<br>' +
+            '• <strong>Seguridad:</strong> Cero toxicidad por vapores, no inflamable, seguro para pintar en dormitorios.<br>' +
+            '• <strong>Resistencia Mecánica:</strong> La resina de poliuretano vulcaniza tras 48h ofreciendo la mayor resistencia al desgaste en articulaciones Gunpla.'
+    },
+    montana_colors: {
+      title: 'Química & Técnica: Montana Colors (Sprays de Graffiti & Water Based - https://www.montanacolors.com)',
+      badge: '🎨 Montana Colors (Aerosoles)',
+      badgeColor: '#fb923c',
+      badgeBg: 'rgba(249,115,22,0.2)',
+      badgeBorder: 'rgba(249,115,22,0.3)',
+      panelBorder: 'rgba(249,115,22,0.25)',
+      panelBg: 'rgba(249,115,22,0.06)',
+      titleColor: '#fb923c',
+      body: '• <strong>Gamas Recomendadas:</strong> MTN 94 (baja presión y acabado mate sintético), MTN Water Based (base agua libre de olor y seguro para poliestireno) y MTN PRO (imprimación plástica y barnices).<br>' +
+            '• <strong>Boquillas / Caps:</strong> Cambia la boquilla de fábrica por <em>Pocket Cap</em> o <em>Skinny Universal Cap</em> para trazos finos y control de flujo en piezas de Gunpla.<br>' +
+            '• <strong>Técnica de Aplicación:</strong> Pulverizar a 20-25 cm de distancia en pasadas rápidas ("sweep passes"), comenzando y terminando fuera de la pieza. Nunca concentrar el spray.<br>' +
+            '• <strong>Protección del Plástico:</strong> Aplicar primero imprimación plástica para evitar que los solventes sintéticos del MTN 94 ablanden el poliestireno (PS). Si usas MTN Water Based, es directamente inocuo.'
+    }
+  };
+
+  function selectPaintMedium(medium) {
+    currentSelectedPaintMedium = medium;
+    const info = MEDIUM_INFO_MAP[medium] || MEDIUM_INFO_MAP.lacquer;
+
+    ['lacquer', 'acrylic', 'polyurethane', 'montana_colors'].forEach(m => {
+      const card = document.getElementById('medium-card-' + m);
+      if (card) {
+        if (m === medium) {
+          card.className = 'medium-select-card active ' + m;
+        } else {
+          card.className = 'medium-select-card ' + m;
+        }
+      }
+    });
+
+    const badge = document.getElementById('selected-medium-badge');
+    if (badge) {
+      badge.textContent = info.badge;
+      badge.style.color = info.badgeColor;
+      badge.style.background = info.badgeBg;
+      badge.style.borderColor = info.badgeBorder;
+    }
+
+    const panel = document.getElementById('medium-info-panel');
+    const titleEl = document.getElementById('medium-info-title');
+    const bodyEl = document.getElementById('medium-info-body');
+    if (panel && titleEl && bodyEl) {
+      panel.style.background = info.panelBg;
+      panel.style.borderColor = info.panelBorder;
+      titleEl.textContent = info.title;
+      titleEl.style.color = info.titleColor;
+      bodyEl.innerHTML = info.body;
+    }
+  }
+
   function switchPaintsSubtab(tab) {
     const cat = document.getElementById('paints-subtab-catalog');
     const ai = document.getElementById('paints-subtab-ai');
@@ -2917,7 +3148,7 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     btn.disabled = true;
     btn.textContent = 'Calculando equivalencias...';
     resultBox.style.display = 'block';
-    resultBox.innerHTML = '<p style="font-size: 0.85rem; color: #94a3b8;">Buscando matriz de conversión...</p>';
+    resultBox.innerHTML = '<p style="font-size: 0.85rem; color: #94a3b8;">Buscando matriz de conversión para ' + currentSelectedPaintMedium.toUpperCase() + '...</p>';
 
     const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
     const authHeaders = {
@@ -2932,7 +3163,7 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       const res = await fetch(apiBase + '/api/v1/paints/ai/convert', {
         method: 'POST',
         headers: authHeaders,
-        body: JSON.stringify({ sourceCode: code })
+        body: JSON.stringify({ sourceCode: code, targetMedium: currentSelectedPaintMedium })
       });
 
       if (!res.ok) {
@@ -2942,14 +3173,29 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
 
       const data = await res.json();
       const matchesHtml = (data.matches || []).map(m => {
+        const isSelectedMedium = 
+          (currentSelectedPaintMedium === 'montana_colors' && m.brand === 'Montana Colors') ||
+          (currentSelectedPaintMedium === 'polyurethane' && m.type === 'polyurethane') ||
+          (currentSelectedPaintMedium === 'lacquer' && m.type === 'lacquer') ||
+          (currentSelectedPaintMedium === 'acrylic' && m.type === 'acrylic');
+
+        const mediumBadge = isSelectedMedium
+          ? '<span style="font-size: 0.7rem; padding: 0.15rem 0.45rem; border-radius: 4px; background: rgba(2,132,199,0.25); color: #38bdf8; border: 1px solid rgba(2,132,199,0.4); font-weight: 700; margin-right: 0.4rem;">★ MEDIO SELECCIONADO</span>'
+          : '';
+
         const rackBadge = m.ownedInRack 
           ? '<span style="font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 4px; background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.3);">✓ En tu Rack (' + (m.rackQuantity || 1) + ')</span>'
           : '<span style="font-size: 0.72rem; color: #64748b;">No registrado en rack</span>';
 
-        return '<div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">' +
+        const cardBorder = isSelectedMedium ? 'border: 2px solid var(--accent); background: rgba(2,132,199,0.06);' : 'border: 1px solid var(--border-color); background: rgba(255,255,255,0.03);';
+
+        return '<div style="' + cardBorder + ' border-radius: 8px; padding: 0.75rem; display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">' +
           '<div style="width: 32px; height: 32px; border-radius: 50%; background: ' + m.hexColor + '; border: 2px solid rgba(255,255,255,0.2); flex-shrink: 0;"></div>' +
           '<div style="flex: 1;">' +
-            '<div style="font-size: 0.85rem; font-weight: 700; color: #fff;">' + m.brand + ' • ' + m.code + ' (' + m.name + ')</div>' +
+            '<div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">' +
+              mediumBadge +
+              '<span style="font-size: 0.85rem; font-weight: 700; color: #fff;">' + m.brand + ' • ' + m.code + ' (' + m.name + ')</span>' +
+            '</div>' +
             '<div style="font-size: 0.75rem; color: #94a3b8;">' + m.line + ' • ' + m.type.toUpperCase() + ' (' + m.finish + ')</div>' +
           '</div>' +
           '<div>' + rackBadge + '</div>' +
@@ -2960,14 +3206,14 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
 
       resultBox.innerHTML = 
         '<div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 0.5rem;">' +
-          '<div style="font-size: 0.82rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; margin-bottom: 0.6rem;">Equivalencias Exactas:</div>' +
+          '<div style="font-size: 0.82rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; margin-bottom: 0.6rem;">Equivalencias Exactas por Medio Químico:</div>' +
           matchesHtml +
           '<div style="background: rgba(2,132,199,0.08); border: 1px solid rgba(2,132,199,0.25); border-radius: 8px; padding: 0.85rem; margin-top: 0.75rem;">' +
-            '<div style="font-size: 0.82rem; font-weight: 700; color: #38bdf8; margin-bottom: 0.4rem;">🎯 Guía de Dilución & Aerógrafo:</div>' +
+            '<div style="font-size: 0.82rem; font-weight: 700; color: #38bdf8; margin-bottom: 0.4rem;">🎯 Guía Técnica (' + (guide.mediumTitle || currentSelectedPaintMedium.toUpperCase()) + '):</div>' +
             '<div style="font-size: 0.78rem; color: #cbd5e1; line-height: 1.5;">' +
-              '• <strong>Thinner Recomendado:</strong> ' + guide.recommendedThinner + '<br>' +
-              '• <strong>Ratio de Mezcla:</strong> ' + guide.thinningRatio + '<br>' +
-              '• <strong>Presión Óptima:</strong> ' + guide.recommendedPSI + '<br>' +
+              '• <strong>Dilución / Formato:</strong> ' + guide.recommendedThinner + '<br>' +
+              '• <strong>Ratio / Preparación:</strong> ' + guide.thinningRatio + '<br>' +
+              '• <strong>Presión / Boquilla:</strong> ' + guide.recommendedPSI + '<br>' +
               '• <strong>Secado:</strong> ' + guide.dryingTime + '<br>' +
               '• <em>Pro Tip:</em> ' + guide.proTips +
             '</div>' +
@@ -2991,7 +3237,7 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     btn.disabled = true;
     btn.textContent = 'Consultando IA...';
     resultBox.style.display = 'block';
-    resultBox.innerHTML = '<p style="font-size: 0.85rem; color: #94a3b8;">Generando paleta y formulación con IA...</p>';
+    resultBox.innerHTML = '<p style="font-size: 0.85rem; color: #94a3b8;">Generando fórmula y tonos para ' + currentSelectedPaintMedium.toUpperCase() + '...</p>';
 
     const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
     const authHeaders = {
@@ -3006,7 +3252,7 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       const res = await fetch(apiBase + '/api/v1/paints/ai/recipe', {
         method: 'POST',
         headers: authHeaders,
-        body: JSON.stringify({ query })
+        body: JSON.stringify({ query, preferredMedium: currentSelectedPaintMedium })
       });
 
       if (!res.ok) {
@@ -3022,7 +3268,7 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       const componentsHtml = (data.components || []).map(c => {
         const inRackBadge = c.inUserRack 
           ? '<span style="font-size: 0.7rem; color: #4ade80;">✓ En tu Rack</span>' 
-          : '<span style="font-size: 0.7rem; color: #94a3b8;">Frasco sugerido</span>';
+          : '<span style="font-size: 0.7rem; color: #94a3b8;">Sugerido</span>';
 
         return '<div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.5rem 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem;">' +
           '<div style="display: flex; align-items: center; gap: 0.6rem;">' +
@@ -3041,11 +3287,19 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
         ? '<span style="font-size: 0.7rem; color: #38bdf8; background: rgba(56,189,248,0.15); padding: 0.15rem 0.4rem; border-radius: 4px;">⚡ Gemini 3.8 Flash AI</span>'
         : '<span style="font-size: 0.7rem; color: #a855f7; background: rgba(168,85,247,0.15); padding: 0.15rem 0.4rem; border-radius: 4px;">🧠 Base Experta de Modelistas</span>';
 
+      const mediumTitleTag = currentSelectedPaintMedium === 'montana_colors'
+        ? '<span style="font-size: 0.72rem; color: #fb923c; background: rgba(249,115,22,0.15); border: 1px solid rgba(249,115,22,0.3); padding: 0.15rem 0.45rem; border-radius: 4px;">🎨 Montana Colors (Aerosoles MTN 94 / WB)</span>'
+        : (currentSelectedPaintMedium === 'polyurethane'
+          ? '<span style="font-size: 0.72rem; color: #4ade80; background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); padding: 0.15rem 0.45rem; border-radius: 4px;">🟢 Poliuretano Acrílico (Vallejo)</span>'
+          : (currentSelectedPaintMedium === 'acrylic'
+            ? '<span style="font-size: 0.72rem; color: #60a5fa; background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); padding: 0.15rem 0.45rem; border-radius: 4px;">🔵 Acrílico (Tamiya)</span>'
+            : '<span style="font-size: 0.72rem; color: #c084fc; background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); padding: 0.15rem 0.45rem; border-radius: 4px;">🟣 Laca (Mr. Color)</span>'));
+
       resultBox.innerHTML = 
         '<div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 0.5rem;">' +
-          '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">' +
+          '<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">' +
             '<h4 style="font-size: 1rem; font-weight: 700; color: #fff;">' + data.recipeName + '</h4>' +
-            engineBadge +
+            '<div style="display: flex; gap: 0.4rem; align-items: center;">' + mediumTitleTag + engineBadge + '</div>' +
           '</div>' +
           '<p style="font-size: 0.8rem; color: #cbd5e1; margin-bottom: 0.75rem; line-height: 1.4;">' + data.description + '</p>' +
           '<div style="display: flex; gap: 0.35rem; margin-bottom: 0.75rem;">' + paletteHtml + '</div>' +
@@ -3055,13 +3309,14 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
             '<p style="font-size: 0.78rem; color: #cbd5e1; line-height: 1.4;">' + data.mixingInstructions + '</p>' +
           '</div>' +
           '<div style="background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.25); border-radius: 8px; padding: 0.75rem;">' +
-            '<div style="font-size: 0.78rem; font-weight: 700; color: #4ade80; margin-bottom: 0.25rem;">💨 Aplicación con Aerógrafo:</div>' +
+            '<div style="font-size: 0.78rem; font-weight: 700; color: #4ade80; margin-bottom: 0.25rem;">💨 Aplicación / Aerógrafo / Spray:</div>' +
             '<div style="font-size: 0.75rem; color: #cbd5e1; line-height: 1.5;">' +
               '• <strong>Imprimación:</strong> ' + air.primer + '<br>' +
               '• <strong>Capa Base:</strong> ' + air.baseCoat + '<br>' +
               '• <strong>Sombra / Realce:</strong> ' + air.shadingOrHighlight + '<br>' +
               '• <strong>Barniz Final:</strong> ' + air.topCoat + '<br>' +
-              '• <strong>Dilución:</strong> ' + air.thinnerRatio + ' a ' + air.psi +
+              '• <strong>Dilución / Formato:</strong> ' + air.thinnerRatio + '<br>' +
+              '• <strong>Presión / Boquilla (Cap):</strong> ' + air.psi +
             '</div>' +
           '</div>' +
         '</div>';

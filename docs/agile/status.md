@@ -11,6 +11,15 @@ Current live state of the project.
 
 ## Live Capabilities
 
+- **AI Paint Assistant & Formulation Engine (`/api/v1/paints/ai/*`):**
+  - **4-Way Chemical Medium Division:** Interactive medium selector allowing modelers to choose between **Laca** (*Mr. Color, Gaia Notes*), **Acrílico** (*Tamiya X/XF*), **Poliuretano** (*Vallejo Mecha/Model Color*), and **Montana Colors** (*MTN 94, MTN Water Based, MTN PRO* - https://www.montanacolors.com/graffiti/spray/).
+  - **Cross-Brand & Spray Conversion:** Instant color matching across all 4 chemical mediums with hex swatches, line details, finish type, user Paint Rack cross-referencing (`ownedInRack`), and prioritization of the user's selected medium.
+  - **Airbrush & Aerosol Spray Guide:**
+    - *Laca:* Mr. Color Leveling Thinner (1:1.5 - 1:2), 12-16 PSI, organic vapor respirator, mirror finish.
+    - *Acrílico:* Tamiya X-20A / IPA 90%+ (1:1), 15-20 PSI, low odor.
+    - *Poliuretano:* Vallejo Thinner + Flow Improver (70:30), 18-22 PSI, zero-toxicity, maximum friction resistance for Gunpla joints.
+    - *Montana Colors (Aerosoles):* Ready-to-spray canisters, recommended caps (*Pocket Cap* or *Skinny Universal Cap* for fine line misting on Gunpla), 20-25 cm spray distance with rapid sweep passes, and plastic primer precautions (MTN PRO) or MTN Water Based for indoor odorless painting.
+  - **AI Recipe Generator:** Formulation engine supporting Gemini API (`gemini-3.8-flash`) and an expert local rules matrix for Gunpla anime & military palettes (*Verde Zaku II, Rojo Cometa Char, Azul Titán MK-II, Inner Frame Barbatos, Blanco RG RX-78*), generating mixing percentages or spray cans, cap recommendations, component swatches, and step-by-step airbrush/spray applications (primer, preshading, base, topcoat).
 - **Interactive Personal Workbench & Workshop (`Mi Taller`):**
   - Integrated personal dashboard with live metric counters: Total Stash, Backlog (unbuilt), WIP (in progress), Built (completed), and Paint Rack inventory.
   - **Stash Management:** Add kits from master catalog, track box status (`unbuilt`, `in_progress`, `built`, `for_trade`, `wishlist`), star ratings, acquisition prices, and notes.

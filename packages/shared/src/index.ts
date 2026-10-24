@@ -112,7 +112,9 @@ export interface ProblemDetails {
   invalidParams?: Array<{ name: string; reason: string }>;
 }
 
-export type PaintType = 'lacquer' | 'acrylic' | 'enamel' | 'oil' | 'primer';
+export type PaintType = 'lacquer' | 'acrylic' | 'polyurethane' | 'spray_graffiti' | 'enamel' | 'oil' | 'primer';
+
+export type PaintMedium = 'lacquer' | 'acrylic' | 'polyurethane' | 'montana_colors';
 
 export type PaintFinish = 'gloss' | 'flat/matte' | 'semi-gloss' | 'metallic' | 'clear' | 'satin';
 
@@ -264,8 +266,9 @@ export interface PaintRecipeUsage {
 }
 
 export interface PaintConversionRequest {
-  sourceBrand: string;
+  sourceBrand?: string;
   sourceCode: string;
+  targetMedium?: PaintMedium;
   targetBrand?: string;
   checkUserRack?: boolean;
 }
@@ -303,6 +306,7 @@ export interface PaintConversionResult {
 
 export interface PaintRecipeAiRequest {
   query: string;
+  preferredMedium?: PaintMedium;
   preferredBrand?: string;
   style?: 'anime_accurate' | 'weathered_realistic' | 'candy_metallic' | 'stealth_matte';
 }

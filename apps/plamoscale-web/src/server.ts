@@ -108,7 +108,7 @@ app.all(['/api/*', '/legacy-media/*', '/uploads/*'], async (req: Request, res: R
     const targetUrl = `${API_URL}${req.originalUrl}`;
     const headers: Record<string, string> = {};
     for (const [key, value] of Object.entries(req.headers)) {
-      if (key !== 'host' && typeof value === 'string') {
+      if (key !== 'host' && key.toLowerCase() !== 'content-length' && typeof value === 'string') {
         headers[key] = value;
       }
     }

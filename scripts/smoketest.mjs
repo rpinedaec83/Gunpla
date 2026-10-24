@@ -924,32 +924,45 @@ async function runSmoketest() {
     console.log('[PASS] Legal Age Gate (Ley 29733 / INDECOPI) verified: <14 blocked (403), 14-17 allowed with Bazar restricted, 18+ full access.');
     console.log('[PASS] Google OAuth 2.0 / OIDC Identity Services, Auth Modal & Transparent API/Media Reverse Proxy verified.');
 
-    // --- Checking AI Paint Assistant & Airbrush Formulation Engine ---
-    console.log('\n--- Checking AI Paint Assistant & Conversion Engine ---');
-    // 1. Paint Conversion
+    // --- Checking AI Paint Assistant & 4-Way Chemical Medium Division ---
+    console.log('\n--- Checking AI Paint Assistant & 4-Way Chemical Medium Division ---');
+    // 1. Paint Conversion across 4 mediums (Laca, Acrílico, Poliuretano, Montana Colors)
     const convertRes = await fetch(`${baseUrl}/api/v1/paints/ai/convert`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'plamoscale' },
-      body: JSON.stringify({ sourceCode: 'XF-1' })
+      body: JSON.stringify({ sourceCode: 'XF-1', targetMedium: 'montana_colors' })
     });
     assert.equal(convertRes.status, 200, 'Paint conversion endpoint must return 200 OK');
     const convertData = await convertRes.json();
-    assert.ok(convertData.matches.length >= 3, 'Must match across Mr. Color, Tamiya, and Vallejo');
-    assert.ok(convertData.airbrushGuide.thinningRatio, 'Must include thinning ratio guide');
+    assert.ok(convertData.matches.length >= 4, 'Must match across Mr. Color, Tamiya, Vallejo, and Montana Colors');
+    const mtnMatch = convertData.matches.find(m => m.brand === 'Montana Colors');
+    assert.ok(mtnMatch, 'Must include Montana Colors match (MTN 94 or Water Based)');
+    assert.equal(convertData.matches[0].brand, 'Montana Colors', 'Target medium Montana Colors must be prioritized first');
+    assert.ok(convertData.airbrushGuide.mediumTitle.includes('Montana Colors'), 'Airbrush guide must reflect Montana Colors spray specifications');
 
-    // 2. AI Color Recipe Generation
-    const recipeRes = await fetch(`${baseUrl}/api/v1/paints/ai/recipe`, {
+    // 2. AI Color Recipe Generation with Montana Colors Sprays
+    const recipeMtnRes = await fetch(`${baseUrl}/api/v1/paints/ai/recipe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'gunplajunkies' },
-      body: JSON.stringify({ query: 'Verde Zaku II Militar' })
+      body: JSON.stringify({ query: 'Verde Zaku II Militar', preferredMedium: 'montana_colors' })
     });
-    assert.equal(recipeRes.status, 200, 'AI Recipe generation must return 200 OK');
-    const recipeData = await recipeRes.json();
-    assert.ok(recipeData.recipeName.includes('Zaku'), 'Must generate Zaku-tailored recipe');
-    assert.ok(recipeData.components.length > 0, 'Must include components with percentages');
-    assert.ok(recipeData.airbrushApplication.psi, 'Must include airbrush application PSI guide');
+    assert.equal(recipeMtnRes.status, 200, 'AI Recipe generation for Montana Colors must return 200 OK');
+    const recipeMtnData = await recipeMtnRes.json();
+    assert.ok(recipeMtnData.recipeName.includes('Montana Colors') || recipeMtnData.description.includes('MTN'), 'Must generate Montana Colors-tailored recipe');
+    assert.ok(recipeMtnData.components.some(c => c.brand === 'Montana Colors'), 'Must include Montana Colors components');
+    assert.ok(recipeMtnData.airbrushApplication.baseCoat.includes('sweep') || recipeMtnData.airbrushApplication.baseCoat.includes('20-25 cm') || recipeMtnData.airbrushApplication.psi.includes('Pocket Cap') || recipeMtnData.airbrushApplication.psi.includes('MTN 94'), 'Must include spray application technique');
 
-    console.log('[PASS] AI Paint Assistant verified: Cross-brand conversions, thinning ratios & AI color recipe generator.');
+    // 3. AI Color Recipe Generation with Polyurethane (Vallejo)
+    const recipePolyRes = await fetch(`${baseUrl}/api/v1/paints/ai/recipe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'plamoscale' },
+      body: JSON.stringify({ query: 'Rojo Carmesí Mecha', preferredMedium: 'polyurethane' })
+    });
+    assert.equal(recipePolyRes.status, 200, 'AI Recipe generation for Polyurethane must return 200 OK');
+    const recipePolyData = await recipePolyRes.json();
+    assert.ok(recipePolyData.components.some(c => c.brand === 'Vallejo'), 'Must include Vallejo Polyurethane components');
+
+    console.log('[PASS] AI Paint Assistant verified: 4-Way Chemical Division (Laca, Acrílico, Poliuretano, Montana Colors) & Spray/Airbrush recommendations.');
 
     console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + PAINTS-AI SMOKETEST CHECKS PASSED ===');
   } finally {
