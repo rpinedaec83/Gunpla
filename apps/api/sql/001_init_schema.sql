@@ -60,7 +60,41 @@ CREATE TABLE IF NOT EXISTS email_outbox (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS kits (
+    id VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    brand VARCHAR(120) NOT NULL,
+    scale VARCHAR(32) NOT NULL,
+    grade VARCHAR(64),
+    category VARCHAR(64) NOT NULL DEFAULT 'gunpla-mecha',
+    kit_number VARCHAR(64),
+    release_year INT,
+    boxart_url TEXT,
+    scalemates_url TEXT,
+    manual_url TEXT,
+    barcode VARCHAR(64),
+    source VARCHAR(32) NOT NULL DEFAULT 'manual',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS paints (
+    id VARCHAR(64) PRIMARY KEY,
+    brand VARCHAR(64) NOT NULL,
+    line VARCHAR(64) NOT NULL,
+    code VARCHAR(64) NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    type VARCHAR(32) NOT NULL,
+    finish VARCHAR(32) NOT NULL,
+    hex_color VARCHAR(16) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_media_assets_builder ON media_assets(builder_username);
 CREATE INDEX IF NOT EXISTS idx_media_assets_category ON media_assets(category);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
+CREATE INDEX IF NOT EXISTS idx_kits_category ON kits(category);
+CREATE INDEX IF NOT EXISTS idx_kits_brand ON kits(brand);
+CREATE INDEX IF NOT EXISTS idx_kits_scalemates_url ON kits(scalemates_url);
+CREATE INDEX IF NOT EXISTS idx_paints_brand ON paints(brand);
+CREATE INDEX IF NOT EXISTS idx_paints_code ON paints(code);

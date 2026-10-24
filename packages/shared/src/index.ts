@@ -108,6 +108,57 @@ export interface ProblemDetails {
   invalidParams?: Array<{ name: string; reason: string }>;
 }
 
+export type PaintType = 'lacquer' | 'acrylic' | 'enamel' | 'oil' | 'primer';
+
+export type PaintFinish = 'gloss' | 'flat/matte' | 'semi-gloss' | 'metallic' | 'clear' | 'satin';
+
+export interface PaintRecord {
+  id: string;
+  brand: string;
+  line: string;
+  code: string;
+  name: string;
+  type: PaintType;
+  finish: PaintFinish;
+  hexColor: string;
+  createdAt: string;
+}
+
+export interface KitRecord {
+  id: string;
+  name: string;
+  brand: string;
+  scale: string;
+  grade?: string;
+  category: ScaleCategory;
+  kitNumber?: string;
+  releaseYear?: number;
+  boxartUrl?: string;
+  scalematesUrl?: string;
+  manualUrl?: string;
+  barcode?: string;
+  source: 'manual' | 'scalemates' | 'scalemates-fallback';
+  createdAt: string;
+}
+
+export interface BrandSummary {
+  brand: string;
+  kitCount: number;
+  categories: ScaleCategory[];
+}
+
+export interface ScalematesImportRequest {
+  scalematesUrl: string;
+  categoryOverride?: ScaleCategory;
+}
+
+export interface ScalematesImportResponse {
+  kit: KitRecord;
+  imported: boolean;
+  isExisting: boolean;
+  warnings?: string[];
+}
+
 export interface PaginatedResult<T> {
   items: T[];
   nextCursor: string | null;

@@ -9,12 +9,6 @@ Goal: Deliver the TypeScript Monorepo foundation, Central API with OpenAPI 3.1 (
 
 ## Active Tasks
 
-### DT2 -- Slice 2: Kit & Paint Master Catalog + On-Demand Scalemates Importer | eMOE: 4 CU
-- Goal: Implement the master catalog slice (`src/slices/catalog-scalemates`) for Scale Model Kits (brand, scale, grade/category, kit number, release year, boxart, PDF manual link, Scalemates reference URL) and Paints/Supplies (Mr. Hobby, Tamiya, Vallejo, Gaia, Citadel with hex color, code, type, finish), plus an on-demand Scalemates URL/metadata importer with graceful manual fallback.
-- API Result: `GET /api/v1/catalog/kits`, `POST /api/v1/catalog/kits`, `POST /api/v1/catalog/kits/import-scalemates`, `GET /api/v1/catalog/paints`, `POST /api/v1/catalog/paints`, `GET /api/v1/catalog/brands`.
-- Smoketest: Run `npm run smoketest` verifying kit filtering by tenant category (`gunpla-mecha` vs `all`), paint search by code/brand, and Scalemates kit import endpoint returning `201 Created` (or deduplicated `200 OK`) and documented in `/openapi.json`.
-- UAT: Search for Gunpla (HG/MG/RG) and military/aviation kits, import a kit from a Scalemates URL, and browse the paint color swatches.
-
 ### DT3 -- Slice 3: Personal Workbench (My Stash, Wishlist & Paint Rack) | eMOE: 3 CU
 - Goal: Implement the builder's personal inventory slice (`src/slices/workbench-stash`) allowing authenticated users to track their Stash (`unbuilt`, `in_progress`, `built`, `wishlist`, `for_trade`) and Paint Rack (`owned`, `low_stock`, `wishlist`) with summary statistics.
 - API Result: `GET /api/v1/workbench/stash`, `POST /api/v1/workbench/stash`, `PATCH /api/v1/workbench/stash/:id`, `DELETE /api/v1/workbench/stash/:id`, `GET /api/v1/workbench/paints`, `POST /api/v1/workbench/paints`.

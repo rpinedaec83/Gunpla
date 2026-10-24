@@ -11,6 +11,7 @@ import { tenantsRouter } from './slices/tenants/tenants.slice';
 import { authRouter } from './slices/auth-sso/auth.slice';
 import { buildersRouter } from './slices/builders/builders.slice';
 import { notificationsRouter } from './slices/notifications-resend/resend.slice';
+import { catalogRouter } from './slices/catalog-scalemates/catalog.slice';
 import { openApiSpec } from './openapi/openapi-spec';
 
 dotenv.config();
@@ -53,6 +54,8 @@ export function createApp() {
       usersCount: db.users.length,
       foundingBuildersCount: db.users.filter((u) => u.isFounder && u.username !== 'rpineda').length,
       seededPhotosCount: db.mediaAssets.length,
+      kitsCount: db.kits ? db.kits.length : 0,
+      paintsCount: db.paints ? db.paints.length : 0,
       authModes: ['local-username-password', 'google-oauth-oidc-sso'],
       emailProvider: 'resend.com',
       lastSeededAt: db.lastSeededAt,
@@ -63,11 +66,12 @@ export function createApp() {
   // Apply Multi-Tenant Context Resolution to all /api/v1/* tenant-scoped slices
   app.use('/api/v1', resolveTenantMiddleware);
 
-  // Mount Vertical Slices (DT1)
+  // Mount Vertical Slices
   app.use('/api/v1/tenants', tenantsRouter);
   app.use('/api/v1/auth', authRouter);
   app.use('/api/v1/builders', buildersRouter);
   app.use('/api/v1/notifications', notificationsRouter);
+  app.use('/api/v1/catalog', catalogRouter);
 
   // Fallback 404 in RFC 7807 Problem Details format
   app.use((req: Request, res: Response) => {

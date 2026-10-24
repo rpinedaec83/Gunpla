@@ -35,4 +35,25 @@ Decisions made:
 - Supported both RESTful resource-noun paths (`/api/v1/auth/registrations`, `/api/v1/auth/sessions`, `/api/v1/auth/google-sessions`, `/api/v1/notifications/contact-messages`) and convenient aliases (`/signup`, `/signin`, `/google`, `/contact`) so API consumers and legacy tests work seamlessly.
 Lessons learned:
 - Pairing an auditable sandbox outbox in the Resend adapter and structured test token support in the Google OIDC verifier allows 100% deterministic CLI smoketests without requiring live external network secrets during CI.
+### DT2 -- Slice 2: Kit & Paint Master Catalog + On-Demand Scalemates Importer | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Designed and added the Kit and Paint data models to `@gunpla/shared` (`KitRecord`, `PaintRecord`, `BrandSummary`, `ScalematesImportRequest`, `ScalematesImportResponse`) and PostgreSQL schema (`apps/api/sql/001_init_schema.sql`).
+- Built the master catalog slice (`apps/api/src/slices/catalog-scalemates/catalog.slice.ts`):
+  - `GET /api/v1/catalog/kits`: Multi-tenant category scoping (`gunplajunkies` receives Gunpla/Mecha/Sci-Fi kits, `plamoscale` receives all kits including military, aviation, automotive, naval), search by keyword, filter by brand/scale.
+  - `POST /api/v1/catalog/kits`: Manual kit creation with brand+kitNumber deduplication.
+  - `GET /api/v1/catalog/kits/:id`: Kit details lookup.
+  - `POST /api/v1/catalog/kits/import-scalemates`: On-demand Scalemates kit importer with deduplication by URL or brand+kitNumber, HTML OpenGraph/JSON-LD parsing, and strict 4-second timeout with transparent fallback (No Masking Policy — Rule 5).
+  - `GET /api/v1/catalog/paints`: Paint and supply lookup with hex color swatches, filterable by brand, line, type (lacquer, acrylic, enamel), finish (gloss, flat, metallic, clear).
+  - `POST /api/v1/catalog/paints`: Paint creation with deduplication.
+  - `GET /api/v1/catalog/brands`: Brands summary with kit counts and supported categories.
+- Built starter catalog seed (`apps/api/src/seed/seed-catalog.ts`) with 8 iconic kits (Bandai Spirits, Kotobukiya, Tamiya, Hasegawa) and 23 paints (Mr. Color, Tamiya Acrylic, Vallejo Model/Mecha Color, Gaia Notes, Citadel).
+- Updated OpenAPI 3.1 contract (`docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`).
+- Updated CLI smoketest (`scripts/smoketest.mjs`) with Checks 7, 8, and 9 verifying multi-tenant category filtering, paint search, and Scalemates kit import.
+Issues hit:
+- When importing from Scalemates, URLs that redirect away from the kit to a general landing page were caught and validated against fallback slug keywords to prevent saving mismatched kit titles.
+- Brand matching between "Bandai" and "Bandai Spirits" was normalized so kit deduplication recognizes equivalent brand variants.
+Decisions made:
+- Enforce strict tenant category scoping on kits: when queried with `X-Tenant-Slug: gunplajunkies`, non-mecha kits (military, aviation) are automatically omitted unless explicitly allowed, maintaining brand focus for GunplaJunkies while PlamoScale has full visibility.
+Lessons learned:
+- Combining slug decomposition with HTML OpenGraph parsing provides a robust two-layer parser that succeeds whether Scalemates is online, offline, rate-limiting, or behind a Cloudflare challenge.
 Usage: Moderate -- self-estimated

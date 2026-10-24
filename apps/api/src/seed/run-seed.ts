@@ -9,6 +9,8 @@ console.log(
       usersCount: state.users.length,
       foundingBuildersCount: state.users.filter((u) => u.isFounder).length,
       mediaAssetsCount: state.mediaAssets.length,
+      kitsCount: state.kits.length,
+      paintsCount: state.paints.length,
       lastSeededAt: state.lastSeededAt
     },
     null,

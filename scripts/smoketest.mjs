@@ -199,7 +199,74 @@ async function runSmoketest() {
     assert.equal(contactGjData.emailRecord.from, 'GunplaJunkies <noreply@gunplajunkies.com>');
     console.log('[PASS] Resend.com Multi-Domain Email Adapter verified for both plamoscale.com and gunplajunkies.com.');
 
-    console.log('=== ALL DT1 SMOKETEST CHECKS PASSED ===');
+    // 7. Verify DT2 Kit Master Catalog & Multi-Tenant Category Scoping
+    // gunplajunkies: allowedCategories = ['gunpla-mecha', 'scifi', 'figures']
+    const gjKitsRes = await fetch(`${baseUrl}/api/v1/catalog/kits`, {
+      headers: { 'X-Tenant-Slug': 'gunplajunkies' }
+    });
+    assert.equal(gjKitsRes.status, 200);
+    const gjKits = await gjKitsRes.json();
+    assert.ok(gjKits.items.length >= 4, 'GunplaJunkies should list Gunpla/Mecha kits');
+    assert.ok(
+      gjKits.items.every((k) => ['gunpla-mecha', 'scifi', 'figures'].includes(k.category)),
+      'GunplaJunkies must only return gunpla-mecha, scifi, or figures kits'
+    );
+
+    // plamoscale: allowedCategories = all scale modeling (military, aviation, automotive, naval, etc.)
+    const psKitsRes = await fetch(`${baseUrl}/api/v1/catalog/kits`, {
+      headers: { 'X-Tenant-Slug': 'plamoscale' }
+    });
+    assert.equal(psKitsRes.status, 200);
+    const psKits = await psKitsRes.json();
+    assert.ok(psKits.items.length >= 8, 'PlamoScale should list all kits including military, aviation, etc.');
+    const categoriesFound = new Set(psKits.items.map((k) => k.category));
+    assert.ok(categoriesFound.has('gunpla-mecha'));
+    assert.ok(categoriesFound.has('military'));
+    assert.ok(categoriesFound.has('aviation'));
+    console.log(`[PASS] Kit Catalog & Multi-Tenant Category Filtering verified (${gjKits.items.length} kits on GunplaJunkies, ${psKits.items.length} kits on PlamoScale).`);
+
+    // 8. Verify DT2 Paint & Supply Catalog Search
+    const paintsRes = await fetch(`${baseUrl}/api/v1/catalog/paints?search=mr.+color`);
+    assert.equal(paintsRes.status, 200);
+    const mrColorPaints = await paintsRes.json();
+    assert.ok(mrColorPaints.items.length >= 5, 'Should find Mr. Color lacquer paints');
+
+    const tamiyaPaintsRes = await fetch(`${baseUrl}/api/v1/catalog/paints?brand=Tamiya`);
+    assert.equal(tamiyaPaintsRes.status, 200);
+    const tamiyaPaints = await tamiyaPaintsRes.json();
+    assert.ok(tamiyaPaints.items.length >= 4, 'Should find Tamiya acrylic paints');
+    assert.ok(tamiyaPaints.items.every((p) => p.brand === 'Tamiya'));
+    console.log(`[PASS] Paint Catalog & Color Swatch Search verified (${mrColorPaints.items.length} Mr. Color, ${tamiyaPaints.items.length} Tamiya paints).`);
+
+    // 9. Verify DT2 Scalemates Kit Importer with Deduplication & 4s Graceful Fallback
+    const scalematesUrl = 'https://www.scalemates.com/kits/bandai-spirits-5061919-rg-1-144-hi-nu-gundam--1359732';
+    const importDupRes = await fetch(`${baseUrl}/api/v1/catalog/kits/import-scalemates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scalematesUrl })
+    });
+    assert.equal(importDupRes.status, 200, 'Existing kit in catalog should return 200 OK (deduplicated)');
+    const dupData = await importDupRes.json();
+    assert.equal(dupData.isExisting, true);
+    assert.equal(dupData.kit.name, 'RG 1/144 Hi-Nu Gundam');
+
+    // Test importing a new kit from Scalemates URL (fallback or live parse within 4s)
+    const newScalematesUrl = 'https://www.scalemates.com/kits/bandai-0185135-mg-1-100-sazabi-ver-ka--196884';
+    const importNewRes = await fetch(`${baseUrl}/api/v1/catalog/kits/import-scalemates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scalematesUrl: newScalematesUrl })
+    });
+    assert.equal(importNewRes.status, 201, 'New kit from Scalemates URL should return 201 Created');
+    const newData = await importNewRes.json();
+    assert.equal(newData.imported, true);
+    assert.equal(newData.isExisting, false);
+    assert.equal(newData.kit.brand, 'Bandai');
+    assert.equal(newData.kit.scale, '1/100');
+    assert.ok(newData.kit.name.toLowerCase().includes('sazabi'));
+    console.log(`[PASS] Scalemates Importer verified (Deduplication + Parsing for "${newData.kit.name}").`);
+
+    console.log('=== ALL DT1 + DT2 SMOKETEST CHECKS PASSED ===');
   } finally {
     server.close();
   }

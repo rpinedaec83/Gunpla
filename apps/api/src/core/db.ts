@@ -4,7 +4,9 @@ import {
   Tenant,
   UserRecord,
   MediaAsset,
-  EmailOutboxItem
+  EmailOutboxItem,
+  KitRecord,
+  PaintRecord
 } from '@gunpla/shared';
 
 export interface PlatformDatabaseState {
@@ -12,6 +14,8 @@ export interface PlatformDatabaseState {
   users: UserRecord[];
   mediaAssets: MediaAsset[];
   emailOutbox: EmailOutboxItem[];
+  kits: KitRecord[];
+  paints: PaintRecord[];
   lastSeededAt: string | null;
 }
 
@@ -26,6 +30,8 @@ function createEmptyState(): PlatformDatabaseState {
     users: [],
     mediaAssets: [],
     emailOutbox: [],
+    kits: [],
+    paints: [],
     lastSeededAt: null
   };
 }
@@ -37,7 +43,16 @@ export function getDb(): PlatformDatabaseState {
   if (fs.existsSync(DB_FILE)) {
     try {
       const raw = fs.readFileSync(DB_FILE, 'utf-8');
-      memoryState = JSON.parse(raw) as PlatformDatabaseState;
+      const parsed = JSON.parse(raw) as Partial<PlatformDatabaseState>;
+      memoryState = {
+        tenants: parsed.tenants ?? [],
+        users: parsed.users ?? [],
+        mediaAssets: parsed.mediaAssets ?? [],
+        emailOutbox: parsed.emailOutbox ?? [],
+        kits: parsed.kits ?? [],
+        paints: parsed.paints ?? [],
+        lastSeededAt: parsed.lastSeededAt ?? null
+      };
       return memoryState;
     } catch {
       memoryState = createEmptyState();

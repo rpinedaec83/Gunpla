@@ -111,6 +111,96 @@ export const openApiSpec = {
         summary: 'Inspect dispatched Resend emails (live and sandbox)',
         responses: { '200': { description: 'Email outbox items' } }
       }
+    },
+    '/api/v1/catalog/kits': {
+      get: {
+        tags: ['Catalog'],
+        summary: 'List and filter scale model kits (scoped by tenant allowedCategories)',
+        parameters: [
+          { name: 'category', in: 'query', schema: { type: 'string' } },
+          { name: 'brand', in: 'query', schema: { type: 'string' } },
+          { name: 'scale', in: 'query', schema: { type: 'string' } },
+          { name: 'search', in: 'query', schema: { type: 'string' } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } }
+        ],
+        responses: { '200': { description: 'List of catalog kits' } }
+      },
+      post: {
+        tags: ['Catalog'],
+        summary: 'Create a new kit manually in the master catalog',
+        responses: {
+          '201': { description: 'Kit created' },
+          '200': { description: 'Kit already exists (deduplicated)' },
+          '400': { description: 'Invalid kit parameters (RFC 7807)' }
+        }
+      }
+    },
+    '/api/v1/catalog/kits/{id}': {
+      get: {
+        tags: ['Catalog'],
+        summary: 'Get kit details by id',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Kit details' },
+          '404': { description: 'Kit not found (RFC 7807)' }
+        }
+      }
+    },
+    '/api/v1/catalog/kits/import-scalemates': {
+      post: {
+        tags: ['Catalog'],
+        summary: 'Import kit metadata from a Scalemates URL with deduplication and 4s graceful fallback',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['scalematesUrl'],
+                properties: {
+                  scalematesUrl: { type: 'string', example: 'https://www.scalemates.com/kits/bandai-5061919-rg-1-144-hi-nu-gundam--1359732' },
+                  categoryOverride: { type: 'string', enum: ['gunpla-mecha', 'military', 'aviation', 'automotive', 'naval', 'figures', 'scifi', 'diorama'] }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          '201': { description: 'Kit imported successfully' },
+          '200': { description: 'Kit already exists (deduplicated)' },
+          '400': { description: 'Invalid Scalemates URL or parsing error (RFC 7807)' }
+        }
+      }
+    },
+    '/api/v1/catalog/paints': {
+      get: {
+        tags: ['Catalog'],
+        summary: 'List paints and supplies by brand, line, type, finish or search query',
+        parameters: [
+          { name: 'brand', in: 'query', schema: { type: 'string' } },
+          { name: 'line', in: 'query', schema: { type: 'string' } },
+          { name: 'type', in: 'query', schema: { type: 'string' } },
+          { name: 'finish', in: 'query', schema: { type: 'string' } },
+          { name: 'search', in: 'query', schema: { type: 'string' } }
+        ],
+        responses: { '200': { description: 'List of paints with hex color swatches' } }
+      },
+      post: {
+        tags: ['Catalog'],
+        summary: 'Add a new paint reference to the master catalog',
+        responses: {
+          '201': { description: 'Paint created' },
+          '200': { description: 'Paint already exists' },
+          '400': { description: 'Incomplete paint data' }
+        }
+      }
+    },
+    '/api/v1/catalog/brands': {
+      get: {
+        tags: ['Catalog'],
+        summary: 'List all kit brands with kit counts and categories',
+        responses: { '200': { description: 'Brands summary list' } }
+      }
     }
   }
 };

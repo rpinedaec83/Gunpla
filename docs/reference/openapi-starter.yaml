@@ -380,3 +380,122 @@ paths:
       responses:
         '201':
           description: Email dispatched via Resend.com using active tenant domain
+  /api/v1/catalog/kits:
+    get:
+      tags: [Catalog]
+      summary: List scale model kits filtered by category, brand, scale, or keyword (scoped to tenant)
+      parameters:
+        - $ref: '#/components/parameters/TenantSlugHeader'
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: brand
+          in: query
+          schema:
+            type: string
+        - name: scale
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of kits
+    post:
+      tags: [Catalog]
+      summary: Create a kit manually in the catalog
+      parameters:
+        - $ref: '#/components/parameters/TenantSlugHeader'
+      responses:
+        '201':
+          description: Kit created
+        '200':
+          description: Existing kit returned
+  /api/v1/catalog/kits/{id}:
+    get:
+      tags: [Catalog]
+      summary: Get kit details by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Kit details
+        '404':
+          description: Kit not found
+  /api/v1/catalog/kits/import-scalemates:
+    post:
+      tags: [Catalog]
+      summary: Import kit from Scalemates URL with deduplication and 4s graceful fallback
+      parameters:
+        - $ref: '#/components/parameters/TenantSlugHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scalematesUrl]
+              properties:
+                scalematesUrl:
+                  type: string
+                categoryOverride:
+                  type: string
+      responses:
+        '201':
+          description: Kit imported
+        '200':
+          description: Kit already existed
+  /api/v1/catalog/paints:
+    get:
+      tags: [Catalog]
+      summary: List paints and supplies by brand, line, type, finish, or color search
+      parameters:
+        - name: brand
+          in: query
+          schema:
+            type: string
+        - name: line
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: finish
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paints list with hex color swatches
+    post:
+      tags: [Catalog]
+      summary: Add new paint reference
+      responses:
+        '201':
+          description: Paint created
+  /api/v1/catalog/brands:
+    get:
+      tags: [Catalog]
+      summary: List catalog brands with counts and supported categories
+      responses:
+        '200':
+          description: Brand summaries
