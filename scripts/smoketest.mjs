@@ -2107,7 +2107,104 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] Push Notifications & In-App Activity Bell verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL CHECKS PASSED ===');
+    // -------------------------------------------------------------------------
+    // DT14: Community Group Builds & Collaborative Build Logs
+    // -------------------------------------------------------------------------
+    console.log('\n--- Verifying Community Group Builds & Collaborative Build Logs ---');
+
+    // 1. List Group Builds on PlamoScale
+    const listGbRes = await fetch(`${baseUrl}/api/v1/group-builds`, {
+      headers: { 'X-Tenant-Slug': 'plamoscale' }
+    });
+    assert.equal(listGbRes.status, 200, 'GET /api/v1/group-builds must return 200');
+    const listGbData = await listGbRes.json();
+    assert.ok(listGbData.total >= 1, 'PlamoScale must return at least 1 seeded group build');
+    const seededGb = listGbData.items.find(g => g.slug === 'escuadrones-del-pacifico-wwii');
+    assert.ok(seededGb, 'Seeded group build escuadrones-del-pacifico-wwii must exist');
+
+    // 2. Create a new Group Build
+    const createGbRes = await fetch(`${baseUrl}/api/v1/group-builds`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${aperichToken}`,
+        'X-Tenant-Slug': 'plamoscale'
+      },
+      body: JSON.stringify({
+        title: 'Desafío Spitfires del Canal de la Mancha',
+        description: 'Construcción en grupo de Spitfires Mk.I a Mk.IX en defensa del Canal de la Mancha.',
+        rules: ['Escala 1/48 o 1/72', 'Esquema RAF de dos tonos', 'Bitácora con fotos de avance'],
+        bannerImageUrl: '/legacy-media/plamoscale/images/aperich/fulls/02.jpg',
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 86400000 * 45).toISOString(),
+        category: 'aviation'
+      })
+    });
+    assert.equal(createGbRes.status, 201, 'POST /api/v1/group-builds must return 201 Created');
+    const newGb = await createGbRes.json();
+    assert.ok(newGb.id);
+    assert.equal(newGb.slug, 'desafio-spitfires-del-canal-de-la-mancha');
+
+    // 3. Join Group Build with an existing build project
+    const aperichBuildsRes = await fetch(`${baseUrl}/api/v1/builds?username=aperich`);
+    const aperichBuildsData = await aperichBuildsRes.json();
+    assert.ok(aperichBuildsData.items && aperichBuildsData.items.length > 0, 'aperich must have builds');
+    const targetBuildId = aperichBuildsData.items[0].id;
+
+    const joinGbRes = await fetch(`${baseUrl}/api/v1/group-builds/${newGb.id}/join`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${aperichToken}`
+      },
+      body: JSON.stringify({ buildId: targetBuildId })
+    });
+    assert.equal(joinGbRes.status, 201, 'POST /group-builds/:id/join must return 201 Created');
+    const joinGbData = await joinGbRes.json();
+    assert.equal(joinGbData.success, true);
+    assert.equal(joinGbData.participantsCount, 1);
+
+    // 4. Duplicate join protection (409 Conflict)
+    const dupJoinRes = await fetch(`${baseUrl}/api/v1/group-builds/${newGb.id}/join`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${aperichToken}`
+      },
+      body: JSON.stringify({ buildId: targetBuildId })
+    });
+    assert.equal(dupJoinRes.status, 409, 'Duplicate join must return 409 Conflict');
+
+    // 5. Details lookup
+    const getGbRes = await fetch(`${baseUrl}/api/v1/group-builds/${newGb.slug}`);
+    assert.equal(getGbRes.status, 200, 'GET /group-builds/:slug must return 200');
+    const fetchedGb = await getGbRes.json();
+    assert.equal(fetchedGb.entries.length, 1);
+    assert.equal(fetchedGb.participantsCount, 1);
+
+    // 6. Leave Group Build
+    const leaveGbRes = await fetch(`${baseUrl}/api/v1/group-builds/${newGb.id}/leave`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${aperichToken}`
+      },
+      body: JSON.stringify({ buildId: targetBuildId })
+    });
+    assert.equal(leaveGbRes.status, 200, 'DELETE /group-builds/:id/leave must return 200');
+    const leaveGbData = await leaveGbRes.json();
+    assert.equal(leaveGbData.success, true);
+    assert.equal(leaveGbData.remainingEntriesCount, 0);
+
+    // 7. Web HTML UI Verification
+    assert.ok(plamoWebShellHtml.includes('id="contests-subtab-btn-groupbuilds"'), 'PlamoScale must render groupbuilds subtab button');
+    assert.ok(plamoWebShellHtml.includes('id="contests-panel-groupbuilds"'), 'PlamoScale must render groupbuilds panel');
+    assert.ok(plamoWebShellHtml.includes('id="modal-create-group-build"'), 'PlamoScale must render modal-create-group-build');
+    assert.ok(plamoWebShellHtml.includes('id="modal-join-group-build"'), 'PlamoScale must render modal-join-group-build');
+
+    console.log('[PASS] Community Group Builds & Collaborative Build Logs verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

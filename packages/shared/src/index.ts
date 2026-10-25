@@ -621,6 +621,58 @@ export interface ContestPodiumResult {
   peoplesChoice?: HallOfFameItem;
 }
 
+export type GroupBuildStatus = 'upcoming' | 'active' | 'completed';
+
+export interface GroupBuildEntry {
+  id: string;
+  groupBuildId: string;
+  buildId: string;
+  userId: string;
+  username: string;
+  userDisplayName?: string;
+  buildTitle: string;
+  buildSlug?: string;
+  coverImageUrl?: string;
+  stage?: string;
+  stepsCount?: number;
+  joinedAt: string;
+}
+
+export interface GroupBuildRecord {
+  id: string;
+  tenantSlug: 'plamoscale' | 'gunplajunkies' | 'all';
+  title: string;
+  slug: string;
+  description: string;
+  rules: string[];
+  bannerImageUrl?: string;
+  startDate: string;
+  endDate: string;
+  status: GroupBuildStatus;
+  creatorUserId: string;
+  creatorUsername: string;
+  creatorDisplayName?: string;
+  category?: ScaleCategory | 'all';
+  entries: GroupBuildEntry[];
+  participantsCount: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateGroupBuildRequest {
+  title: string;
+  description: string;
+  rules?: string[];
+  bannerImageUrl?: string;
+  startDate: string;
+  endDate: string;
+  category?: ScaleCategory | 'all';
+}
+
+export interface JoinGroupBuildRequest {
+  buildId: string;
+}
+
 export interface ShopStockItem {
   id: string;
   shopId: string;

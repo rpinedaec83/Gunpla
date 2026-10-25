@@ -284,6 +284,48 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS group_builds (
+    id VARCHAR(64) PRIMARY KEY,
+    tenant_slug VARCHAR(64) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    rules JSONB NOT NULL DEFAULT '[]'::jsonb,
+    banner_image_url TEXT,
+    start_date TIMESTAMPTZ NOT NULL,
+    end_date TIMESTAMPTZ NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'active',
+    creator_user_id VARCHAR(64) REFERENCES users(id) ON DELETE SET NULL,
+    creator_username VARCHAR(64) NOT NULL,
+    creator_display_name VARCHAR(128),
+    category VARCHAR(64),
+    participants_count INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS group_build_entries (
+    id VARCHAR(64) PRIMARY KEY,
+    group_build_id VARCHAR(64) NOT NULL REFERENCES group_builds(id) ON DELETE CASCADE,
+    build_id VARCHAR(64) NOT NULL REFERENCES build_projects(id) ON DELETE CASCADE,
+    user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    username VARCHAR(64) NOT NULL,
+    user_display_name VARCHAR(128),
+    build_title VARCHAR(255) NOT NULL,
+    build_slug VARCHAR(255),
+    cover_image_url TEXT,
+    stage VARCHAR(64),
+    steps_count INT NOT NULL DEFAULT 0,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_group_builds_tenant ON group_builds(tenant_slug);
+CREATE INDEX IF NOT EXISTS idx_group_builds_slug ON group_builds(slug);
+CREATE INDEX IF NOT EXISTS idx_group_builds_status ON group_builds(status);
+CREATE INDEX IF NOT EXISTS idx_group_build_entries_gb ON group_build_entries(group_build_id);
+CREATE INDEX IF NOT EXISTS idx_group_build_entries_build ON group_build_entries(build_id);
+CREATE INDEX IF NOT EXISTS idx_group_build_entries_user ON group_build_entries(user_id);
+
 CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, is_read);
 CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_push_subs_user ON push_subscriptions(user_id);

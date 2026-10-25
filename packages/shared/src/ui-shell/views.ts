@@ -7,7 +7,8 @@ import {
   ContestRecord,
   ShopRecord,
   MarketplaceListingRecord,
-  CommissionBuilderRecord
+  CommissionBuilderRecord,
+  GroupBuildRecord
 } from '../index';
 import type { AppShellConfig, AppShellData } from './app-shell';
 
@@ -606,8 +607,25 @@ export function renderViews(
 
     <!-- 7. CONTESTS TAB -->
     <section id="view-contests" class="view-section">
-      <!-- Hall of Fame & Badges Showcase -->
-      <div id="view-contests-hall-of-fame" style="background: linear-gradient(135deg, rgba(234, 179, 8, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1px solid rgba(234, 179, 8, 0.35); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 25px rgba(0,0,0,0.4);">
+      <!-- Sub-Tabs Bar: Contests & Group Builds -->
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button id="contests-subtab-btn-contests" class="filter-pill active" onclick="switchContestsSubtab('contests')">
+            🏆 Concursos & Salón de la Fama
+          </button>
+          <button id="contests-subtab-btn-groupbuilds" class="filter-pill" onclick="switchContestsSubtab('groupbuilds')">
+            🤝 Proyectos Grupales (${(data.groupBuilds || []).length})
+          </button>
+        </div>
+        <button class="btn-primary" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="openCreateGroupBuildModal()">
+          + Organizar Proyecto Grupal
+        </button>
+      </div>
+
+      <!-- PANEL 1: CONTESTS & HALL OF FAME -->
+      <div id="contests-panel-contests">
+        <!-- Hall of Fame & Badges Showcase -->
+        <div id="view-contests-hall-of-fame" style="background: linear-gradient(135deg, rgba(234, 179, 8, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1px solid rgba(234, 179, 8, 0.35); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 25px rgba(0,0,0,0.4);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
           <div>
             <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -837,6 +855,126 @@ export function renderViews(
         `
           )
           .join('')}
+      </div>
+      </div>
+
+      <!-- PANEL 2: GROUP BUILDS -->
+      <div id="contests-panel-groupbuilds" style="display: none;">
+        <div style="background: linear-gradient(135deg, rgba(56, 189, 248, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1.5rem;">🤝</span>
+                <h2 style="font-size: 1.35rem; font-weight: 700; color: #38bdf8; margin: 0;">Proyectos Grupales Colaborativos</h2>
+              </div>
+              <p style="font-size: 0.85rem; color: #cbd5e1; margin: 0.35rem 0 0 0;">
+                Construcciones temáticas en equipo. Únete con tu propia bitácora, documenta avances y comparte recetas de pintura junto a otros modelistas.
+              </p>
+            </div>
+            <button class="btn-primary" onclick="openCreateGroupBuildModal()">
+              + Organizar Proyecto Grupal
+            </button>
+          </div>
+        </div>
+
+        ${(() => {
+          const groupBuilds = data.groupBuilds && data.groupBuilds.length > 0 ? data.groupBuilds : [];
+          if (groupBuilds.length === 0) {
+            return `
+              <div style="background: var(--card-bg); border: 1px dashed var(--border-color); border-radius: 10px; padding: 3rem 1.5rem; text-align: center;">
+                <span style="font-size: 2.5rem; display: block; margin-bottom: 0.75rem;">🤝</span>
+                <h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.4rem;">No hay proyectos grupales activos</h3>
+                <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.25rem;">
+                  Sé el primero en proponer un tema de construcción y reunir a la comunidad.
+                </p>
+                <button class="btn-primary" onclick="openCreateGroupBuildModal()">+ Organizar Proyecto Grupal</button>
+              </div>
+            `;
+          }
+
+          return `
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+              ${groupBuilds
+                .map(
+                  (gb) => `
+                <div class="group-build-card" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                  <div style="position: relative; width: 100%; height: 200px; background: #0f172a;">
+                    <img src="${gb.bannerImageUrl || '/legacy-media/plamoscale/images/aperich/fulls/01.jpg'}" alt="${escapeHtml(gb.title)}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+                    <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(15,23,42,0.95) 100%);"></div>
+                    <div style="position: absolute; top: 12px; left: 12px; display: flex; gap: 0.5rem; align-items: center;">
+                      <span class="filter-pill" style="font-size: 0.75rem; padding: 0.2rem 0.6rem; background: ${gb.status === 'active' ? 'rgba(34,197,94,0.2)' : 'rgba(234,179,8,0.2)'}; color: ${gb.status === 'active' ? '#4ade80' : '#facc15'}; border-color: ${gb.status === 'active' ? 'rgba(34,197,94,0.4)' : 'rgba(234,179,8,0.4)'};">
+                        ${gb.status === 'active' ? '🟢 Activo' : gb.status === 'upcoming' ? '🟡 Próximo' : '⚪ Concluido'}
+                      </span>
+                      ${gb.category ? `<span class="filter-pill" style="font-size: 0.75rem; padding: 0.2rem 0.6rem; text-transform: uppercase;">${escapeHtml(gb.category)}</span>` : ''}
+                    </div>
+                    <div style="position: absolute; bottom: 14px; left: 16px; right: 16px;">
+                      <h3 style="font-size: 1.35rem; font-weight: 700; color: #fff; margin: 0 0 0.25rem 0;">${escapeHtml(gb.title)}</h3>
+                      <div style="font-size: 0.8rem; color: #94a3b8; display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <span>Organizado por: <strong style="color: #38bdf8;">@${gb.creatorUsername}</strong></span>
+                        <span>📅 Hasta: ${new Date(gb.endDate).toLocaleDateString('es-PE')}</span>
+                        <span>👥 <strong>${gb.participantsCount || 0}</strong> participantes</span>
+                        <span>📦 <strong>${(gb.entries || []).length}</strong> maquetas</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="padding: 1.5rem;">
+                    <p style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.6; margin-bottom: 1.25rem;">
+                      ${escapeHtml(gb.description)}
+                    </p>
+
+                    ${gb.rules && gb.rules.length > 0 ? `
+                      <div style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border-color);">
+                        <div style="font-size: 0.82rem; font-weight: 600; color: #fff; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.35rem;">
+                          <span>📋</span> Reglas y Pautas del Proyecto:
+                        </div>
+                        <ul style="padding-left: 1.25rem; font-size: 0.8rem; color: #94a3b8; margin: 0; line-height: 1.5;">
+                          ${gb.rules.map((r: string) => `<li>${escapeHtml(r)}</li>`).join('')}
+                        </ul>
+                      </div>
+                    ` : ''}
+
+                    <!-- Participating Builds -->
+                    <div style="margin-bottom: 1.5rem;">
+                      <h4 style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+                        <span>🧩</span> Maquetas en el Proyecto (${(gb.entries || []).length})
+                      </h4>
+                      ${gb.entries && gb.entries.length > 0 ? `
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem;">
+                          ${gb.entries.map((e: any) => `
+                            <div style="display: flex; gap: 0.75rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.6rem; align-items: center;">
+                              <img src="${e.coverImageUrl || '/legacy-media/plamoscale/images/aperich/thumbs/01.jpg'}" alt="${escapeHtml(e.buildTitle)}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);" />
+                              <div style="overflow: hidden; flex: 1;">
+                                <div style="font-size: 0.82rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(e.buildTitle)}</div>
+                                <div style="font-size: 0.72rem; color: #94a3b8;">Por <strong style="color: #cbd5e1;">@${e.username}</strong></div>
+                                <div style="font-size: 0.7rem; color: var(--accent); margin-top: 0.1rem;">Etapa: ${e.stage || 'Armado'}</div>
+                              </div>
+                            </div>
+                          `).join('')}
+                        </div>
+                      ` : `
+                        <p style="font-size: 0.8rem; color: #64748b; font-style: italic;">
+                          Aún no hay maquetas inscritas en este grupo. ¡Sé el primero en sumarte!
+                        </p>
+                      `}
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 1rem;">
+                      <button class="filter-pill" style="font-size: 0.8rem; padding: 0.45rem 0.85rem;" onclick="shareSocialLink('${escapeHtml(gb.title)}', '/contests', 'Participa en el proyecto grupal ${escapeHtml(gb.title)}')">
+                        🔗 Compartir
+                      </button>
+                      <button class="btn-primary" style="font-size: 0.85rem; padding: 0.45rem 1rem;" onclick="openJoinGroupBuildModal('${gb.id}', '${escapeHtml(gb.title)}')">
+                        🤝 Unirme al Proyecto Grupal
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              `
+                )
+                .join('')}
+            </div>
+          `;
+        })()}
       </div>
     </section>
 

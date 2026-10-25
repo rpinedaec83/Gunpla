@@ -4,10 +4,14 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
-- **Community Group Builds & Collaborative Build Logs:** Multi-author group build projects where multiple builders can contribute progress logs and paint recipes to a shared team project.
 - **Advanced Kit Barcode & Box Scanner:** Camera-based barcode (JAN/EAN/UPC) scanning in Workbench for instant kit logging from kit boxes.
+- **Interactive Workbench 3D / AR Viewer:** Model 3D inspection and pose staging in Mi Taller for planning diorama compositions.
 
 ## Completed Candidates & Parking Lot Items
+
+### GROUP-BUILDS -- Community Group Builds & Collaborative Build Logs (COMPLETED)
+- Goal: Collaborative multi-author build projects where multiple builders contribute progress logs, steps, and paint recipes to a shared team project.
+- Delivered: Endpoints `GET /api/v1/group-builds`, `POST /api/v1/group-builds`, `GET /api/v1/group-builds/{idOrSlug}`, `POST /api/v1/group-builds/{idOrSlug}/join`, and `DELETE /api/v1/group-builds/{idOrSlug}/leave`; dedicated slice `group-builds.slice.ts`; database tables `group_builds` and `group_build_entries`; starter seed projects for PlamoScale and GunplaJunkies; in-app notification dispatch on participant join; UI subtabs `🏆 Concursos & Salón de la Fama` and `🤝 Proyectos Grupales`, modals `#modal-create-group-build` and `#modal-join-group-build`; 4 isolated unit tests (`tests/unit/group-builds.test.mjs`, total 74 passing); end-to-end smoketest; and verified live deployment on LXC 190.
 
 ### BUILD-STEPS-GALLERY -- Advanced Build Step Media Reordering & Multi-Photo Gallery (COMPLETED)
 - Goal: Multi-photo upload and gallery viewing per build step milestone, with intuitive step reordering and deletion controls for builders.

@@ -582,6 +582,66 @@ export const openApiSpec = {
         }
       }
     },
+    '/api/v1/group-builds': {
+      get: {
+        tags: ['Community'],
+        summary: 'List collaborative group builds scoped by tenant and optional status',
+        parameters: [
+          { name: 'status', in: 'query', required: false, schema: { type: 'string', enum: ['upcoming', 'active', 'completed'] } },
+          { name: 'tenant', in: 'query', required: false, schema: { type: 'string' } }
+        ],
+        responses: { '200': { description: 'Group builds list' } }
+      },
+      post: {
+        tags: ['Community'],
+        summary: 'Create a new collaborative group build project',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '201': { description: 'Group build created' },
+          '400': { description: 'Validation error' },
+          '401': { description: 'Unauthorized' }
+        }
+      }
+    },
+    '/api/v1/group-builds/{idOrSlug}': {
+      get: {
+        tags: ['Community'],
+        summary: 'Get group build project details and participant build entries',
+        parameters: [{ name: 'idOrSlug', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Group build details' },
+          '404': { description: 'Group build not found' }
+        }
+      }
+    },
+    '/api/v1/group-builds/{idOrSlug}/join': {
+      post: {
+        tags: ['Community'],
+        summary: 'Join an active collaborative group build with an existing build project',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'idOrSlug', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '201': { description: 'Build joined to group build' },
+          '400': { description: 'Invalid build or group build completed' },
+          '403': { description: 'Forbidden (not build owner)' },
+          '404': { description: 'Group build or build not found' },
+          '409': { description: 'Build already registered in group build' }
+        }
+      }
+    },
+    '/api/v1/group-builds/{idOrSlug}/leave': {
+      delete: {
+        tags: ['Community'],
+        summary: 'Leave a collaborative group build project',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'idOrSlug', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Successfully removed from group build' },
+          '401': { description: 'Unauthorized' },
+          '404': { description: 'Group build or entry not found' }
+        }
+      }
+    },
     '/api/v1/shops': {
       get: {
         tags: ['Community'],

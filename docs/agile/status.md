@@ -4,12 +4,32 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell & Multi-Photo Gallery Reorder Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos de Armado + 4 Technical Debt resolutions verified via `npm test` (70 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt13-build-step-gallery-reorder` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder & Community Group Builds Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + 4 Technical Debt resolutions verified via `npm test` (74 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt14-community-group-builds` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Proyectos Grupales Comunitarios y Bitacoras Colaborativas (Community Group Builds):**
+  - **Iniciativas Tematicas Colaborativas:**
+    - Proyectos grupales multi-autor donde modelistas unen fuerzas en tematicas especificas (ej. dioramas historicos de la WWII, batallas iconicas de Gunpla UC 0079, cazas navales).
+    - Modelo de datos `GroupBuildRecord` y `GroupBuildEntry` con gestion de reglas, fechas, banner ilustrativo, participante lider y listado de obras vinculadas.
+  - **Endpoints Especializados de Proyectos Grupales:**
+    - `GET /api/v1/group-builds`: Listado de proyectos grupales con filtrado por tenant (`plamoscale` vs `gunplajunkies`) y estado (`active`, `upcoming`, `completed`).
+    - `POST /api/v1/group-builds`: Creacion de proyectos grupales por usuarios autenticados con validacion de fechas, reglas y slug autogenerado.
+    - `GET /api/v1/group-builds/:idOrSlug`: Detalle del proyecto grupal con listado completo de maquetas participantes y conteo de miembros unicos.
+    - `POST /api/v1/group-builds/:idOrSlug/join`: Inscripcion de una bitacora activa a un proyecto grupal con proteccion contra duplicados (409 Conflict) y despacho automatico de notificacion interna al organizador.
+    - `DELETE /api/v1/group-builds/:idOrSlug/leave`: Salida del proyecto grupal con recalculacion precisa de participantes restantes.
+  - **Interfaz de Usuario Web Shell (PlamoScale & GunplaJunkies):**
+    - Subpestanas en la seccion de Concursos: `🏆 Concursos & Salón de la Fama` y `🤝 Proyectos Grupales` (`switchContestsSubtab`).
+    - Modal de organizacion `#modal-create-group-build` con selector de categorias, fechas limites y pautas.
+    - Modal de inscripcion `#modal-join-group-build` que vincula dinamicamente proyectos desde `Mi Taller`.
+    - Cuadricula visual de proyectos con banner tematico, insignias de estado, miniaturas de maquetas inscritas y botones de participacion / compartir.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/group-builds.test.mjs` (4 casos de prueba aislados cubriendo listado por tenant, inscripcion y actualizacion de participantes unicos, proteccion contra duplicados y salida con recomputo). Total unit tests: 74 passed en 300ms.
+    - Smoketest automatizado en `scripts/smoketest.mjs` verificando el ciclo completo de creacion, inscripcion, detalle, salida e inyeccion HTML en la app web.
+    - Verificacion en vivo en el cluster Proxmox LXC 190 (`http://192.168.1.190:8080`).
 
 - **Galeria Multi-Foto & Reordenamiento de Pasos de Armado (Multi-Photo Gallery & Step Reorder):**
   - **Carga y Visualizacion Multi-Foto en Pasos de Bitacora:**

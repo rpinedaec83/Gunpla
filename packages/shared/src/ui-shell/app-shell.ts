@@ -12,6 +12,7 @@ import {
   MarketplaceListingRecord,
   CommissionBuilderRecord,
   HallOfFameItem,
+  GroupBuildRecord,
   OpenGraphMetadata
 } from '../index';
 
@@ -43,6 +44,7 @@ export interface AppShellData {
   listings?: MarketplaceListingRecord[];
   commissionBuilders?: CommissionBuilderRecord[];
   hallOfFame?: HallOfFameItem[];
+  groupBuilds?: GroupBuildRecord[];
 }
 
 function escapeHtml(str: string): string {
@@ -1577,6 +1579,206 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
 
   function likeBuild(buildId) {
     alert('Like registrado para la bitácora ' + buildId + '. (POST /api/v1/builds/' + buildId + '/like)');
+  }
+
+  // --- Sub-Tabs Engine: Contests & Group Builds ---
+  let activeContestsSubtab = 'contests';
+  function switchContestsSubtab(subtab) {
+    activeContestsSubtab = subtab;
+    const btnContests = document.getElementById('contests-subtab-btn-contests');
+    const btnGroupBuilds = document.getElementById('contests-subtab-btn-groupbuilds');
+    const panelContests = document.getElementById('contests-panel-contests');
+    const panelGroupBuilds = document.getElementById('contests-panel-groupbuilds');
+
+    if (btnContests) btnContests.classList.toggle('active', subtab === 'contests');
+    if (btnGroupBuilds) btnGroupBuilds.classList.toggle('active', subtab === 'groupbuilds');
+    if (panelContests) panelContests.style.display = (subtab === 'contests') ? 'block' : 'none';
+    if (panelGroupBuilds) panelGroupBuilds.style.display = (subtab === 'groupbuilds') ? 'block' : 'none';
+  }
+
+  // --- Group Builds (Collaborative Multi-Author Projects) ---
+  function openCreateGroupBuildModal() {
+    if (!currentUser || !currentToken) {
+      alert('Debes iniciar sesión con tu cuenta de modelista para organizar un proyecto grupal.');
+      openAuthModal();
+      return;
+    }
+    const m = document.getElementById('modal-create-group-build');
+    const endDateInput = document.getElementById('cgb-end-date');
+    if (endDateInput && !endDateInput.value) {
+      const d = new Date();
+      d.setDate(d.getDate() + 60);
+      endDateInput.value = d.toISOString().split('T')[0];
+    }
+    if (m) m.classList.add('active');
+  }
+
+  function closeCreateGroupBuildModal(e) {
+    if (!e || e.target.id === 'modal-create-group-build' || e.target.classList.contains('auth-close')) {
+      const m = document.getElementById('modal-create-group-build');
+      if (m) m.classList.remove('active');
+    }
+  }
+
+  async function handleCreateGroupBuildSubmit(e) {
+    e.preventDefault();
+    const title = document.getElementById('cgb-title').value.trim();
+    const category = document.getElementById('cgb-category').value;
+    const endDate = document.getElementById('cgb-end-date').value;
+    const description = document.getElementById('cgb-desc').value.trim();
+    const rulesRaw = document.getElementById('cgb-rules').value.trim();
+    const bannerImageUrl = document.getElementById('cgb-banner-url').value.trim();
+    const btn = document.getElementById('btn-submit-cgb');
+
+    const rules = rulesRaw ? rulesRaw.split(String.fromCharCode(10)).map(r => r.trim()).filter(Boolean) : [];
+    const startDate = new Date().toISOString();
+
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    const authHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + currentToken,
+      'X-Tenant-Slug': '${config.tenantSlug}'
+    };
+
+    btn.disabled = true;
+    btn.textContent = 'Creando proyecto...';
+
+    try {
+      const res = await fetch(apiBase + '/api/v1/group-builds', {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({
+          title,
+          category,
+          startDate,
+          endDate: new Date(endDate).toISOString(),
+          description,
+          rules,
+          bannerImageUrl: bannerImageUrl || undefined
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Error al crear proyecto grupal');
+      }
+
+      closeCreateGroupBuildModal();
+      alert('¡Proyecto Grupal creado con éxito! Ya puedes invitar a otros modelistas a unirse.');
+      window.location.reload();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Publicar Proyecto Grupal';
+    }
+  }
+
+  let activeJoinGroupBuildId = null;
+
+  async function openJoinGroupBuildModal(groupBuildId, title) {
+    if (!currentUser || !currentToken) {
+      alert('Debes iniciar sesión con tu cuenta de modelista para unirte al proyecto grupal.');
+      openAuthModal();
+      return;
+    }
+
+    activeJoinGroupBuildId = groupBuildId;
+    const m = document.getElementById('modal-join-group-build');
+    const idInput = document.getElementById('join-gb-id');
+    const titleText = document.getElementById('join-gb-title-text');
+    const select = document.getElementById('join-gb-build-select');
+    const btn = document.getElementById('btn-submit-join-gb');
+
+    if (idInput) idInput.value = groupBuildId;
+    if (titleText) titleText.textContent = 'Inscribir bitácora a: ' + title;
+
+    if (select) {
+      select.innerHTML = '<option value="">Cargando tus proyectos...</option>';
+      select.disabled = true;
+    }
+    if (btn) btn.disabled = true;
+
+    if (m) m.classList.add('active');
+
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    try {
+      let builds = window.__WB_BUILDS;
+      if (!builds || builds.length === 0) {
+        const res = await fetch(apiBase + '/api/v1/builds?username=' + encodeURIComponent(currentUser.username));
+        if (res.ok) {
+          const d = await res.json();
+          builds = d.items || [];
+        }
+      }
+
+      if (!builds || builds.length === 0) {
+        if (select) {
+          select.innerHTML = '<option value="">No tienes bitácoras registradas</option>';
+        }
+      } else {
+        if (select) {
+          select.innerHTML = builds.map(b => 
+            '<option value="' + b.id + '">' + escapeHtml(b.title) + ' (' + (b.category || 'Gunpla') + ')</option>'
+          ).join('');
+          select.disabled = false;
+        }
+        if (btn) btn.disabled = false;
+      }
+    } catch (err) {
+      if (select) select.innerHTML = '<option value="">Error al cargar bitácoras</option>';
+    }
+  }
+
+  function closeJoinGroupBuildModal(e) {
+    if (!e || e.target.id === 'modal-join-group-build' || e.target.classList.contains('auth-close')) {
+      const m = document.getElementById('modal-join-group-build');
+      if (m) m.classList.remove('active');
+    }
+  }
+
+  async function handleJoinGroupBuildSubmit(e) {
+    e.preventDefault();
+    const groupBuildId = document.getElementById('join-gb-id').value;
+    const buildId = document.getElementById('join-gb-build-select').value;
+    const btn = document.getElementById('btn-submit-join-gb');
+
+    if (!buildId) {
+      alert('Debes seleccionar una bitácora para inscribirte.');
+      return;
+    }
+
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    const authHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + currentToken,
+      'X-Tenant-Slug': '${config.tenantSlug}'
+    };
+
+    btn.disabled = true;
+    btn.textContent = 'Inscribiendo...';
+
+    try {
+      const res = await fetch(apiBase + '/api/v1/group-builds/' + groupBuildId + '/join', {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ buildId })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Error al unirte al proyecto grupal');
+      }
+
+      closeJoinGroupBuildModal();
+      alert('¡Te has unido con éxito al Proyecto Grupal! Tu avance se compartirá con la comunidad.');
+      window.location.reload();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Confirmar Inscripción';
+    }
   }
 
   // --- Contests & Community Voting Engine ---
