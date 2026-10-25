@@ -1452,6 +1452,89 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Modal: Create Group Build -->
+<div id="modal-create-group-build" class="custom-modal" onclick="closeCreateGroupBuildModal(event)">
+  <div class="auth-box" style="max-width: 540px;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeCreateGroupBuildModal()">&times;</span>
+    <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;">+ Organizar Proyecto Grupal</h3>
+    <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
+      Propón un tema colaborativo para que otros modelistas construyan maquetas y compartan avances en equipo.
+    </p>
+    <form onsubmit="handleCreateGroupBuildSubmit(event)">
+      <div class="auth-input-group">
+        <label class="auth-label">Título del Proyecto Grupal</label>
+        <input type="text" id="cgb-title" class="auth-input" placeholder="ej. Batalla de A Baoa Qu UC 0079" required />
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div class="auth-input-group">
+          <label class="auth-label">Categoría</label>
+          <select id="cgb-category" class="auth-input">
+            <option value="all">Todas las Categorías</option>
+            <option value="gunpla-mecha">Gunpla / Mecha</option>
+            <option value="aviation">Aviación Histórica</option>
+            <option value="military">Blindados Militares</option>
+            <option value="automotive">Automotriz & Carreras</option>
+            <option value="naval">Buques & Submarinos</option>
+            <option value="scifi">Sci-Fi & Fantasía</option>
+            <option value="diorama">Dioramas & Escenografía</option>
+          </select>
+        </div>
+        <div class="auth-input-group">
+          <label class="auth-label">Fecha Límite</label>
+          <input type="date" id="cgb-end-date" class="auth-input" required />
+        </div>
+      </div>
+
+      <div class="auth-input-group">
+        <label class="auth-label">Descripción & Temática</label>
+        <textarea id="cgb-desc" class="auth-input" style="height: 75px; resize: none;" placeholder="Describe la premisa del proyecto, escalas recomendadas, contexto histórico o de ficción..." required></textarea>
+      </div>
+
+      <div class="auth-input-group">
+        <label class="auth-label">Reglas y Pautas (Una regla por línea)</label>
+        <textarea id="cgb-rules" class="auth-input" style="height: 65px; resize: none;" placeholder="ej.&#10;Kits escala 1/144 HG o RG&#10;Pintura personalizada obligatoria&#10;Mínimo 2 pasos documentados"></textarea>
+      </div>
+
+      <div class="auth-input-group">
+        <label class="auth-label">URL de Banner / Imagen Temática (Opcional)</label>
+        <input type="url" id="cgb-banner-url" class="auth-input" placeholder="https://ejemplo.com/banner.jpg" />
+      </div>
+
+      <button type="submit" id="btn-submit-cgb" class="btn-primary" style="width: 100%; justify-content: center; padding: 0.65rem; margin-top: 0.5rem;">
+        Publicar Proyecto Grupal
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Join Group Build -->
+<div id="modal-join-group-build" class="custom-modal" onclick="closeJoinGroupBuildModal(event)">
+  <div class="auth-box" style="max-width: 480px;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeJoinGroupBuildModal()">&times;</span>
+    <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;">🤝 Unirme al Proyecto Grupal</h3>
+    <p id="join-gb-title-text" style="font-size: 0.82rem; color: #38bdf8; margin-bottom: 1.25rem;">
+      Inscribe tu bitácora de armado para documentar tu avance en equipo.
+    </p>
+    <form onsubmit="handleJoinGroupBuildSubmit(event)">
+      <input type="hidden" id="join-gb-id" />
+      <div class="auth-input-group">
+        <label class="auth-label">Selecciona una de tus Bitácoras Activas</label>
+        <select id="join-gb-build-select" class="auth-input" required>
+          <option value="">Cargando tus bitácoras...</option>
+        </select>
+        <span style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.3rem; display: block;">
+          ¿No tienes una bitácora creada? Ve a <strong>Mi Taller</strong> y crea tu proyecto primero.
+        </span>
+      </div>
+
+      <button type="submit" id="btn-submit-join-gb" class="btn-primary" style="width: 100%; justify-content: center; padding: 0.65rem; margin-top: 0.5rem;">
+        Confirmar Inscripción
+      </button>
+    </form>
+  </div>
+</div>
+
 
 `;
 }

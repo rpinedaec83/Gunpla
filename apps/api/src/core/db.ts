@@ -18,7 +18,8 @@ import {
   ShopRecord,
   ShopStockItem,
   NotificationItem,
-  PushSubscriptionRecord
+  PushSubscriptionRecord,
+  GroupBuildRecord
 } from '@gunpla/shared';
 import { isPostgresConfigured, syncStateToPostgres } from './postgres';
 
@@ -41,6 +42,7 @@ export interface PlatformDatabaseState {
   shopStock: ShopStockItem[];
   notifications: NotificationItem[];
   pushSubscriptions: PushSubscriptionRecord[];
+  groupBuilds: GroupBuildRecord[];
   lastSeededAt: string | null;
 }
 
@@ -71,6 +73,7 @@ function createEmptyState(): PlatformDatabaseState {
     shopStock: [],
     notifications: [],
     pushSubscriptions: [],
+    groupBuilds: [],
     lastSeededAt: null
   };
 }
@@ -102,6 +105,7 @@ export function getDb(): PlatformDatabaseState {
         shopStock: parsed.shopStock ?? [],
         notifications: parsed.notifications ?? [],
         pushSubscriptions: parsed.pushSubscriptions ?? [],
+        groupBuilds: parsed.groupBuilds ?? [],
         lastSeededAt: parsed.lastSeededAt ?? null
       };
       return memoryState;

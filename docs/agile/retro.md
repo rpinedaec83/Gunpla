@@ -492,3 +492,32 @@ Decisions made:
 Lessons learned:
 - Rendering multi-photo thumbnails with direct Lightbox integration significantly improves the presentation of in-progress custom Gunpla techniques like candy-coating and weathering.
 Usage: Moderate -- self-estimated
+
+### DT14 -- Community Group Builds & Collaborative Build Logs | eMOE: 5 CU | aMOE: 5 CU
+What was done:
+- Designed and authored shared data models in `packages/shared/src/index.ts`: `GroupBuildRecord`, `GroupBuildEntry`, `GroupBuildStatus`, `CreateGroupBuildRequest`, and `JoinGroupBuildRequest`.
+- Authored contract-first OpenAPI 3.1 specification (`docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`) for:
+  - `GET /api/v1/group-builds`: List group builds with tenant and status filtering.
+  - `POST /api/v1/group-builds`: Create group build with slug generation and validation.
+  - `GET /api/v1/group-builds/{idOrSlug}`: Lookup details and participant entries.
+  - `POST /api/v1/group-builds/{idOrSlug}/join`: Join active project with an existing build and notify the organizer.
+  - `DELETE /api/v1/group-builds/{idOrSlug}/leave`: Leave group build and recalculate participants.
+- Implemented dedicated slice `apps/api/src/slices/community/group-builds.slice.ts` mounted at `/api/v1/group-builds`:
+  - Added starter seed projects for PlamoScale (Escuadrones del Pacifico WWII) and GunplaJunkies (Asalto a la Fortaleza Espacial A Baoa Qu).
+  - Integrated `dispatchNotification` to inform group build creators when a builder joins their project.
+- Added PostgreSQL schema tables in `apps/api/sql/001_init_schema.sql` (`group_builds`, `group_build_entries`).
+- Updated frontend UI components:
+  - In `packages/shared/src/ui-shell/views.ts`: Added subtab selector (`🏆 Concursos & Salón de la Fama` / `🤝 Proyectos Grupales`), project showcase cards, participant thumbnails, and action buttons.
+  - In `packages/shared/src/ui-shell/modals.ts`: Added `#modal-create-group-build` (for organizing) and `#modal-join-group-build` (for registering active builds).
+  - In `packages/shared/src/ui-shell/app-shell.ts`: Added `switchContestsSubtab`, modal management, form submissions, and dynamic build options population.
+  - In web applications (`apps/plamoscale-web` and `apps/gunplajunkies-web`): Fetched and passed `groupBuilds` in server SSR.
+- Authored isolated unit test suite `tests/unit/group-builds.test.mjs` (4 test cases covering listing, tenant scoping, joining, duplicate rejection, and leaving). Total unit test suite: 74 passed in 290ms.
+- Extended regression smoketest in `scripts/smoketest.mjs` with full group build lifecycle and HTML element validation.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190:8080`, `:3000`, `:3001`).
+Issues hit:
+- In `app-shell.ts`, multiline template literals unescaped `\n` causing a JS syntax error during smoketest evaluation; resolved reliably using `String.fromCharCode(10)`.
+Decisions made:
+- Embedding Group Builds directly alongside Contests provides a cohesive community hub where competitive challenges and collaborative group builds are discovered side-by-side.
+Lessons learned:
+- Dynamically linking a builder's existing projects from "Mi Taller" into a group build eliminates duplicate data entry and keeps build progress in sync across personal and collective views.
+Usage: Moderate -- self-estimated

@@ -18,6 +18,7 @@ import { catalogRouter } from './slices/catalog-scalemates/catalog.slice';
 import { workbenchRouter } from './slices/workbench-stash/workbench.slice';
 import { buildsRouter, mediaRouter } from './slices/build-logs/builds.slice';
 import { communityRouter } from './slices/community/community.slice';
+import { groupBuildsRouter } from './slices/community/group-builds.slice';
 import { marketplaceRouter, commissionsRouter } from './slices/marketplace/marketplace.slice';
 import { paintsAiRouter } from './slices/paints-ai/paints-ai.slice';
 import { ogRouter } from './slices/social-og/og.slice';
@@ -152,6 +153,7 @@ export function createApp() {
   app.use('/api/v1/commissions', commissionsRouter);
   app.use('/api/v1/paints/ai', paintsAiRouter);
   app.use('/api/v1/og', ogRouter);
+  app.use('/api/v1/group-builds', groupBuildsRouter);
   app.use('/api/v1', communityRouter);
 
   // PostgreSQL Diagnostic & Status Endpoint
