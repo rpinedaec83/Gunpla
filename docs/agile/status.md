@@ -4,12 +4,30 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder & Community Group Builds Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + 4 Technical Debt resolutions verified via `npm test` (74 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt14-community-group-builds` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds & Barcode Scanner Stash Integration Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + 4 Technical Debt resolutions verified via `npm test` (91 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt15-barcode-scanner-stash` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Escáner de Código de Barras (JAN / EAN / UPC) y Registro Instantáneo al Stash (Barcode Box Scanner):**
+  - **Mapeo Heurístico y Normalización de Prefijos de Fabricante:**
+    - Algoritmo en `@gunpla/shared` (`normalizeBarcode`, `detectBarcodeFormat`, `getManufacturerHintFromBarcode`) con detección de formatos: `JAN-13`, `JAN-8`, `EAN-13`, `UPC-A`, `UPC-E`, `CODE-128`.
+    - Reconocimiento de prefijos industriales: Bandai Spirits (`4573102`), Bandai clásica (`4543112`, `4549660`, `4902425`), Tamiya (`4950344`), Kotobukiya (`4934054`), Hasegawa (`4967834`), Aoshima (`4905083`), Max Factory (`4545784`), Good Smile Company (`4580416`), Revell (`4009803`) y Vallejo (`8429551`).
+  - **Endpoints Especializados de Código de Barras:**
+    - `GET /api/v1/catalog/barcode/:barcode`: Búsqueda de maqueta por código de barras normalizado con formato detectado, indicación de coincidencia y sugerencia heurística de fabricante.
+    - `POST /api/v1/workbench/stash/scan`: Registro instantáneo al Stash personal; si el código ya existe en el catálogo maestro lo vincula de inmediato, y si es nuevo crea automáticamente la maqueta en `db.kits` (`source: 'user-import'`) antes de agregarla al inventario del usuario con su estado, precio pagado y notas.
+  - **Interfaz de Usuario Web Shell (PlamoScale & GunplaJunkies):**
+    - Modal interactivo `#modal-barcode-scanner` con visor de cámara en vivo (`#barcode-scanner-video`), visor láser animado y píldora de estado contextual.
+    - Integración nativa de `BarcodeDetector` API para escaneo automático continuo por fotogramas con cámara trasera (`facingMode: { ideal: "environment" }`).
+    - Campo de respaldo de búsqueda manual `#barcode-manual-input` con activación por botón o tecla Enter.
+    - Tarjeta de confirmación previa con boxart, especificaciones, selector de estado de Stash (`unbuilt`, `in_progress`, `built`, `wishlist`, `for_trade`) y botón de un clic `📦 Agregar Maqueta a Mi Stash`.
+    - Botones de acceso directo `📷 Escanear Caja (JAN / EAN)` en la barra de herramientas del Stash y en la cabecera de acciones rápidas de Mi Taller.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/barcode-scanner.test.mjs` (17 pruebas aisladas cubriendo normalización, detección de formatos, resolución de marcas por prefijo, búsqueda de catálogo y registro con auto-creación). Total unit tests: 91 passed.
+    - Smoketest automatizado en `scripts/smoketest.mjs` verificando consultas de código Bandai, Tamiya con guiones, no catalogados, errores 400 RFC 7807, registro instantáneo en Stash y presencia de elementos HTML en los portales.
+    - Verificación y despliegue en vivo en el cluster Proxmox LXC 190 (`http://192.168.1.190:8080`, `http://192.168.1.190:3000`, `http://192.168.1.190:3001`).
 
 - **Proyectos Grupales Comunitarios y Bitacoras Colaborativas (Community Group Builds):**
   - **Iniciativas Tematicas Colaborativas:**

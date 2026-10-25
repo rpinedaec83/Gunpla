@@ -19,7 +19,12 @@ import {
   BulkPaintImportItem,
   BulkImportRequest,
   BulkStashImportResponse,
-  BulkPaintImportResponse
+  BulkPaintImportResponse,
+  ScanStashRequest,
+  ScanStashResponse,
+  normalizeBarcode,
+  detectBarcodeFormat,
+  getManufacturerHintFromBarcode
 } from '@gunpla/shared';
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
@@ -180,6 +185,126 @@ workbenchRouter.post('/stash', (req: Request, res: Response) => {
     ...newItem,
     kit
   });
+});
+
+/**
+ * POST /api/v1/workbench/stash/scan
+ * Instant stash registration via scanned barcode (JAN / EAN / UPC / Code-128).
+ * Finds existing kit or creates a new catalog kit record on the fly with source 'user-import'.
+ */
+workbenchRouter.post('/stash/scan', (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const {
+    barcode,
+    status,
+    notes,
+    pricePaid,
+    currency,
+    kitName,
+    brand,
+    scale,
+    grade,
+    category
+  } = req.body as ScanStashRequest;
+
+  if (!barcode || typeof barcode !== 'string') {
+    return sendProblem(
+      req,
+      res,
+      400,
+      'Código de Barras Requerido',
+      'El campo "barcode" es obligatorio para registrar por escaneo.',
+      'validation-error',
+      [{ name: 'barcode', reason: 'Debe ser un código de barras válido' }]
+    );
+  }
+
+  const normalized = normalizeBarcode(barcode);
+  if (!normalized || normalized.length < 4) {
+    return sendProblem(
+      req,
+      res,
+      400,
+      'Código de Barras Inválido',
+      'El código de barras normalizado es demasiado corto.',
+      'validation-error',
+      [{ name: 'barcode', reason: 'Debe contener al menos 4 caracteres alfanuméricos' }]
+    );
+  }
+
+  const db = getDb();
+  let createdKit = false;
+
+  // Search existing kit
+  let kit = db.kits.find(k => {
+    if (k.barcode && normalizeBarcode(k.barcode) === normalized) {
+      return true;
+    }
+    if (k.barcode && normalizeBarcode(k.barcode).replace(/^0+/, '') === normalized.replace(/^0+/, '')) {
+      return true;
+    }
+    return false;
+  });
+
+  if (!kit) {
+    // If not found in catalog, auto-create kit with provided or heuristic details
+    const manufacturerHint = getManufacturerHintFromBarcode(normalized);
+    const resolvedBrand = (brand && brand.trim()) || manufacturerHint || 'Desconocida';
+    const resolvedName = (kitName && kitName.trim()) || `${resolvedBrand} Model Kit [${normalized}]`;
+    const resolvedScale = (scale && scale.trim()) || '1/144';
+    const resolvedCategory: ScaleCategory = category || (
+      resolvedBrand.toLowerCase().includes('bandai') || resolvedBrand.toLowerCase().includes('kotobukiya')
+        ? 'gunpla-mecha'
+        : 'military'
+    );
+
+    kit = {
+      id: `kit-scan-${randomUUID().slice(0, 8)}`,
+      name: resolvedName,
+      brand: resolvedBrand,
+      scale: resolvedScale,
+      grade: grade?.trim() || undefined,
+      category: resolvedCategory,
+      barcode: normalized,
+      source: 'user-import',
+      createdAt: new Date().toISOString()
+    };
+
+    db.kits.push(kit);
+    createdKit = true;
+  }
+
+  const now = new Date().toISOString();
+  const newStashItem: StashItemRecord = {
+    id: `stash-${randomUUID().slice(0, 8)}`,
+    userId,
+    kitId: kit.id,
+    status: status || 'unbuilt',
+    notes: notes?.trim() || undefined,
+    pricePaid: pricePaid !== undefined && pricePaid !== null ? Number(pricePaid) : undefined,
+    currency: currency || 'USD',
+    acquiredAt: now,
+    completedAt: status === 'built' ? now : undefined,
+    createdAt: now,
+    updatedAt: now
+  };
+
+  db.stashItems.push(newStashItem);
+  saveDb(db);
+
+  const response: ScanStashResponse = {
+    stashItem: {
+      ...newStashItem,
+      kit
+    },
+    kit,
+    createdKit,
+    message: createdKit
+      ? `Maqueta registrada en catálogo y agregada a tu Stash (${kit.name}).`
+      : `Maqueta agregada a tu Stash con éxito (${kit.name}).`
+  };
+
+  return res.status(201).json(response);
 });
 
 /**

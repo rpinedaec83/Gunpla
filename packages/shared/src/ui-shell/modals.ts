@@ -1535,6 +1535,65 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Modal: Barcode Scanner & Instant Stash Registration -->
+<div id="modal-barcode-scanner" class="custom-modal" onclick="closeBarcodeScannerModal(event)">
+  <div class="auth-box" style="max-width: 540px;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeBarcodeScannerModal()">&times;</span>
+    
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+      <span style="font-size: 1.6rem;">📷</span>
+      <div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin: 0;">Escanear Código de Barras (JAN / EAN)</h3>
+        <p style="font-size: 0.82rem; color: #94a3b8; margin: 0.2rem 0 0;">Apunta la cámara a la caja de tu maqueta para registrarla en tu Stash</p>
+      </div>
+    </div>
+
+    <!-- Scanner Viewport -->
+    <div id="barcode-viewport-container" style="position: relative; width: 100%; height: 240px; background: #0f172a; border-radius: 8px; overflow: hidden; margin: 1rem 0 0.75rem; border: 2px solid #334155; display: flex; align-items: center; justify-content: center;">
+      <video id="barcode-scanner-video" playsinline autoplay muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+      
+      <!-- Targeting Reticle Overlay with laser scanline -->
+      <div id="barcode-scanner-reticle" style="position: absolute; inset: 25px 40px; border: 2px dashed rgba(56, 189, 248, 0.7); border-radius: 10px; pointer-events: none; box-shadow: inset 0 0 15px rgba(56, 189, 248, 0.2); display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <div id="barcode-laser-line" style="width: 100%; height: 2px; background: #ef4444; box-shadow: 0 0 8px #ef4444; position: absolute; top: 50%; transform: translateY(-50%); animation: laserSweep 2s ease-in-out infinite alternate;"></div>
+      </div>
+
+      <!-- Live Status Pill -->
+      <div id="barcode-scanner-status" style="position: absolute; bottom: 12px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); color: #38bdf8; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; border: 1px solid rgba(56, 189, 248, 0.3); pointer-events: none;">
+        Iniciando cámara...
+      </div>
+    </div>
+
+    <!-- Camera Control Buttons -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 0.5rem;">
+      <div style="font-size: 0.75rem; color: #64748b;">
+        Soporta JAN-13, EAN-13, UPC-A, Code-128
+      </div>
+      <div style="display: flex; gap: 0.4rem;">
+        <button type="button" id="btn-restart-scanner" class="filter-pill" onclick="restartBarcodeScannerCamera()" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">
+          🔄 Reiniciar Cámara
+        </button>
+      </div>
+    </div>
+
+    <!-- Manual Barcode Search Fallback -->
+    <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem;">
+      <label class="auth-label" style="margin-bottom: 0.35rem; font-size: 0.78rem;">¿Cámara no disponible? Ingresa el código manualmente:</label>
+      <div style="display: flex; gap: 0.5rem;">
+        <input type="text" id="barcode-manual-input" class="auth-input" placeholder="ej: 4573102619198 o 4950344611195" onkeydown="if(event.key==='Enter'){event.preventDefault();handleManualBarcodeSearch();}" />
+        <button type="button" id="btn-search-barcode-manual" class="btn-primary" onclick="handleManualBarcodeSearch()" style="padding: 0.5rem 0.9rem; font-size: 0.82rem; white-space: nowrap;">
+          🔍 Buscar
+        </button>
+      </div>
+    </div>
+
+    <!-- Scan Results & Stash Confirmation Container (Initially Hidden) -->
+    <div id="barcode-result-card" style="display: none; background: #1e293b; border: 1px solid #38bdf8; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+      <!-- Populated via renderBarcodeResult() -->
+    </div>
+
+  </div>
+</div>
+
 
 `;
 }

@@ -420,6 +420,9 @@ export function renderViews(
 
             <!-- Quick Action Buttons -->
             <div style="display: flex; flex-wrap: wrap; gap: 0.6rem;">
+              <button id="btn-scan-barcode-header" class="btn-primary" onclick="openBarcodeScannerModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; background: linear-gradient(135deg, #0ea5e9, #6366f1); display: inline-flex; align-items: center; gap: 0.35rem; border: none; box-shadow: 0 4px 12px rgba(14,165,233,0.25);">
+                <span>📷</span> Escanear Caja (JAN)
+              </button>
               <button class="filter-pill" onclick="openEditProfileModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <span>✏️</span> Editar Perfil
               </button>
@@ -481,6 +484,22 @@ export function renderViews(
 
         <!-- Sub-Tab 1: Stash Grid -->
         <div id="wb-subtab-stash" class="wb-subtab-content">
+          <!-- Stash Action & Count Bar -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff; margin: 0;">📦 Inventario de Cajas</h3>
+              <span id="wb-stash-count-badge" style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.75rem; padding: 0.15rem 0.55rem; border-radius: 9999px; font-weight: 600;">0 maquetas</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button id="btn-scan-barcode-stash" class="btn-primary" onclick="openBarcodeScannerModal()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; background: linear-gradient(135deg, #0ea5e9, #6366f1); display: inline-flex; align-items: center; gap: 0.35rem; border: none;">
+                📷 Escanear Caja (JAN / EAN)
+              </button>
+              <button class="filter-pill" onclick="openAddStashModal()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem;">
+                + Agregar Manual
+              </button>
+            </div>
+          </div>
+
           <!-- Wishlist Stock Alerts Live Banner -->
           <div id="wb-wishlist-alerts-banner" style="display: none; margin-bottom: 1.25rem;"></div>
 

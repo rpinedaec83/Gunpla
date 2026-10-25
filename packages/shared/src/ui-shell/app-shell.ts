@@ -3379,6 +3379,402 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     if (targetBtn) targetBtn.classList.add('active');
   }
 
+  // --- Barcode Scanner & Instant Stash Registration Engine ---
+  let barcodeMediaStream = null;
+  let barcodeScanInterval = null;
+  let barcodeScannerRunning = false;
+  let lastScannedBarcodeValue = null;
+  let lastScannedBarcodeTime = 0;
+  let currentBarcodeLookup = null;
+
+  function openBarcodeScannerModal() {
+    if (!currentUser) {
+      openAuthModal();
+      return;
+    }
+    const m = document.getElementById('modal-barcode-scanner');
+    if (!m) return;
+
+    // Reset inputs and results
+    const manualInput = document.getElementById('barcode-manual-input');
+    if (manualInput) manualInput.value = '';
+    const resultCard = document.getElementById('barcode-result-card');
+    if (resultCard) {
+      resultCard.style.display = 'none';
+      resultCard.innerHTML = '';
+    }
+    currentBarcodeLookup = null;
+
+    m.classList.add('active');
+    startBarcodeScannerCamera();
+  }
+
+  function closeBarcodeScannerModal(e) {
+    if (!e || e.target.id === 'modal-barcode-scanner' || e.target.classList.contains('auth-close')) {
+      const m = document.getElementById('modal-barcode-scanner');
+      if (m) m.classList.remove('active');
+      stopBarcodeScannerCamera();
+    }
+  }
+
+  async function startBarcodeScannerCamera() {
+    const video = document.getElementById('barcode-scanner-video');
+    const statusEl = document.getElementById('barcode-scanner-status');
+    const laser = document.getElementById('barcode-laser-line');
+
+    if (laser) laser.style.display = 'block';
+    if (statusEl) {
+      statusEl.textContent = 'Iniciando cámara...';
+      statusEl.style.color = '#38bdf8';
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (statusEl) {
+        statusEl.textContent = 'Cámara no soportada en este navegador. Usa la búsqueda manual.';
+        statusEl.style.color = '#f59e0b';
+      }
+      return;
+    }
+
+    try {
+      stopBarcodeScannerCamera();
+      const constraints = {
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      barcodeMediaStream = stream;
+      if (video) {
+        video.srcObject = stream;
+        video.setAttribute('playsinline', 'true');
+        await video.play().catch(() => {});
+      }
+
+      barcodeScannerRunning = true;
+      if (statusEl) {
+        statusEl.textContent = 'Apunta al código de barras en la caja...';
+        statusEl.style.color = '#38bdf8';
+      }
+
+      // Live BarcodeDetector API Integration
+      if ('BarcodeDetector' in window) {
+        try {
+          const barcodeDetector = new window.BarcodeDetector({
+            formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39']
+          });
+
+          barcodeScanInterval = setInterval(async () => {
+            if (!barcodeScannerRunning || !video || video.readyState < 2) return;
+            try {
+              const detected = await barcodeDetector.detect(video);
+              if (detected && detected.length > 0 && detected[0].rawValue) {
+                const code = detected[0].rawValue;
+                const now = Date.now();
+                if (code !== lastScannedBarcodeValue || (now - lastScannedBarcodeTime) > 3000) {
+                  lastScannedBarcodeValue = code;
+                  lastScannedBarcodeTime = now;
+                  onBarcodeDetected(code);
+                }
+              }
+            } catch (err) {
+              // Ignore single frame detect errors
+            }
+          }, 350);
+        } catch (detectorErr) {
+          console.warn('BarcodeDetector format init fallback:', detectorErr);
+        }
+      } else {
+        if (statusEl) {
+          statusEl.textContent = 'Cámara activa. Si no detecta automáticamente, usa el campo manual.';
+        }
+      }
+    } catch (err) {
+      console.warn('getUserMedia error:', err);
+      if (statusEl) {
+        statusEl.textContent = 'Permiso de cámara denegado o no disponible. Ingresa el código abajo.';
+        statusEl.style.color = '#f87171';
+      }
+      if (laser) laser.style.display = 'none';
+    }
+  }
+
+  function stopBarcodeScannerCamera() {
+    barcodeScannerRunning = false;
+    if (barcodeScanInterval) {
+      clearInterval(barcodeScanInterval);
+      barcodeScanInterval = null;
+    }
+    if (barcodeMediaStream) {
+      barcodeMediaStream.getTracks().forEach(t => t.stop());
+      barcodeMediaStream = null;
+    }
+    const video = document.getElementById('barcode-scanner-video');
+    if (video) {
+      video.srcObject = null;
+    }
+  }
+
+  function restartBarcodeScannerCamera() {
+    startBarcodeScannerCamera();
+  }
+
+  function onBarcodeDetected(code) {
+    const statusEl = document.getElementById('barcode-scanner-status');
+    if (statusEl) {
+      statusEl.textContent = '✓ Código detectado: ' + code;
+      statusEl.style.color = '#4ade80';
+    }
+    const manualInput = document.getElementById('barcode-manual-input');
+    if (manualInput) manualInput.value = code;
+
+    lookupBarcode(code);
+  }
+
+  function handleManualBarcodeSearch() {
+    const input = document.getElementById('barcode-manual-input');
+    if (!input || !input.value.trim()) {
+      alert('Por favor ingresa un código de barras (ej: 4573102619198).');
+      return;
+    }
+    lookupBarcode(input.value.trim());
+  }
+
+  async function lookupBarcode(rawBarcode) {
+    const card = document.getElementById('barcode-result-card');
+    if (!card) return;
+
+    card.style.display = 'block';
+    card.innerHTML = 
+      '<div style="text-align: center; color: #38bdf8; padding: 1.5rem 0;">' +
+        '<div style="font-size: 1.75rem; margin-bottom: 0.5rem;">🔍</div>' +
+        '<strong>Consultando catálogo maestro para ' + escapeHtml(rawBarcode) + '...</strong>' +
+      '</div>';
+
+    try {
+      const res = await fetch('/api/v1/catalog/barcode/' + encodeURIComponent(rawBarcode));
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        card.innerHTML = 
+          '<div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); padding: 0.85rem; border-radius: 6px; color: #fca5a5; font-size: 0.82rem;">' +
+            '<strong>Error en consulta:</strong> ' + escapeHtml(errData.detail || 'Código de barras no válido') +
+          '</div>';
+        return;
+      }
+
+      const data = await res.json();
+      currentBarcodeLookup = data;
+      renderBarcodeResult(data);
+    } catch (err) {
+      console.error('Barcode lookup failed:', err);
+      card.innerHTML = 
+        '<div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); padding: 0.85rem; border-radius: 6px; color: #fca5a5; font-size: 0.82rem;">' +
+          'No se pudo conectar con el catálogo. Verifica tu conexión.' +
+        '</div>';
+    }
+  }
+
+  function renderBarcodeResult(data) {
+    const card = document.getElementById('barcode-result-card');
+    if (!card) return;
+
+    const formatBadge = '<span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 600;">' + escapeHtml(data.format || 'JAN-13') + '</span>';
+    const hintBadge = data.manufacturerHint
+      ? '<span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 600;">🏭 ' + escapeHtml(data.manufacturerHint) + '</span>'
+      : '';
+
+    if (data.found && data.kit) {
+      const kit = data.kit;
+      const boxart = kit.boxartUrl || '/legacy-media/plamoscale/images/aperich/thumbs/01.jpg';
+
+      card.innerHTML = 
+        '<div style="display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap;">' +
+          '<img src="' + boxart + '" style="width: 90px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #334155; flex-shrink: 0;" />' +
+          '<div style="flex: 1; min-width: 200px;">' +
+            '<div style="display: flex; gap: 0.4rem; margin-bottom: 0.35rem; flex-wrap: wrap;">' +
+              formatBadge +
+              hintBadge +
+              '<span style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 600;">✓ En Catálogo</span>' +
+            '</div>' +
+            '<h4 style="font-size: 1.05rem; font-weight: 700; color: #fff; margin: 0 0 0.25rem;">' + escapeHtml(kit.name) + '</h4>' +
+            '<div style="font-size: 0.8rem; color: #94a3b8;">' +
+              escapeHtml(kit.brand) + ' • ' + escapeHtml(kit.scale) + (kit.grade ? ' • ' + escapeHtml(kit.grade) : '') +
+            '</div>' +
+            '<div style="font-size: 0.75rem; color: #64748b; margin-top: 0.2rem; font-family: monospace;">' +
+              'Código: ' + escapeHtml(data.normalizedBarcode) + (kit.kitNumber ? ' | Ref: #' + escapeHtml(kit.kitNumber) : '') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<form onsubmit="handleConfirmBarcodeStash(event)" style="border-top: 1px solid #334155; padding-top: 0.85rem;">' +
+          '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">' +
+            '<div>' +
+              '<label class="auth-label" style="font-size: 0.75rem;">Estado en Stash</label>' +
+              '<select id="scan-stash-status" class="auth-input" style="padding: 0.45rem;">' +
+                '<option value="unbuilt" selected>⏳ Sin Armar (Backlog)</option>' +
+                '<option value="in_progress">🛠️ En Armado (WIP)</option>' +
+                '<option value="built">🏆 Armado (Terminado)</option>' +
+                '<option value="wishlist">⭐ Lista de Deseos</option>' +
+                '<option value="for_trade">🏷️ En Venta / Trade</option>' +
+              '</select>' +
+            '</div>' +
+            '<div>' +
+              '<label class="auth-label" style="font-size: 0.75rem;">Precio Pagado (Opcional)</label>' +
+              '<div style="display: flex; gap: 0.3rem;">' +
+                '<input type="number" step="0.01" id="scan-stash-price" class="auth-input" placeholder="0.00" style="padding: 0.45rem;" />' +
+                '<select id="scan-stash-currency" class="auth-input" style="width: 85px; padding: 0.45rem;">' +
+                  '<option value="USD">USD</option>' +
+                  '<option value="JPY">JPY</option>' +
+                  '<option value="EUR">EUR</option>' +
+                  '<option value="MXN">MXN</option>' +
+                '</select>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="margin-bottom: 0.85rem;">' +
+            '<label class="auth-label" style="font-size: 0.75rem;">Notas de adquisición (Opcional)</label>' +
+            '<input type="text" id="scan-stash-notes" class="auth-input" placeholder="ej. Comprada en Mandarake / Regalo de cumpleaños" style="padding: 0.45rem;" />' +
+          '</div>' +
+          '<button type="submit" id="btn-submit-scan-stash" class="btn-primary" style="width: 100%; justify-content: center; padding: 0.65rem; font-weight: 700; background: linear-gradient(135deg, #0ea5e9, #6366f1); border: none;">' +
+            '📦 Agregar Maqueta a Mi Stash' +
+          '</button>' +
+        '</form>';
+    } else {
+      // Kit not yet in catalog: Allow instant creation + stash addition
+      const defaultBrand = data.manufacturerHint || 'Bandai Spirits';
+      card.innerHTML = 
+        '<div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 0.75rem; margin-bottom: 0.85rem;">' +
+          '<div style="display: flex; gap: 0.4rem; align-items: center; margin-bottom: 0.25rem;">' +
+            formatBadge +
+            hintBadge +
+          '</div>' +
+          '<div style="color: #fbbf24; font-size: 0.82rem; font-weight: 600;">' +
+            'Código no encontrado en el catálogo maestro, ¡pero puedes registrar la maqueta al instante!' +
+          '</div>' +
+        '</div>' +
+
+        '<form onsubmit="handleConfirmBarcodeStash(event)">' +
+          '<div style="margin-bottom: 0.65rem;">' +
+            '<label class="auth-label" style="font-size: 0.75rem;">Nombre del Kit / Maqueta *</label>' +
+            '<input type="text" id="scan-new-kit-name" class="auth-input" placeholder="ej. MG 1/100 Zeta Gundam Ver.Ka" required style="padding: 0.45rem;" />' +
+          '</div>' +
+          '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 0.65rem;">' +
+            '<div>' +
+              '<label class="auth-label" style="font-size: 0.75rem;">Marca *</label>' +
+              '<input type="text" id="scan-new-kit-brand" class="auth-input" value="' + escapeHtml(defaultBrand) + '" required style="padding: 0.45rem;" />' +
+            '</div>' +
+            '<div>' +
+              '<label class="auth-label" style="font-size: 0.75rem;">Escala *</label>' +
+              '<input type="text" id="scan-new-kit-scale" class="auth-input" value="1/144" required style="padding: 0.45rem;" />' +
+            '</div>' +
+          '</div>' +
+          '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 0.65rem;">' +
+            '<div>' +
+              '<label class="auth-label" style="font-size: 0.75rem;">Categoría</label>' +
+              '<select id="scan-new-kit-category" class="auth-input" style="padding: 0.45rem;">' +
+                '<option value="gunpla-mecha" selected>Gunpla & Mecha</option>' +
+                '<option value="military">Militar & Blindados</option>' +
+                '<option value="aviation">Aviación</option>' +
+                '<option value="automotive">Automotriz</option>' +
+                '<option value="naval">Naval</option>' +
+                '<option value="scifi">Ciencia Ficción</option>' +
+                '<option value="figures">Figuras & Anime</option>' +
+              '</select>' +
+            '</div>' +
+            '<div>' +
+              '<label class="auth-label" style="font-size: 0.75rem;">Estado en Stash</label>' +
+              '<select id="scan-stash-status" class="auth-input" style="padding: 0.45rem;">' +
+                '<option value="unbuilt" selected>⏳ Sin Armar (Backlog)</option>' +
+                '<option value="in_progress">🛠️ En Armado (WIP)</option>' +
+                '<option value="built">🏆 Armado (Terminado)</option>' +
+                '<option value="wishlist">⭐ Lista de Deseos</option>' +
+              '</select>' +
+            '</div>' +
+          '</div>' +
+          '<div style="margin-bottom: 0.85rem;">' +
+            '<label class="auth-label" style="font-size: 0.75rem;">Notas de adquisición (Opcional)</label>' +
+            '<input type="text" id="scan-stash-notes" class="auth-input" placeholder="ej. Edición limitada de evento" style="padding: 0.45rem;" />' +
+          '</div>' +
+          '<button type="submit" id="btn-submit-scan-stash" class="btn-primary" style="width: 100%; justify-content: center; padding: 0.65rem; font-weight: 700; background: linear-gradient(135deg, #0ea5e9, #6366f1); border: none;">' +
+            '✨ Registrar en Catálogo y Agregar al Stash' +
+          '</button>' +
+        '</form>';
+    }
+  }
+
+  async function handleConfirmBarcodeStash(e) {
+    if (e) e.preventDefault();
+    if (!currentBarcodeLookup || !currentToken) return;
+
+    const btn = document.getElementById('btn-submit-scan-stash');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Guardando en Stash...';
+    }
+
+    const statusSelect = document.getElementById('scan-stash-status');
+    const notesInput = document.getElementById('scan-stash-notes');
+    const priceInput = document.getElementById('scan-stash-price');
+    const currSelect = document.getElementById('scan-stash-currency');
+
+    const nameInput = document.getElementById('scan-new-kit-name');
+    const brandInput = document.getElementById('scan-new-kit-brand');
+    const scaleInput = document.getElementById('scan-new-kit-scale');
+    const catSelect = document.getElementById('scan-new-kit-category');
+
+    const payload = {
+      barcode: currentBarcodeLookup.normalizedBarcode,
+      status: statusSelect ? statusSelect.value : 'unbuilt',
+      notes: notesInput && notesInput.value.trim() ? notesInput.value.trim() : undefined,
+      pricePaid: priceInput && priceInput.value ? parseFloat(priceInput.value) : undefined,
+      currency: currSelect ? currSelect.value : 'USD',
+      kitName: nameInput && nameInput.value.trim() ? nameInput.value.trim() : undefined,
+      brand: brandInput && brandInput.value.trim() ? brandInput.value.trim() : undefined,
+      scale: scaleInput && scaleInput.value.trim() ? scaleInput.value.trim() : undefined,
+      category: catSelect ? catSelect.value : undefined
+    };
+
+    try {
+      const res = await fetch('/api/v1/workbench/stash/scan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert('Error: ' + (err.detail || 'No se pudo registrar la maqueta en el Stash'));
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Reintentar';
+        }
+        return;
+      }
+
+      const resData = await res.json();
+      showShareToast('📦 ' + (resData.message || '¡Maqueta agregada con éxito a tu Stash!'));
+      
+      closeBarcodeScannerModal();
+      loadWorkbenchData();
+      switchTab('workbench');
+      switchWorkbenchSubtab('stash');
+    } catch (err) {
+      console.error('Scan stash error:', err);
+      alert('Error de conexión al agregar al Stash.');
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Reintentar';
+      }
+    }
+  }
+
   // Modal open/close handlers
   function openAddStashModal() {
     const m = document.getElementById('modal-add-stash');
@@ -4375,6 +4771,9 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
       const sPaints = document.getElementById('wb-stat-paints');
       if (sPaints) sPaints.textContent = totalPaints;
 
+      const sBadge = document.getElementById('wb-stash-count-badge');
+      if (sBadge) sBadge.textContent = totalKits + (totalKits === 1 ? ' maqueta' : ' maquetas');
+
       // Render Stash Grid
       const stashContainer = document.getElementById('wb-stash-grid');
       if (stashContainer) {
@@ -4384,7 +4783,10 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
               '<div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📦</div>' +
               '<h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.4rem;">¡Tu Stash está vacío!</h3>' +
               '<p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.25rem;">Agrega tu primera maqueta para empezar a registrar tu colección y avances.</p>' +
-              '<button class="btn-primary" onclick="openAddStashModal()">+ Agregar Mi Primer Kit</button>' +
+              '<div style="display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">' +
+                '<button class="btn-primary" onclick="openBarcodeScannerModal()" style="background: linear-gradient(135deg, #0ea5e9, #6366f1); border: none;">📷 Escanear Caja (JAN)</button>' +
+                '<button class="filter-pill" onclick="openAddStashModal()">+ Agregar Manual</button>' +
+              '</div>' +
             '</div>';
         } else {
           stashContainer.innerHTML = stashItems.map(item => {
@@ -4416,7 +4818,10 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
             return '<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;">' +
               '<img src="' + boxArt + '" alt="' + kitName + '" style="width: 100%; height: 160px; object-fit: cover; background: #020617;">' +
               '<div style="padding: 1rem; flex: 1; display: flex; flex-direction: column;">' +
-                '<div style="font-size: 0.72rem; color: var(--primary); font-weight: 600; text-transform: uppercase; margin-bottom: 0.2rem;">' + brand + ' • ' + scale + grade + '</div>' +
+                '<div style="font-size: 0.72rem; color: var(--primary); font-weight: 600; text-transform: uppercase; margin-bottom: 0.2rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.25rem;">' +
+                  '<span>' + brand + ' • ' + scale + grade + '</span>' +
+                  (kit.barcode ? '<span style="font-family: monospace; font-size: 0.68rem; color: #94a3b8; background: rgba(255,255,255,0.06); padding: 0.1rem 0.35rem; border-radius: 3px;">🏷️ ' + escapeHtml(kit.barcode) + '</span>' : '') +
+                '</div>' +
                 '<h4 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; line-height: 1.3;">' + kitName + '</h4>' +
                 '<div style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.75rem;">' + stars + (item.pricePaid ? ' • ' + (item.currency || 'PEN') + ' ' + item.pricePaid : '') + '</div>' +
                 (item.notes ? '<p style="font-size: 0.75rem; color: #94a3b8; font-style: italic; margin-bottom: 0.75rem;">"' + item.notes + '"</p>' : '') +

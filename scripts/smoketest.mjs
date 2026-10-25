@@ -2204,7 +2204,101 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] Community Group Builds & Collaborative Build Logs verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS CHECKS PASSED ===');
+    // -------------------------------------------------------------------------
+    // DT15: Barcode Scanner (JAN / EAN / UPC) & Instant Stash Registration
+    // -------------------------------------------------------------------------
+    console.log('--- Verifying DT15 Barcode Scanner & Instant Stash Registration ---');
+
+    // 1. Verify Catalog Barcode Lookup for existing Bandai kit (RG Hi-Nu)
+    const bcHiNuRes = await fetch(`${baseUrl}/api/v1/catalog/barcode/4573102619198`);
+    assert.equal(bcHiNuRes.status, 200, 'GET /catalog/barcode/:barcode must return 200');
+    const bcHiNuData = await bcHiNuRes.json();
+    assert.equal(bcHiNuData.found, true);
+    assert.equal(bcHiNuData.kit?.id, 'kit-rg-hinu');
+    assert.equal(bcHiNuData.format, 'JAN-13');
+    assert.equal(bcHiNuData.manufacturerHint, 'Bandai Spirits');
+
+    // 2. Verify Barcode Lookup for existing Tamiya kit with spaces/hyphens
+    const bcSpitfireRes = await fetch(`${baseUrl}/api/v1/catalog/barcode/4950-3446-11195`);
+    assert.equal(bcSpitfireRes.status, 200, 'GET /catalog/barcode with hyphens must return 200');
+    const bcSpitfireData = await bcSpitfireRes.json();
+    assert.equal(bcSpitfireData.found, true);
+    assert.equal(bcSpitfireData.kit?.id, 'kit-tamiya-spitfire');
+    assert.equal(bcSpitfireData.normalizedBarcode, '4950344611195');
+    assert.equal(bcSpitfireData.manufacturerHint, 'Tamiya');
+
+    // 3. Verify Barcode Lookup for uncataloged barcode with manufacturer hint (Kotobukiya JAN)
+    const bcUnknownRes = await fetch(`${baseUrl}/api/v1/catalog/barcode/4934054998877`);
+    assert.equal(bcUnknownRes.status, 200);
+    const bcUnknownData = await bcUnknownRes.json();
+    assert.equal(bcUnknownData.found, false);
+    assert.equal(bcUnknownData.format, 'JAN-13');
+    assert.equal(bcUnknownData.manufacturerHint, 'Kotobukiya');
+
+    // 4. Verify Invalid Short Barcode Validation Error (RFC 7807)
+    const bcInvalidRes = await fetch(`${baseUrl}/api/v1/catalog/barcode/12`);
+    assert.equal(bcInvalidRes.status, 400, 'Short barcode must return 400 validation error');
+    const bcInvalidErr = await bcInvalidRes.json();
+    assert.equal(bcInvalidErr.status, 400);
+    assert.ok(bcInvalidErr.detail);
+
+    // 5. Instant Stash Registration with Existing Kit (RG Hi-Nu)
+    const scanStashKnownRes = await fetch(`${baseUrl}/api/v1/workbench/stash/scan`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${aperichToken}`
+      },
+      body: JSON.stringify({
+        barcode: '4573102619198',
+        status: 'unbuilt',
+        notes: 'Comprado en Akihabara Yodobashi',
+        pricePaid: 4500,
+        currency: 'JPY'
+      })
+    });
+    assert.equal(scanStashKnownRes.status, 201, 'POST /workbench/stash/scan for known kit must return 201');
+    const scanKnownData = await scanStashKnownRes.json();
+    assert.equal(scanKnownData.createdKit, false);
+    assert.equal(scanKnownData.stashItem?.kitId, 'kit-rg-hinu');
+    assert.equal(scanKnownData.stashItem?.status, 'unbuilt');
+
+    // 6. Instant Stash Registration with Uncataloged Box (Auto-creates Kit + Stash Item)
+    const scanStashNewRes = await fetch(`${baseUrl}/api/v1/workbench/stash/scan`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${aperichToken}`
+      },
+      body: JSON.stringify({
+        barcode: '4905083889900', // Aoshima prefix
+        kitName: 'Aoshima 1/24 Pagani Huayra Pacchetto Tempesta',
+        scale: '1/24',
+        category: 'automotive',
+        status: 'in_progress',
+        notes: 'Supercar build'
+      })
+    });
+    assert.equal(scanStashNewRes.status, 201, 'POST /workbench/stash/scan for new kit must return 201');
+    const scanNewData = await scanStashNewRes.json();
+    assert.equal(scanNewData.createdKit, true);
+    assert.equal(scanNewData.kit?.brand, 'Aoshima');
+    assert.equal(scanNewData.kit?.source, 'user-import');
+    assert.equal(scanNewData.kit?.barcode, '4905083889900');
+    assert.equal(scanNewData.stashItem?.kitId, scanNewData.kit?.id);
+    assert.equal(scanNewData.stashItem?.status, 'in_progress');
+
+    // 7. Verify Web UI Barcode Scanner Elements
+    assert.ok(plamoWebShellHtml.includes('id="btn-scan-barcode-header"'), 'PlamoScale must render header barcode scan button');
+    assert.ok(plamoWebShellHtml.includes('id="btn-scan-barcode-stash"'), 'PlamoScale must render stash action bar scan button');
+    assert.ok(plamoWebShellHtml.includes('id="modal-barcode-scanner"'), 'PlamoScale must render barcode scanner modal');
+    assert.ok(plamoWebShellHtml.includes('id="barcode-scanner-video"'), 'PlamoScale must render scanner video element');
+    assert.ok(plamoWebShellHtml.includes('id="barcode-manual-input"'), 'PlamoScale must render manual barcode input fallback');
+    assert.ok(plamoWebShellHtml.includes('id="barcode-result-card"'), 'PlamoScale must render barcode result card');
+
+    console.log('[PASS] DT15 Barcode Scanner & Instant Stash Registration verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

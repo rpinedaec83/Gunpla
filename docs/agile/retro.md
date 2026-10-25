@@ -521,3 +521,31 @@ Decisions made:
 Lessons learned:
 - Dynamically linking a builder's existing projects from "Mi Taller" into a group build eliminates duplicate data entry and keeps build progress in sync across personal and collective views.
 Usage: Moderate -- self-estimated
+
+### DT15 -- Barcode Scanner (JAN / EAN / UPC) & Instant Stash Registration | eMOE: 5 CU | aMOE: 5 CU
+What was done:
+- Designed and authored shared data models and barcode utilities in `packages/shared/src/index.ts`:
+  - `BarcodeFormat` (`JAN-13`, `JAN-8`, `EAN-13`, `UPC-A`, `UPC-E`, `CODE-128`, `OTHER`), `BarcodeLookupResponse`, `ScanStashRequest`, `ScanStashResponse`.
+  - Pure functions: `normalizeBarcode`, `detectBarcodeFormat`, `getManufacturerHintFromBarcode` with industrial prefix heuristics (Bandai Spirits `4573102`, Bandai `4543112`/`4549660`/`4902425`, Tamiya `4950344`, Kotobukiya `4934054`, Hasegawa `4967834`, Aoshima `4905083`, Revell `4009803`, Vallejo `8429551`).
+- Updated initial seed catalog kits in `apps/api/src/seed/seed-catalog.ts` with authentic JAN/EAN barcodes.
+- Authored contract-first OpenAPI 3.1 specification (`docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`):
+  - `GET /api/v1/catalog/barcode/{barcode}`: Lookup kit by barcode with format detection and manufacturer hint.
+  - `POST /api/v1/workbench/stash/scan`: Instant stash registration with catalog auto-matching and on-the-fly kit auto-creation (`source: 'user-import'`).
+- Implemented backend slice endpoints:
+  - In `apps/api/src/slices/catalog-scalemates/catalog.slice.ts`: `GET /barcode/:barcode` with input normalization and fallback matching.
+  - In `apps/api/src/slices/workbench-stash/workbench.slice.ts`: `POST /stash/scan` validating barcodes and creating stash items and catalog kits.
+- Updated frontend UI in `packages/shared/src/ui-shell/`:
+  - In `views.ts`: Added `📷 Escanear Caja (JAN)` button to workbench header quick actions, and an inventory action bar to `#wb-subtab-stash` with `#wb-stash-count-badge` and `#btn-scan-barcode-stash`.
+  - In `modals.ts`: Authored `#modal-barcode-scanner` with video viewport, sci-fi laser scanline animation (`@keyframes laserSweep`), live status badge, camera controls, manual barcode input fallback (`#barcode-manual-input`), and dynamic result container (`#barcode-result-card`).
+  - In `app-shell.ts`: Implemented camera lifecycle (`startBarcodeScannerCamera`, `stopBarcodeScannerCamera`), live continuous detection loop via `BarcodeDetector` API, manual barcode search fallback, preview card rendering with boxart, stash status selection, and one-click stash confirmation.
+  - Displayed barcode tags (`🏷️ #barcode`) on stash item cards in Workbench.
+- Authored isolated unit test suite `tests/unit/barcode-scanner.test.mjs` (17 test cases covering normalization, format detection, manufacturer prefix resolution, catalog matching, and instant stash auto-creation). Total unit tests: 91 passed in 370ms.
+- Extended end-to-end regression smoketest in `scripts/smoketest.mjs` verifying lookup, short barcode rejection (400 validation error), known kit scan registration, uncataloged box auto-creation, and HTML element presence.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190:8080`, `:3000`, `:3001`).
+Issues hit:
+- In `tests/unit/barcode-scanner.test.mjs`, repeated test runs previously accumulated a test kit in `db.kits`; resolved by cleaning up test barcodes in `beforeEach`.
+Decisions made:
+- Exporting pure barcode utilities (`normalizeBarcode`, `detectBarcodeFormat`, `getManufacturerHintFromBarcode`) in `@gunpla/shared` enabled zero-latency client-side format identification and manufacturer detection before network roundtrips.
+Lessons learned:
+- Combining live camera stream detection (`BarcodeDetector`) with an immediate manual input fallback ensures full accessibility across desktop webcams, mobile Safari, and devices with restricted camera permissions.
+Usage: Moderate -- self-estimated

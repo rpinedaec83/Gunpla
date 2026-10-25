@@ -8,7 +8,11 @@ import {
   ScalematesImportResponse,
   ScaleCategory,
   PaintType,
-  PaintFinish
+  PaintFinish,
+  BarcodeLookupResponse,
+  normalizeBarcode,
+  detectBarcodeFormat,
+  getManufacturerHintFromBarcode
 } from '@gunpla/shared';
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
@@ -108,6 +112,54 @@ catalogRouter.get('/kits/:id', (req: Request, res: Response) => {
   }
 
   return res.json(kit);
+});
+
+/**
+ * GET /api/v1/catalog/barcode/:barcode
+ * Lookup kit by JAN / EAN / UPC / Code-128 barcode with manufacturer prefix heuristics
+ */
+catalogRouter.get('/barcode/:barcode', (req: Request, res: Response) => {
+  const rawBarcode = req.params.barcode || '';
+  const normalized = normalizeBarcode(rawBarcode);
+
+  if (!normalized || normalized.length < 4) {
+    return sendProblem(
+      req,
+      res,
+      400,
+      'Código de Barras Inválido',
+      'El código de barras proporcionado es demasiado corto o inválido.',
+      'validation-error',
+      [{ name: 'barcode', reason: 'Debe contener al menos 4 caracteres alfanuméricos' }]
+    );
+  }
+
+  const format = detectBarcodeFormat(normalized);
+  const manufacturerHint = getManufacturerHintFromBarcode(normalized);
+  const db = getDb();
+
+  // Find kit by exact normalized barcode or matching substring/number
+  const kit = db.kits.find(k => {
+    if (k.barcode && normalizeBarcode(k.barcode) === normalized) {
+      return true;
+    }
+    // Fallback: match without leading zeros if 12/13 digits
+    if (k.barcode && normalizeBarcode(k.barcode).replace(/^0+/, '') === normalized.replace(/^0+/, '')) {
+      return true;
+    }
+    return false;
+  });
+
+  const response: BarcodeLookupResponse = {
+    barcode: rawBarcode,
+    normalizedBarcode: normalized,
+    found: !!kit,
+    kit: kit || undefined,
+    manufacturerHint: kit?.brand || manufacturerHint,
+    format
+  };
+
+  return res.json(response);
 });
 
 /**

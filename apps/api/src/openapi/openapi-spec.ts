@@ -146,6 +146,17 @@ export const openApiSpec = {
         }
       }
     },
+    '/api/v1/catalog/barcode/{barcode}': {
+      get: {
+        tags: ['Catalog'],
+        summary: 'Lookup kit by JAN / EAN / UPC / Code-128 barcode with manufacturer prefix heuristics',
+        parameters: [{ name: 'barcode', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Barcode lookup result with match or manufacturer hint' },
+          '400': { description: 'Invalid barcode (RFC 7807)' }
+        }
+      }
+    },
     '/api/v1/catalog/kits/import-scalemates': {
       post: {
         tags: ['Catalog'],
@@ -231,6 +242,40 @@ export const openApiSpec = {
           '201': { description: 'Kit added to stash' },
           '400': { description: 'Validation error' },
           '404': { description: 'Kit not found in catalog' }
+        }
+      }
+    },
+    '/api/v1/workbench/stash/scan': {
+      post: {
+        tags: ['Workbench'],
+        summary: 'Instant stash registration via scanned barcode (JAN / EAN / UPC / Code-128)',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['barcode'],
+                properties: {
+                  barcode: { type: 'string' },
+                  status: { type: 'string', enum: ['unbuilt', 'in_progress', 'built', 'wishlist', 'for_trade'] },
+                  notes: { type: 'string' },
+                  pricePaid: { type: 'number' },
+                  currency: { type: 'string' },
+                  kitName: { type: 'string' },
+                  brand: { type: 'string' },
+                  scale: { type: 'string' },
+                  grade: { type: 'string' },
+                  category: { type: 'string' }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          '201': { description: 'Kit registered in catalog (if needed) and added to stash' },
+          '400': { description: 'Validation error (RFC 7807)' }
         }
       }
     },

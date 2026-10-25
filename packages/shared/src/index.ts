@@ -248,6 +248,85 @@ export interface UpdateStashItemRequest {
   completedAt?: string;
 }
 
+export type BarcodeFormat = 'JAN-13' | 'JAN-8' | 'EAN-13' | 'UPC-A' | 'UPC-E' | 'CODE-128' | 'OTHER';
+
+export interface BarcodeLookupResponse {
+  barcode: string;
+  normalizedBarcode: string;
+  found: boolean;
+  kit?: KitRecord;
+  manufacturerHint?: string;
+  format: BarcodeFormat;
+}
+
+export interface ScanStashRequest {
+  barcode: string;
+  status?: StashStatus;
+  notes?: string;
+  pricePaid?: number;
+  currency?: string;
+  kitName?: string;
+  brand?: string;
+  scale?: string;
+  grade?: string;
+  category?: ScaleCategory;
+}
+
+export interface ScanStashResponse {
+  stashItem: StashItemRecord;
+  kit: KitRecord;
+  createdKit: boolean;
+  message: string;
+}
+
+export function normalizeBarcode(raw: string): string {
+  if (!raw) return '';
+  return raw.trim().replace(/[^a-zA-Z0-9]/g, '');
+}
+
+export function detectBarcodeFormat(normalized: string): BarcodeFormat {
+  if (!normalized) return 'OTHER';
+  const isDigits = /^\d+$/.test(normalized);
+  if (isDigits) {
+    if (normalized.length === 13) {
+      if (normalized.startsWith('45') || normalized.startsWith('49')) {
+        return 'JAN-13';
+      }
+      return 'EAN-13';
+    }
+    if (normalized.length === 8) {
+      if (normalized.startsWith('45') || normalized.startsWith('49')) {
+        return 'JAN-8';
+      }
+      return 'UPC-E';
+    }
+    if (normalized.length === 12) {
+      return 'UPC-A';
+    }
+  }
+  if (normalized.length >= 4 && normalized.length <= 48) {
+    return 'CODE-128';
+  }
+  return 'OTHER';
+}
+
+export function getManufacturerHintFromBarcode(normalized: string): string | undefined {
+  if (!normalized) return undefined;
+  if (normalized.startsWith('4573102')) return 'Bandai Spirits';
+  if (normalized.startsWith('4543112') || normalized.startsWith('4549660') || normalized.startsWith('4902425')) return 'Bandai';
+  if (normalized.startsWith('4950344')) return 'Tamiya';
+  if (normalized.startsWith('4934054')) return 'Kotobukiya';
+  if (normalized.startsWith('4967834')) return 'Hasegawa';
+  if (normalized.startsWith('4905083')) return 'Aoshima';
+  if (normalized.startsWith('4545784')) return 'Max Factory';
+  if (normalized.startsWith('4580416')) return 'Good Smile Company';
+  if (normalized.startsWith('4537807')) return 'Kaiyodo';
+  if (normalized.startsWith('4571337')) return 'Wave Corporation';
+  if (normalized.startsWith('4009803')) return 'Revell';
+  if (normalized.startsWith('8429551')) return 'Vallejo';
+  return undefined;
+}
+
 export interface CreatePaintRackItemRequest {
   paintId: string;
   status?: PaintRackStatus;

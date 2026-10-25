@@ -4,10 +4,13 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
-- **Advanced Kit Barcode & Box Scanner:** Camera-based barcode (JAN/EAN/UPC) scanning in Workbench for instant kit logging from kit boxes.
 - **Interactive Workbench 3D / AR Viewer:** Model 3D inspection and pose staging in Mi Taller for planning diorama compositions.
 
 ## Completed Candidates & Parking Lot Items
+
+### BARCODE-SCANNER -- Escáner de Código de Barras (JAN / EAN / UPC) y Registro al Stash (COMPLETED)
+- Goal: Camera-based barcode (JAN/EAN/UPC/Code-128) scanning in Mi Taller Workbench for instant kit box registration to personal stash with manufacturer prefix heuristics.
+- Delivered: Endpoints `GET /api/v1/catalog/barcode/:barcode` and `POST /api/v1/workbench/stash/scan`; normalization and format detection (`JAN-13`, `JAN-8`, `EAN-13`, `UPC-A`, `UPC-E`, `CODE-128`); manufacturer prefix recognition (Bandai Spirits, Bandai, Tamiya, Kotobukiya, Hasegawa, Aoshima, Revell, Vallejo); starter seed kits updated with barcodes; Web UI `#modal-barcode-scanner` with camera feed (`getUserMedia`), targeting reticle with laser sweep animation, live `BarcodeDetector` API frame loop, manual barcode input fallback, preview card with boxart, stash status selection, and one-click stash addition; 17 isolated unit tests (`tests/unit/barcode-scanner.test.mjs`, total 91 passing); end-to-end smoketest; and verified live deployment on LXC 190.
 
 ### GROUP-BUILDS -- Community Group Builds & Collaborative Build Logs (COMPLETED)
 - Goal: Collaborative multi-author build projects where multiple builders contribute progress logs, steps, and paint recipes to a shared team project.

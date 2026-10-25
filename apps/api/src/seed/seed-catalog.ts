@@ -14,6 +14,7 @@ export const INITIAL_KITS: KitRecord[] = [
     boxartUrl: 'https://plamoscale.com/assets/images/boxart/rg-hi-nu.jpg',
     scalematesUrl: 'https://www.scalemates.com/kits/bandai-spirits-5061919-rg-1-144-hi-nu-gundam--1359732',
     manualUrl: 'http://dalong.net/reviews/rg/rg36/rg36_m.htm',
+    barcode: '4573102619198',
     source: 'scalemates',
     createdAt: new Date().toISOString()
   },
@@ -29,6 +30,7 @@ export const INITIAL_KITS: KitRecord[] = [
     boxartUrl: 'https://plamoscale.com/assets/images/boxart/mg-barbatos.jpg',
     scalematesUrl: 'https://www.scalemates.com/kits/bandai-5058222-asw-g-08-gundam-barbatos--1243171',
     manualUrl: 'http://dalong.net/reviews/mg/m206/m206_m.htm',
+    barcode: '4573102582225',
     source: 'scalemates',
     createdAt: new Date().toISOString()
   },
@@ -44,6 +46,7 @@ export const INITIAL_KITS: KitRecord[] = [
     boxartUrl: 'https://plamoscale.com/assets/images/boxart/hguc-rx78.jpg',
     scalematesUrl: 'https://www.scalemates.com/kits/bandai-0196728-rx-78-2-gundam--948332',
     manualUrl: 'http://dalong.net/reviews/hg/h191/h191_m.htm',
+    barcode: '4543112967282',
     source: 'scalemates',
     createdAt: new Date().toISOString()
   },
@@ -58,6 +61,7 @@ export const INITIAL_KITS: KitRecord[] = [
     releaseYear: 2018,
     boxartUrl: 'https://plamoscale.com/assets/images/boxart/asra-archer.jpg',
     scalematesUrl: 'https://www.scalemates.com/kits/kotobukiya-kp432-asra-archer--1110034',
+    barcode: '4934054109432',
     source: 'scalemates',
     createdAt: new Date().toISOString()
   },
@@ -74,6 +78,7 @@ export const INITIAL_KITS: KitRecord[] = [
     releaseYear: 1997,
     boxartUrl: 'https://plamoscale.com/assets/images/boxart/tiger1.jpg',
     scalematesUrl: 'https://www.scalemates.com/kits/tamiya-35216-tiger-i--132891',
+    barcode: '4950344352166',
     source: 'scalemates',
     createdAt: new Date().toISOString()
   },
@@ -90,6 +95,7 @@ export const INITIAL_KITS: KitRecord[] = [
     releaseYear: 2018,
     boxartUrl: 'https://plamoscale.com/assets/images/boxart/spitfire.jpg',
     scalematesUrl: 'https://www.scalemates.com/kits/tamiya-61119-supermarine-spitfire-mki--1159987',
+    barcode: '4950344611195',
     source: 'scalemates',
     createdAt: new Date().toISOString()
   },
@@ -106,6 +112,7 @@ export const INITIAL_KITS: KitRecord[] = [
     releaseYear: 2014,
     boxartUrl: 'https://plamoscale.com/assets/images/boxart/gtr-r32.jpg',
     scalematesUrl: 'https://www.scalemates.com/kits/tamiya-24341-nissan-skyline-gt-r-nismo-custom--938741',
+    barcode: '4950344243419',
     source: 'scalemates',
     createdAt: new Date().toISOString()
   },
@@ -122,6 +129,7 @@ export const INITIAL_KITS: KitRecord[] = [
     releaseYear: 2013,
     boxartUrl: 'https://plamoscale.com/assets/images/boxart/yamato.jpg',
     scalematesUrl: 'https://www.scalemates.com/kits/hasegawa-40151-yamato--233158',
+    barcode: '4967834401518',
     source: 'scalemates',
     createdAt: new Date().toISOString()
   }
