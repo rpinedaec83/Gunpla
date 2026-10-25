@@ -330,7 +330,8 @@ async function syncStateToPostgresInternal(client: any, state: PlatformDatabaseS
   }
 
   // 9. Contests & Contest Entries
-  for (const c of INITIAL_CONTESTS) {
+  const contestsToSync = (state.contests && state.contests.length > 0) ? state.contests : INITIAL_CONTESTS;
+  for (const c of contestsToSync) {
     await client.query(
       `INSERT INTO contests (id, slug, title, description, tenant_slug, category, banner_url, start_date, end_date, status, rules, prizes, participants_count, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
@@ -416,7 +417,8 @@ async function syncStateToPostgresInternal(client: any, state: PlatformDatabaseS
   }
 
   // 11. Commission Builders
-  for (const cb of INITIAL_COMMISSION_BUILDERS) {
+  const buildersToSync = (state.commissionBuilders && state.commissionBuilders.length > 0) ? state.commissionBuilders : INITIAL_COMMISSION_BUILDERS;
+  for (const cb of buildersToSync) {
     await client.query(
       `INSERT INTO commission_builders (id, user_id, username, display_name, bio, specialties, accepting_commissions, starting_price_pen, portfolio_sample_urls, whatsapp_url, instagram_url, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
@@ -444,7 +446,8 @@ async function syncStateToPostgresInternal(client: any, state: PlatformDatabaseS
   }
 
   // 12. Shops
-  for (const s of INITIAL_SHOPS) {
+  const shopsToSync = (state.shops && state.shops.length > 0) ? state.shops : INITIAL_SHOPS;
+  for (const s of shopsToSync) {
     await client.query(
       `INSERT INTO shops (id, name, description, country, city, catalog_url, whatsapp_url, website_url, instagram_url, specialties, is_verified, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())

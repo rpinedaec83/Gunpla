@@ -473,13 +473,22 @@ ${offerPrice ? `<p><strong>Oferta propuesta por el comprador:</strong> <span sty
 // Custom Commissions Directory Routes
 // ---------------------------------------------------------------------------
 
+export function getCommissionBuildersFromDb(): CommissionBuilderRecord[] {
+  const db = getDb();
+  if (db.commissionBuilders && db.commissionBuilders.length > 0) {
+    return db.commissionBuilders;
+  }
+  return INITIAL_COMMISSION_BUILDERS;
+}
+
 /**
  * GET /api/v1/commissions/builders
  */
 commissionsRouter.get('/builders', (_req: Request, res: Response) => {
+  const builders = getCommissionBuildersFromDb();
   return res.json({
-    items: INITIAL_COMMISSION_BUILDERS,
-    totalCount: INITIAL_COMMISSION_BUILDERS.length
+    items: builders,
+    totalCount: builders.length
   });
 });
 
@@ -515,8 +524,8 @@ commissionsRouter.post('/requests', optionalAuth, async (req: Request, res: Resp
     return sendProblem(req, res, 400, 'Datos Inválidos', 'El nombre de usuario del modelista (builderUsername) es obligatorio.');
   }
 
-  // Verify builder exists in INITIAL_COMMISSION_BUILDERS or db.users
-  const targetBuilder = INITIAL_COMMISSION_BUILDERS.find(b => b.username.toLowerCase() === builderUsername.trim().toLowerCase())
+  // Verify builder exists in db.commissionBuilders or db.users
+  const targetBuilder = getCommissionBuildersFromDb().find(b => b.username.toLowerCase() === builderUsername.trim().toLowerCase())
     || db.users.find(u => u.username.toLowerCase() === builderUsername.trim().toLowerCase());
   if (!targetBuilder) {
     return sendProblem(req, res, 404, 'Modelista No Encontrado', `No se encontró ningún modelista registrado con usuario '${builderUsername}'.`);

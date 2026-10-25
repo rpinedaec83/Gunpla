@@ -137,6 +137,22 @@ export const INITIAL_SHOPS: ShopRecord[] = [
   }
 ];
 
+export function getContestsFromDb(): ContestRecord[] {
+  const db = getDb();
+  if (db.contests && db.contests.length > 0) {
+    return db.contests;
+  }
+  return INITIAL_CONTESTS;
+}
+
+export function getShopsFromDb(): ShopRecord[] {
+  const db = getDb();
+  if (db.shops && db.shops.length > 0) {
+    return db.shops;
+  }
+  return INITIAL_SHOPS;
+}
+
 /**
  * GET /api/v1/contests
  * Scoped by active tenant context with populated entries
@@ -149,7 +165,7 @@ communityRouter.get('/contests', (req: Request, res: Response) => {
     ? db.contestEntries
     : INITIAL_CONTEST_ENTRIES;
 
-  let items = INITIAL_CONTESTS.map(contest => {
+  let items = getContestsFromDb().map(contest => {
     const entries = allEntries
       .filter(e => e.contestId === contest.id && e.status === 'approved')
       .map(e => ({
@@ -179,7 +195,7 @@ communityRouter.get('/contests', (req: Request, res: Response) => {
  */
 communityRouter.get('/contests/:slugOrId', (req: Request, res: Response) => {
   const db = getDb();
-  const contest = INITIAL_CONTESTS.find(
+  const contest = getContestsFromDb().find(
     c => c.id === req.params.slugOrId || c.slug === req.params.slugOrId
   );
 
@@ -230,7 +246,7 @@ communityRouter.post('/contests/:id/entries', requireAuth, (req: Request, res: R
     );
   }
 
-  const contest = INITIAL_CONTESTS.find(c => c.id === contestId || c.slug === contestId);
+  const contest = getContestsFromDb().find(c => c.id === contestId || c.slug === contestId);
   if (!contest) {
     return sendProblem(
       req,
@@ -327,7 +343,7 @@ communityRouter.post('/contests/:id/entries/:entryId/vote', requireAuth, (req: R
   const user = req.user!;
   const { id: contestId, entryId } = req.params;
 
-  const contest = INITIAL_CONTESTS.find(c => c.id === contestId || c.slug === contestId);
+  const contest = getContestsFromDb().find(c => c.id === contestId || c.slug === contestId);
   if (!contest) {
     return sendProblem(
       req,
@@ -611,7 +627,7 @@ communityRouter.post('/contests/:id/entries/:entryId/judge', requireAuth, async 
     );
   }
 
-  const contest = INITIAL_CONTESTS.find(c => c.id === contestId || c.slug === contestId);
+  const contest = getContestsFromDb().find(c => c.id === contestId || c.slug === contestId);
   if (!contest) {
     return sendProblem(
       req,
@@ -738,7 +754,7 @@ communityRouter.post('/contests/:id/entries/:entryId/judge', requireAuth, async 
  */
 communityRouter.get('/contests/:id/entries/:entryId/judge-scores', (req: Request, res: Response) => {
   const { id: contestId, entryId } = req.params;
-  const contest = INITIAL_CONTESTS.find(c => c.id === contestId || c.slug === contestId);
+  const contest = getContestsFromDb().find(c => c.id === contestId || c.slug === contestId);
   if (!contest) {
     return sendProblem(
       req,
@@ -784,7 +800,7 @@ communityRouter.get('/contests/:id/entries/:entryId/certificate', async (req: Re
   const { id: contestId, entryId } = req.params;
   const format = req.query.format as string | undefined;
 
-  const contest = INITIAL_CONTESTS.find(c => c.id === contestId || c.slug === contestId);
+  const contest = getContestsFromDb().find(c => c.id === contestId || c.slug === contestId);
   if (!contest) {
     return sendProblem(
       req,
@@ -884,8 +900,9 @@ communityRouter.get('/contests/:id/entries/:entryId/certificate', async (req: Re
  * List verified trusted shops directory
  */
 communityRouter.get('/shops', (_req: Request, res: Response) => {
+  const shops = getShopsFromDb();
   return res.json({
-    items: INITIAL_SHOPS,
-    totalCount: INITIAL_SHOPS.length
+    items: shops,
+    totalCount: shops.length
   });
 });
