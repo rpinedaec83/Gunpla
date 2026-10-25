@@ -638,3 +638,30 @@ Decisions made:
 Lessons learned:
 - Providing pre-calculated scale stencils for Gunpla (1/144, 1/100), military armor (1/35), aircraft (1/48), and racing cars (1/24) gives scale modelers instant utility out-of-the-box without requiring complex desktop vector illustration software.
 Usage: Moderate -- self-estimated
+
+### DT19 -- AI Workbench Smart Builder Assistant (Vision AI) | eMOE: 5 CU | aMOE: 5 CU
+What was done:
+- Configured and validated Google AI Studio Gemini API with model `gemini-3.5-flash-lite` for multimodal text and image reasoning.
+- Designed shared data models and offline heuristic analysis in `packages/shared/src/index.ts`:
+  - `RunnerInspectionRequest`, `RunnerInspectionResponse`, `DetectedRunnerPart`, `RunnerPartStatus`.
+  - `NubInspectionRequest`, `NubInspectionResponse`, `NubDiagnosisType`, `NubSeverity`, `NubCorrectionStep`.
+  - Authored pure deterministic fallback engines `analyzeRunnerPhotoOffline` and `analyzeNubPhotoOffline`.
+- Implemented backend slice `apps/api/src/slices/builder-ai/builder-ai.slice.ts` and mounted in `apps/api/src/server.ts` at `/api/v1/workbench/ai`:
+  - `POST /api/v1/workbench/ai/inspect-runner`: Analyzes runner photos, identifies letter, counts remaining vs removed parts, estimates assembly completion %, and provides safety/cut recommendations.
+  - `POST /api/v1/workbench/ai/inspect-nub`: Macro gate inspection scoring quality (0-100), detecting stress marks, diagnosing flaws, and generating step-by-step sanding grit sequences.
+- Updated OpenAPI 3.1 specification in `docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`.
+- Implemented Web UI shell components in `packages/shared/src/ui-shell/`:
+  - In `modals.ts`: Authored `#modal-ai-builder-assistant` with camera/file upload, tabbed navigation (Runner vs Nub Inspector), KPI cards, parts pills, quality score dial (0-100), diagnostic badges, and step-by-step sanding sequence guide.
+  - In `views.ts`: Added `🔍 Asistente IA` quick action in Workbench header.
+  - In `app-shell.ts`: Added modal controls, tab switcher, camera upload handlers (`handleAiRunnerImageUpload`, `handleAiNubImageUpload`), and submit/render handlers.
+- Authored isolated unit test suite `tests/unit/builder-ai.test.mjs` (10 test cases covering runner letter normalization, part status tally, completion math, nub scores, ABS/KPS plastic types, and monotonic sanding grit sequences). Total unit tests: 126 passed in 430ms.
+- Extended end-to-end regression smoketest in `scripts/smoketest.mjs` validating endpoints, RFC 7807 400 validation, and UI controls.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190:8080`, `:3000`, `:3001`).
+Issues hit:
+- When mounting `/api/v1/workbench/ai` in `server.ts`, placing it after `/api/v1/workbench` caused requests to be intercepted by `requireAuth` returning 401; mounting `/api/v1/workbench/ai` before `/api/v1/workbench` resolved the routing cleanly.
+- `gemini-2.5-flash` endpoint returned a deprecation redirect to `gemini-3.5-flash-lite` / `gemini-3.8-flash`; updated API slices to use `gemini-3.5-flash-lite`, achieving sub-2s inference speeds.
+Decisions made:
+- Employing a hybrid architecture (Gemini 3.5 Flash multimodal vision when online with transparent offline local heuristics) guarantees 100% test suite determinism and offline PWA capability while unlocking AI vision for builders with camera feeds.
+Lessons learned:
+- Combining runner part remaining counts with visual completion percentages gives scale modelers a clear, motivational progress tracker during long multi-day builds.
+Usage: Moderate -- self-estimated

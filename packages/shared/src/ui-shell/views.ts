@@ -435,6 +435,9 @@ export function renderViews(
               <button id="btn-open-decal-studio" class="filter-pill" onclick="openDecalStudioModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(14, 165, 233, 0.4); color: #38bdf8; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <span>🏷️</span> Decal Studio
               </button>
+              <button id="btn-open-ai-assistant" class="filter-pill" onclick="openAiAssistantModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(168, 85, 247, 0.4); color: #c084fc; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <span>🔍</span> Asistente IA
+              </button>
               <button class="filter-pill" onclick="openEditProfileModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <span>✏️</span> Editar Perfil
               </button>

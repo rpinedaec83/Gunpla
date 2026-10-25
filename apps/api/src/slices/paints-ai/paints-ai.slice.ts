@@ -490,7 +490,7 @@ Responde ÚNICAMENTE un objeto JSON válido con la siguiente estructura exacta:
   }
 }`;
 
-      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -506,7 +506,7 @@ Responde ÚNICAMENTE un objeto JSON válido con la siguiente estructura exacta:
         const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
         if (rawText) {
           const parsed = JSON.parse(rawText) as PaintRecipeAiResponse;
-          parsed.aiEngine = 'gemini-3.8-flash';
+          parsed.aiEngine = 'gemini-3.5-flash-lite';
           parsed.components = (parsed.components || []).map(c => ({
             ...c,
             inUserRack: inRack(c.code)

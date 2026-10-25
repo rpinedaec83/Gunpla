@@ -1090,6 +1090,26 @@ export const openApiSpec = {
           '400': { description: 'Validation error' }
         }
       }
+    },
+    '/api/v1/workbench/ai/inspect-runner': {
+      post: {
+        tags: ['Workbench AI'],
+        summary: 'Inspect model kit runner/sprue photo with Vision AI',
+        responses: {
+          '200': { description: 'Runner analysis with detected parts and remaining tally' },
+          '400': { description: 'Validation error' }
+        }
+      }
+    },
+    '/api/v1/workbench/ai/inspect-nub': {
+      post: {
+        tags: ['Workbench AI'],
+        summary: 'Inspect gate cut and nub mark cleanup quality with Vision AI',
+        responses: {
+          '200': { description: 'Nub quality assessment and corrective sanding recommendations' },
+          '400': { description: 'Validation error' }
+        }
+      }
     }
   }
 };

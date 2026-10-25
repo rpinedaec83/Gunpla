@@ -1931,6 +1931,170 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Modal: AI Workbench Smart Builder Assistant (DT19) -->
+<div id="modal-ai-builder-assistant" class="modal" style="display: none;">
+  <div class="modal-content" style="max-width: 820px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+      <div>
+        <h2 style="font-size: 1.25rem; margin: 0; display: flex; align-items: center; gap: 0.5rem; color: #c084fc;">
+          <span>🔍</span> Asistente Inteligente de Taller (Vision AI)
+        </h2>
+        <p style="font-size: 0.8rem; color: #94a3b8; margin: 0.2rem 0 0 0;">
+          Inspección automatizada de grapas y control de calidad de corte (nub marks) con Google Gemini Vision.
+        </p>
+      </div>
+      <button class="modal-close" onclick="closeAiAssistantModal()" style="background: none; border: none; font-size: 1.3rem; color: #94a3b8; cursor: pointer;">&times;</button>
+    </div>
+
+    <!-- Navigation Tabs: Runner vs Nub -->
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.5rem;">
+      <button type="button" id="tab-btn-ai-runner" class="filter-pill active" onclick="switchAiAssistantTab('runner')" style="font-size: 0.82rem; padding: 0.4rem 0.85rem;">
+        📷 Inspección de Grapas (Runners)
+      </button>
+      <button type="button" id="tab-btn-ai-nub" class="filter-pill" onclick="switchAiAssistantTab('nub')" style="font-size: 0.82rem; padding: 0.4rem 0.85rem;">
+        🔎 Calidad de Corte (Nub Inspector)
+      </button>
+    </div>
+
+    <!-- Scrollable Body -->
+    <div style="flex: 1; overflow-y: auto; padding-right: 0.25rem;">
+      <!-- Tab 1: Runner Inspector -->
+      <div id="ai-tab-runner-content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <!-- Upload Box -->
+          <div style="background: rgba(15, 23, 42, 0.6); border: 2px dashed rgba(168, 85, 247, 0.35); border-radius: 8px; padding: 1rem; text-align: center; position: relative;">
+            <input type="file" id="ai-runner-file-input" accept="image/*" onchange="handleAiRunnerImageUpload(event)" style="display: none;" />
+            <div id="ai-runner-upload-prompt" onclick="document.getElementById('ai-runner-file-input').click()" style="cursor: pointer; padding: 1.5rem 0.5rem;">
+              <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">📸</div>
+              <div style="font-weight: 600; font-size: 0.88rem; color: #e2e8f0; margin-bottom: 0.25rem;">Haz clic para subir o capturar foto de la grapa</div>
+              <div style="font-size: 0.75rem; color: #94a3b8;">Formatos JPG, PNG, WebP (Máx. 10MB)</div>
+            </div>
+            <img id="ai-runner-preview-img" src="" alt="Vista previa de grapa" style="display: none; max-width: 100%; max-height: 180px; object-fit: contain; border-radius: 4px; margin: 0 auto;" />
+          </div>
+
+          <!-- Parameters -->
+          <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; display: flex; flex-direction: column; gap: 0.6rem;">
+            <div>
+              <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Letra de Grapa (Opcional):</label>
+              <input type="text" id="ai-runner-letter-input" placeholder="Ej. A, B, C, D1" maxlength="4" style="width: 100%; background: #0f172a; border: 1px solid var(--border-color); color: #fff; padding: 0.4rem; border-radius: 4px; font-size: 0.85rem;" />
+            </div>
+            <div>
+              <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Maqueta / Kit (Opcional):</label>
+              <input type="text" id="ai-runner-kit-input" placeholder="Ej. RG 1/144 Hi-Nu Gundam" style="width: 100%; background: #0f172a; border: 1px solid var(--border-color); color: #fff; padding: 0.4rem; border-radius: 4px; font-size: 0.85rem;" />
+            </div>
+            <button type="button" id="btn-run-ai-runner-analysis" class="btn-primary" onclick="submitRunnerInspection()" style="margin-top: auto; padding: 0.55rem; background: linear-gradient(135deg, #a855f7, #7c3aed); border: none; font-weight: 700;">
+              ⚡ Analizar Grapa con Visión IA
+            </button>
+          </div>
+        </div>
+
+        <!-- Runner Results Viewport -->
+        <div id="ai-runner-results" style="display: none; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.6rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span id="ai-runner-badge-letter" style="background: #7c3aed; color: #fff; font-weight: 900; font-size: 1.1rem; padding: 0.2rem 0.6rem; border-radius: 6px;">A</span>
+              <span style="font-size: 0.9rem; font-weight: 700; color: #f8fafc;">Resultado de Conteo de Piezas</span>
+            </div>
+            <span id="ai-runner-engine-tag" style="font-size: 0.72rem; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 0.2rem 0.5rem; border-radius: 4px;">gemini-3.5-flash-lite</span>
+          </div>
+
+          <!-- KPIs -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 0.85rem;">
+            <div style="background: rgba(30, 41, 59, 0.6); padding: 0.5rem; border-radius: 6px; text-align: center;">
+              <div style="font-size: 0.7rem; color: #94a3b8;">Total Piezas</div>
+              <div id="ai-runner-kpi-total" style="font-size: 1.25rem; font-weight: 800; color: #f8fafc;">0</div>
+            </div>
+            <div style="background: rgba(30, 41, 59, 0.6); padding: 0.5rem; border-radius: 6px; text-align: center;">
+              <div style="font-size: 0.7rem; color: #eab308;">Restantes</div>
+              <div id="ai-runner-kpi-remaining" style="font-size: 1.25rem; font-weight: 800; color: #facc15;">0</div>
+            </div>
+            <div style="background: rgba(30, 41, 59, 0.6); padding: 0.5rem; border-radius: 6px; text-align: center;">
+              <div style="font-size: 0.7rem; color: #10b981;">Retiradas</div>
+              <div id="ai-runner-kpi-removed" style="font-size: 1.25rem; font-weight: 800; color: #34d399;">0</div>
+            </div>
+            <div style="background: rgba(30, 41, 59, 0.6); padding: 0.5rem; border-radius: 6px; text-align: center;">
+              <div style="font-size: 0.7rem; color: #38bdf8;">Avance</div>
+              <div id="ai-runner-kpi-completion" style="font-size: 1.25rem; font-weight: 800; color: #38bdf8;">0%</div>
+            </div>
+          </div>
+
+          <!-- Parts List pills -->
+          <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.35rem;">Piezas Detectadas:</div>
+          <div id="ai-runner-parts-container" style="display: flex; flex-wrap: wrap; gap: 0.35rem; max-height: 120px; overflow-y: auto; margin-bottom: 0.85rem;"></div>
+
+          <!-- Recommendations -->
+          <div id="ai-runner-recommendations-box" style="background: rgba(30, 41, 59, 0.4); border-left: 3px solid #7c3aed; padding: 0.5rem 0.75rem; font-size: 0.78rem; color: #cbd5e1;"></div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Nub Inspector -->
+      <div id="ai-tab-nub-content" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <!-- Upload Box -->
+          <div style="background: rgba(15, 23, 42, 0.6); border: 2px dashed rgba(234, 179, 8, 0.35); border-radius: 8px; padding: 1rem; text-align: center; position: relative;">
+            <input type="file" id="ai-nub-file-input" accept="image/*" onchange="handleAiNubImageUpload(event)" style="display: none;" />
+            <div id="ai-nub-upload-prompt" onclick="document.getElementById('ai-nub-file-input').click()" style="cursor: pointer; padding: 1.5rem 0.5rem;">
+              <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🔬</div>
+              <div style="font-weight: 600; font-size: 0.88rem; color: #e2e8f0; margin-bottom: 0.25rem;">Foto Macro o Acercamiento del Corte</div>
+              <div style="font-size: 0.75rem; color: #94a3b8;">Enfoca de cerca la compuerta o saliente (Nub)</div>
+            </div>
+            <img id="ai-nub-preview-img" src="" alt="Vista previa de corte" style="display: none; max-width: 100%; max-height: 180px; object-fit: contain; border-radius: 4px; margin: 0 auto;" />
+          </div>
+
+          <!-- Parameters -->
+          <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; display: flex; flex-direction: column; gap: 0.6rem;">
+            <div>
+              <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Nombre / Número de Pieza:</label>
+              <input type="text" id="ai-nub-part-input" placeholder="Ej. A12 - Armadura de Hombro" style="width: 100%; background: #0f172a; border: 1px solid var(--border-color); color: #fff; padding: 0.4rem; border-radius: 4px; font-size: 0.85rem;" />
+            </div>
+            <div>
+              <label style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Tipo de Plástico:</label>
+              <select id="ai-nub-plastic-select" style="width: 100%; background: #0f172a; border: 1px solid var(--border-color); color: #fff; padding: 0.4rem; border-radius: 4px; font-size: 0.85rem;">
+                <option value="PS" selected>PS (Poliestireno Estándar)</option>
+                <option value="KPS">KPS (Poliestireno de Alta Tenacidad / Frames)</option>
+                <option value="ABS">ABS (Plástico Resistente)</option>
+                <option value="PE">PE (Polietileno / Polycaps)</option>
+                <option value="resin">Resina / Aftermarket</option>
+              </select>
+            </div>
+            <button type="button" id="btn-run-ai-nub-analysis" class="btn-primary" onclick="submitNubInspection()" style="margin-top: auto; padding: 0.55rem; background: linear-gradient(135deg, #eab308, #ca8a04); border: none; font-weight: 700; color: #000;">
+              🔬 Evaluar Calidad de Corte
+            </button>
+          </div>
+        </div>
+
+        <!-- Nub Results Viewport -->
+        <div id="ai-nub-results" style="display: none; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.6rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <div id="ai-nub-score-dial" style="font-size: 1.4rem; font-weight: 900; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #10b981; color: #0f172a;">85</div>
+              <div>
+                <div id="ai-nub-headline" style="font-size: 0.9rem; font-weight: 700; color: #f8fafc;">Diagnóstico de Corte</div>
+                <div id="ai-nub-diagnosis-badges" style="display: flex; gap: 0.35rem; margin-top: 0.2rem;"></div>
+              </div>
+            </div>
+            <span id="ai-nub-engine-tag" style="font-size: 0.72rem; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 0.2rem 0.5rem; border-radius: 4px;">gemini-3.5-flash-lite</span>
+          </div>
+
+          <!-- Detailed Analysis -->
+          <p id="ai-nub-analysis-text" style="font-size: 0.82rem; color: #cbd5e1; line-height: 1.4; margin: 0 0 0.85rem 0;"></p>
+
+          <!-- Sanding Grit Sequence -->
+          <div style="margin-bottom: 0.85rem; background: rgba(30, 41, 59, 0.5); padding: 0.6rem 0.8rem; border-radius: 6px;">
+            <div style="font-size: 0.75rem; color: #facc15; font-weight: 600; margin-bottom: 0.35rem;">Secuencia de Lijas Recomendada:</div>
+            <div id="ai-nub-grit-sequence" style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;"></div>
+          </div>
+
+          <!-- Step by step instructions -->
+          <div style="font-size: 0.78rem; font-weight: 700; color: #94a3b8; margin-bottom: 0.35rem;">Pasos de Corrección Técnica:</div>
+          <div id="ai-nub-steps-container" style="display: flex; flex-direction: column; gap: 0.45rem;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 
 `;

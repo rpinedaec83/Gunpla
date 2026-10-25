@@ -2520,7 +2520,84 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT18 Custom Decals & Masking Stencils Studio verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO CHECKS PASSED ===');
+    // -------------------------------------------------------------------------
+    // DT19: AI Workbench Smart Builder Assistant (Vision AI)
+    // -------------------------------------------------------------------------
+    console.log('\n--- Verifying DT19 AI Workbench Smart Builder Assistant ---');
+
+    // 1. Runner inspection without image returns 400 validation error
+    const runnerEmptyRes = await fetch(`${baseUrl}/api/v1/workbench/ai/inspect-runner`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: '' })
+    });
+    assert.equal(runnerEmptyRes.status, 400, 'Empty runner image must return 400');
+    assert.ok(
+      (runnerEmptyRes.headers.get('content-type') || '').includes('application/problem+json'),
+      'Must return RFC 7807 problem details'
+    );
+
+    // 2. Runner inspection with sample image returns 200 with parts detection
+    const runnerRes = await fetch(`${baseUrl}/api/v1/workbench/ai/inspect-runner`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        runnerLetter: 'B',
+        kitName: 'RG 1/144 Hi-Nu Gundam'
+      })
+    });
+    assert.equal(runnerRes.status, 200, 'POST /inspect-runner must return 200');
+    const runnerData = await runnerRes.json();
+    assert.equal(runnerData.runnerLetter, 'B', 'Runner letter must be B');
+    assert.ok(runnerData.totalPartsDetected > 0, 'Total parts detected must be > 0');
+    assert.equal(
+      runnerData.totalPartsDetected,
+      runnerData.remainingPartsCount + runnerData.removedPartsCount,
+      'Total parts must equal remaining + removed'
+    );
+    assert.ok(Array.isArray(runnerData.parts), 'parts must be an array');
+    assert.ok(runnerData.parts.length > 0, 'parts array must not be empty');
+    assert.ok(Array.isArray(runnerData.recommendations), 'recommendations must be an array');
+
+    // 3. Nub inspection without image returns 400 validation error
+    const nubEmptyRes = await fetch(`${baseUrl}/api/v1/workbench/ai/inspect-nub`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: '' })
+    });
+    assert.equal(nubEmptyRes.status, 400, 'Empty nub image must return 400');
+
+    // 4. Nub inspection with sample macro image returns 200 with score and corrective steps
+    const nubRes = await fetch(`${baseUrl}/api/v1/workbench/ai/inspect-nub`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        partName: 'Arm Armor B12',
+        plasticType: 'PS'
+      })
+    });
+    assert.equal(nubRes.status, 200, 'POST /inspect-nub must return 200');
+    const nubData = await nubRes.json();
+    assert.ok(nubData.qualityScore >= 0 && nubData.qualityScore <= 100, 'qualityScore must be 0-100');
+    assert.ok(nubData.diagnosis, 'diagnosis must exist');
+    assert.ok(nubData.headline, 'headline must exist');
+    assert.ok(Array.isArray(nubData.correctionSteps), 'correctionSteps must be an array');
+    assert.ok(nubData.correctionSteps.length > 0, 'correctionSteps must not be empty');
+    assert.ok(Array.isArray(nubData.sandingGritSequence), 'sandingGritSequence must be an array');
+
+    // 5. Verify UI controls on PlamoScale Web Shell
+    assert.ok(plamoWebShellHtml.includes('id="btn-open-ai-assistant"'), 'PlamoScale must render header AI assistant button');
+    assert.ok(plamoWebShellHtml.includes('id="modal-ai-builder-assistant"'), 'PlamoScale must render modal-ai-builder-assistant');
+    assert.ok(plamoWebShellHtml.includes('id="tab-btn-ai-runner"'), 'PlamoScale must render runner inspector tab button');
+    assert.ok(plamoWebShellHtml.includes('id="tab-btn-ai-nub"'), 'PlamoScale must render nub inspector tab button');
+    assert.ok(plamoWebShellHtml.includes('id="btn-run-ai-runner-analysis"'), 'PlamoScale must render run runner analysis button');
+    assert.ok(plamoWebShellHtml.includes('id="btn-run-ai-nub-analysis"'), 'PlamoScale must render run nub analysis button');
+
+    console.log('[PASS] DT19 AI Workbench Smart Builder Assistant verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

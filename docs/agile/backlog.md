@@ -4,9 +4,14 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
-- **AI Workbench Smart Builder Assistant:** Computer vision inspection of runner parts and sprue cleanup quality.
+- **Exportacion de Inventario a PDF / Ficha de Seguro:** Generacion de reporte consolidado en PDF con fotografias de vitrina y tasacion patrimonial del Stash y vitrina.
+- **Pistas de Sonido / Soundscapes de Taller:** Reproductor integrado de audio ambiente relajante para sesiones de pintura y montaje (lluvia, hangar sci-fi, compresor suave).
 
 ## Completed Candidates & Parking Lot Items
+
+### SMART-BUILDER-AI -- Asistente Inteligente de Taller con Vision AI (COMPLETED)
+- Goal: Multimodal AI-powered workbench assistant for scale modelers. Inspects photos of plastic runners/sprues to identify remaining parts, track assembly progress, and evaluates close-up photos of gate connections/nub marks to score cut quality (0-100), diagnose stress marks or gouges, and provide professional sanding/cleanup corrective actions. Supports Google Gemini 3.5 Flash multimodal vision with transparent deterministic local fallback.
+- Delivered: Endpoints `POST /api/v1/workbench/ai/inspect-runner` and `POST /api/v1/workbench/ai/inspect-nub`; shared types in `@gunpla/shared` (`RunnerInspectionRequest`, `RunnerInspectionResponse`, `DetectedRunnerPart`, `NubInspectionRequest`, `NubInspectionResponse`, `NubDiagnosisType`, `NubSeverity`); pure offline analysis functions `analyzeRunnerPhotoOffline` and `analyzeNubPhotoOffline`; multimodal Google Gemini 3.5 Flash (`gemini-3.5-flash-lite`) integration via Google AI Studio API with transparent offline fallback; Web UI modal `#modal-ai-builder-assistant` with camera/file upload, runner parts tally and completion gauge, quality score dial (0-100), diagnostic classification badges, and step-by-step sanding sequence guide; quick action button `🔍 Asistente IA` in Workbench header; 10 isolated unit tests (`tests/unit/builder-ai.test.mjs`, total 126 passing); end-to-end smoketest; and verified live deployment on LXC 190.
 
 ### DECAL-STUDIO -- Estudio y Generador de Calcas al Agua y Pistas de Enmascarado (COMPLETED)
 - Goal: In-browser vector water-slide decal and masking stencil designer and exporter for scale modelers, generating millimeter-precise vector SVGs for print sheets (A4, A5, A6) at 100% scale without distortion on transparent or white-film decal paper across model scales (1/144, 1/100, 1/60, 1/35, 1/48, 1/24, custom).

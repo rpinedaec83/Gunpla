@@ -5158,6 +5158,277 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // AI Workbench Smart Builder Assistant (DT19)
+  // ---------------------------------------------------------------------------
+  let aiCurrentRunnerImageBase64 = null;
+  let aiCurrentNubImageBase64 = null;
+
+  function openAiAssistantModal(tab) {
+    const modal = document.getElementById('modal-ai-builder-assistant');
+    if (!modal) return;
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    if (tab) {
+      switchAiAssistantTab(tab);
+    }
+  }
+
+  function closeAiAssistantModal() {
+    const modal = document.getElementById('modal-ai-builder-assistant');
+    if (!modal) return;
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+  }
+
+  function switchAiAssistantTab(tabName) {
+    const runnerContent = document.getElementById('ai-tab-runner-content');
+    const nubContent = document.getElementById('ai-tab-nub-content');
+    const runnerTabBtn = document.getElementById('tab-btn-ai-runner');
+    const nubTabBtn = document.getElementById('tab-btn-ai-nub');
+
+    if (tabName === 'nub') {
+      if (runnerContent) runnerContent.style.display = 'none';
+      if (nubContent) nubContent.style.display = 'block';
+      if (runnerTabBtn) runnerTabBtn.classList.remove('active');
+      if (nubTabBtn) nubTabBtn.classList.add('active');
+    } else {
+      if (runnerContent) runnerContent.style.display = 'block';
+      if (nubContent) nubContent.style.display = 'none';
+      if (runnerTabBtn) runnerTabBtn.classList.add('active');
+      if (nubTabBtn) nubTabBtn.classList.remove('active');
+    }
+  }
+
+  function handleAiRunnerImageUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      aiCurrentRunnerImageBase64 = evt.target.result;
+      const previewImg = document.getElementById('ai-runner-preview-img');
+      const uploadPrompt = document.getElementById('ai-runner-upload-prompt');
+      if (previewImg) {
+        previewImg.src = aiCurrentRunnerImageBase64;
+        previewImg.style.display = 'block';
+      }
+      if (uploadPrompt) {
+        uploadPrompt.style.display = 'none';
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleAiNubImageUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      aiCurrentNubImageBase64 = evt.target.result;
+      const previewImg = document.getElementById('ai-nub-preview-img');
+      const uploadPrompt = document.getElementById('ai-nub-upload-prompt');
+      if (previewImg) {
+        previewImg.src = aiCurrentNubImageBase64;
+        previewImg.style.display = 'block';
+      }
+      if (uploadPrompt) {
+        uploadPrompt.style.display = 'none';
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function submitRunnerInspection() {
+    const btn = document.getElementById('btn-run-ai-runner-analysis');
+    const letterInput = document.getElementById('ai-runner-letter-input');
+    const kitInput = document.getElementById('ai-runner-kit-input');
+
+    const runnerLetter = letterInput ? letterInput.value.trim() : 'A';
+    const kitName = kitInput ? kitInput.value.trim() : '';
+
+    const sampleImage = aiCurrentRunnerImageBase64 || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ Analizando con Gemini Vision...';
+    }
+
+    try {
+      const res = await fetch('/api/v1/workbench/ai/inspect-runner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: sampleImage,
+          runnerLetter,
+          kitName
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.detail || errData.title || 'Error al analizar la grapa');
+      }
+
+      const data = await res.json();
+      renderAiRunnerResults(data);
+    } catch (err) {
+      console.error('Runner analysis error:', err);
+      alert('Error: ' + err.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '⚡ Analizar Grapa con Visión IA';
+      }
+    }
+  }
+
+  function renderAiRunnerResults(data) {
+    const resultsBox = document.getElementById('ai-runner-results');
+    if (!resultsBox) return;
+    resultsBox.style.display = 'block';
+
+    const badgeLetter = document.getElementById('ai-runner-badge-letter');
+    if (badgeLetter) badgeLetter.textContent = data.runnerLetter || 'A';
+
+    const engineTag = document.getElementById('ai-runner-engine-tag');
+    if (engineTag) engineTag.textContent = data.aiEngine || 'Vision AI';
+
+    const totalEl = document.getElementById('ai-runner-kpi-total');
+    if (totalEl) totalEl.textContent = data.totalPartsDetected || 0;
+
+    const remainingEl = document.getElementById('ai-runner-kpi-remaining');
+    if (remainingEl) remainingEl.textContent = data.remainingPartsCount || 0;
+
+    const removedEl = document.getElementById('ai-runner-kpi-removed');
+    if (removedEl) removedEl.textContent = data.removedPartsCount || 0;
+
+    const completionEl = document.getElementById('ai-runner-kpi-completion');
+    if (completionEl) completionEl.textContent = (data.completionPercentage || 0) + '%';
+
+    const partsContainer = document.getElementById('ai-runner-parts-container');
+    if (partsContainer) {
+      partsContainer.innerHTML = (data.parts || []).map(function(p) {
+        const isRemoved = p.status === 'removed';
+        const bg = isRemoved ? 'rgba(16, 185, 129, 0.2)' : 'rgba(234, 179, 8, 0.15)';
+        const color = isRemoved ? '#34d399' : '#facc15';
+        const border = isRemoved ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(234, 179, 8, 0.35)';
+        return '<span style="background: ' + bg + '; color: ' + color + '; border: ' + border + '; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px;" title="' + (p.notes || '') + '">' + p.partNumber + ' ' + (isRemoved ? '✓' : '•') + '</span>';
+      }).join('');
+    }
+
+    const recBox = document.getElementById('ai-runner-recommendations-box');
+    if (recBox) {
+      recBox.innerHTML = '<strong>💡 Recomendaciones del Taller:</strong><ul style="margin: 0.3rem 0 0 1.2rem; padding: 0;">' + (data.recommendations || []).map(function(r) { return '<li>' + r + '</li>'; }).join('') + '</ul>';
+    }
+  }
+
+  async function submitNubInspection() {
+    const btn = document.getElementById('btn-run-ai-nub-analysis');
+    const partInput = document.getElementById('ai-nub-part-input');
+    const plasticSelect = document.getElementById('ai-nub-plastic-select');
+
+    const partName = partInput ? partInput.value.trim() : '';
+    const plasticType = plasticSelect ? plasticSelect.value : 'PS';
+
+    const sampleImage = aiCurrentNubImageBase64 || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ Evaluando Calidad...';
+    }
+
+    try {
+      const res = await fetch('/api/v1/workbench/ai/inspect-nub', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: sampleImage,
+          partName,
+          plasticType
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.detail || errData.title || 'Error al inspeccionar corte');
+      }
+
+      const data = await res.json();
+      renderAiNubResults(data);
+    } catch (err) {
+      console.error('Nub inspection error:', err);
+      alert('Error: ' + err.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🔬 Evaluar Calidad de Corte';
+      }
+    }
+  }
+
+  function renderAiNubResults(data) {
+    const resultsBox = document.getElementById('ai-nub-results');
+    if (!resultsBox) return;
+    resultsBox.style.display = 'block';
+
+    const scoreDial = document.getElementById('ai-nub-score-dial');
+    if (scoreDial) {
+      const s = data.qualityScore || 0;
+      scoreDial.textContent = s;
+      if (s >= 90) {
+        scoreDial.style.background = '#10b981';
+        scoreDial.style.color = '#0f172a';
+      } else if (s >= 70) {
+        scoreDial.style.background = '#eab308';
+        scoreDial.style.color = '#0f172a';
+      } else {
+        scoreDial.style.background = '#ef4444';
+        scoreDial.style.color = '#ffffff';
+      }
+    }
+
+    const headline = document.getElementById('ai-nub-headline');
+    if (headline) headline.textContent = data.headline || 'Diagnóstico de Calidad';
+
+    const engineTag = document.getElementById('ai-nub-engine-tag');
+    if (engineTag) engineTag.textContent = data.aiEngine || 'Vision AI';
+
+    const badgesContainer = document.getElementById('ai-nub-diagnosis-badges');
+    if (badgesContainer) {
+      const diagLabels = {
+        clean_cut: 'Corte Limpio (Flush)',
+        protruding_nub: 'Saliente de Compuerta',
+        stress_mark: 'Marca de Estrés',
+        gouge: 'Mordedura en Pieza',
+        under_sanded: 'Falta de Pulido'
+      };
+      const label = diagLabels[data.diagnosis] || data.diagnosis;
+      badgesContainer.innerHTML = '<span style="font-size: 0.72rem; background: rgba(255,255,255,0.1); padding: 0.15rem 0.4rem; border-radius: 4px; color: #f8fafc;">' + label + '</span>' +
+        '<span style="font-size: 0.72rem; background: rgba(239, 68, 68, 0.2); padding: 0.15rem 0.4rem; border-radius: 4px; color: #fca5a5;">Severidad: ' + (data.severity || 'normal') + '</span>';
+    }
+
+    const analysisText = document.getElementById('ai-nub-analysis-text');
+    if (analysisText) analysisText.textContent = data.detailedAnalysis || '';
+
+    const gritSequenceContainer = document.getElementById('ai-nub-grit-sequence');
+    if (gritSequenceContainer) {
+      gritSequenceContainer.innerHTML = (data.sandingGritSequence || []).map(function(g, idx, arr) {
+        const isLast = idx === arr.length - 1;
+        return '<span style="background: rgba(234, 179, 8, 0.2); color: #facc15; font-size: 0.78rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px;">#' + g + '</span>' + (!isLast ? '<span style="color: #94a3b8; font-size: 0.8rem;">→</span>' : '');
+      }).join(' ');
+    }
+
+    const stepsContainer = document.getElementById('ai-nub-steps-container');
+    if (stepsContainer) {
+      stepsContainer.innerHTML = (data.correctionSteps || []).map(function(step) {
+        return '<div style="background: rgba(30, 41, 59, 0.5); border-left: 3px solid #38bdf8; padding: 0.45rem 0.7rem; border-radius: 4px;">' +
+          '<div style="font-size: 0.78rem; font-weight: 700; color: #38bdf8;">Paso ' + step.stepOrder + ': ' + step.tool + '</div>' +
+          '<div style="font-size: 0.76rem; color: #cbd5e1; margin-top: 0.15rem;">' + step.instruction + '</div>' +
+        '</div>';
+      }).join('');
+    }
+  }
+
   // Modal open/close handlers
   function openAddStashModal() {
     const m = document.getElementById('modal-add-stash');

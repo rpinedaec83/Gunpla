@@ -30,6 +30,7 @@ services:
       DATABASE_URL: postgresql://${DB_USER:-gunpla_usr}:${DB_PASSWORD:-gunpla_homelab_pass_2026}@gunpla-db:5432/${DB_NAME:-gunpla_prod}
       JWT_SECRET: ${JWT_SECRET:-gunpla-plamoscale-sso-dev-secret-2026}
       RESEND_API_KEY: ${RESEND_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}

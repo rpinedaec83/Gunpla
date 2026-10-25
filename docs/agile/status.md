@@ -4,12 +4,43 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator & Decal Studio Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + 4 Technical Debt resolutions verified via `npm test` (116 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt18-decal-studio` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio & Smart Builder AI Assistant Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + 4 Technical Debt resolutions verified via `npm test` (126 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt19-ai-builder-assistant` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Asistente Inteligente de Taller con Visión AI (AI Workbench Smart Builder Assistant):**
+  - **Inspección Multimodal de Grapas y Piezas con Google Gemini Vision:**
+    - Lógica de inspección por visión artificial en `@gunpla/shared` y `apps/api/src/slices/builder-ai/builder-ai.slice.ts`:
+      - Detección automática de la letra de la grapa (`A`, `B`, `C`, `D1`, etc.) a partir de la fotografía de la matriz.
+      - Conteo exhaustivo de piezas detectadas, piezas restantes en la matriz (*intact*), piezas ya retiradas (*removed*) y cálculo del porcentaje de avance de ensamblaje del kit.
+      - Recomendaciones de modelista experto para la manipulación y corte de compuertas sin estresar el plástico.
+  - **Control de Calidad de Corte y Limpieza de Piezas (Nub Mark Inspector):**
+    - Análisis de fotos macro o primeros planos del punto de corte con asignación de puntaje de calidad (0 a 100).
+    - Clasificación y diagnóstico de defectos:
+      - `clean_cut`: Corte limpio al ras, listo para ensamble o pintura.
+      - `protruding_nub`: Saliente de compuerta sobrante que requiere rebaje.
+      - `stress_mark`: Mancha blanquecina por tensión mecánica excesiva o alicate embotado.
+      - `gouge`: Mordedura profunda que penetró bajo la superficie plana de la pieza.
+      - `under_sanded`: Rayaduras abrasivas visibles que requieren pulido fino.
+    - Guía de corrección paso a paso: Secuencia exacta de herramientas (bisturí ángulo 30°, tacos abrasivos, lijas de esponja) y progresión de granos de lija al agua (ej. #800 -> #1000 -> #1500 -> #2000).
+  - **Arquitectura Híbrida y Fallback Transparente (Offline-First):**
+    - Si `GEMINI_API_KEY` está configurado en el servidor, ejecuta inferencia multimodal en vivo con Google Gemini 3.5 Flash (`gemini-3.5-flash-lite`).
+    - Si la clave no está configurada o se encuentra sin conexión a internet, conmuta sin errores a motores heurísticos deterministas locales (`analyzeRunnerPhotoOffline` y `analyzeNubPhotoOffline`).
+  - **Endpoints Especializados de Visión AI:**
+    - `POST /api/v1/workbench/ai/inspect-runner`: Recibe imagen (data URL base64 o URL), letra opcional y nombre de kit; retorna lista de piezas, avance y recomendaciones.
+    - `POST /api/v1/workbench/ai/inspect-nub`: Recibe fotografía macro del corte, nombre de pieza y tipo de plástico (`PS`, `KPS`, `ABS`, `PE`, `resin`); retorna puntaje, severidad, diagnóstico y secuencia de lijas.
+  - **Interfaz de Usuario Web Shell (PlamoScale & GunplaJunkies):**
+    - Modal interactivo `#modal-ai-builder-assistant` con soporte de subida de imágenes o captura con cámara.
+    - Pestaña 1 (`#ai-tab-runner-content`): Viewport de grapas con badges de piezas detectadas (`A1`, `A2`...) y KPIs de progreso (Total, Restantes, Retiradas, Avance %).
+    - Pestaña 2 (`#ai-tab-nub-content`): Viewport de calidad de corte con dial cromático de puntuación (verde/amarillo/rojo), badges de diagnóstico y lista desplegable de pasos técnicos.
+    - Acceso directo `🔍 Asistente IA` en la barra de herramientas de Mi Taller en la cabecera.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/builder-ai.test.mjs` (10 pruebas aisladas cubriendo normalización de grapas, conteo de piezas, cálculo de avance, diagnóstico de nubs, plásticos ABS/KPS y secuencia monotónica de lijas). Total unit tests: 126 passed.
+    - Smoketest automatizado en `scripts/smoketest.mjs` validando ambos endpoints, respuestas 400 de validación y elementos del DOM en los portales.
+    - Despliegue en vivo en el clúster Proxmox LXC 190 (`http://192.168.1.190:8080`, `http://192.168.1.190:3000`, `http://192.168.1.190:3001`).
 
 - **Estudio y Generador de Calcas al Agua y Pistas de Enmascarado (Custom Decals & Masking Stencils Studio):**
   - **Motor Vectorial SVG con Precisión Milimétrica al 100% de Escala:**
