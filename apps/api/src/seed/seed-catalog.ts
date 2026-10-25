@@ -15,6 +15,7 @@ export const INITIAL_KITS: KitRecord[] = [
     scalematesUrl: 'https://www.scalemates.com/kits/bandai-spirits-5061919-rg-1-144-hi-nu-gundam--1359732',
     manualUrl: 'http://dalong.net/reviews/rg/rg36/rg36_m.htm',
     barcode: '4573102619198',
+    model3dFormat: 'procedural',
     source: 'scalemates',
     createdAt: new Date().toISOString()
   },

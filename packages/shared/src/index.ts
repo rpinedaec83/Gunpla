@@ -161,8 +161,114 @@ export interface KitRecord {
   scalematesUrl?: string;
   manualUrl?: string;
   barcode?: string;
+  model3dUrl?: string;
+  model3dFormat?: 'glb' | 'gltf' | 'obj' | 'procedural';
   source: 'manual' | 'scalemates' | 'scalemates-fallback' | 'user-import';
   createdAt: string;
+}
+
+export type DioramaLightingPreset = 'studio' | 'neon-scifi' | 'sunset' | 'military-hangar' | 'clay-primer';
+export type DioramaViewMode = 'shaded' | 'wireframe' | 'clay' | 'matcap';
+export type DioramaCameraAngle = 'perspective' | 'isometric' | 'top' | 'front' | 'hero';
+
+export interface KitModel3dMetadata {
+  kitId: string;
+  kitName: string;
+  brand: string;
+  scale: string;
+  category: ScaleCategory;
+  modelUrl: string;
+  modelFormat: 'glb' | 'gltf' | 'obj' | 'procedural';
+  meshType: 'mecha' | 'tank' | 'aircraft' | 'car' | 'warship' | 'humanoid';
+  realHeightMeters: number;
+  physicalHeightMm: number;
+  humanFigureScaleMm: number;
+  defaultLighting: DioramaLightingPreset;
+  defaultViewMode: DioramaViewMode;
+  arSupported: boolean;
+  dioramaGroundSizeMeters: number;
+}
+
+export interface KitModel3dResponse {
+  kit: KitRecord;
+  model3d: KitModel3dMetadata;
+}
+
+export function resolveKitModel3d(kit: KitRecord): KitModel3dMetadata {
+  let meshType: 'mecha' | 'tank' | 'aircraft' | 'car' | 'warship' | 'humanoid' = 'mecha';
+  if (kit.category === 'military') meshType = 'tank';
+  else if (kit.category === 'aviation') meshType = 'aircraft';
+  else if (kit.category === 'automotive') meshType = 'car';
+  else if (kit.category === 'naval') meshType = 'warship';
+  else if (kit.category === 'figures') meshType = 'humanoid';
+
+  const scaleStr = (kit.scale || '1/144').trim();
+  let realHeightMeters = 18.0; // Standard 18m Gundam
+  let physicalHeightMm = 125.0; // 12.5 cm for 1/144
+  let humanFigureScaleMm = 12.5;
+  let groundSize = 25.0;
+
+  if (scaleStr === '1/144') {
+    realHeightMeters = 18.0;
+    physicalHeightMm = 125.0;
+    humanFigureScaleMm = 12.5;
+    groundSize = 30.0;
+  } else if (scaleStr === '1/100') {
+    realHeightMeters = 18.0;
+    physicalHeightMm = 180.0;
+    humanFigureScaleMm = 18.0;
+    groundSize = 35.0;
+  } else if (scaleStr === '1/35') {
+    realHeightMeters = 3.0; // Tank height ~3m, length ~8m
+    physicalHeightMm = 85.0;
+    humanFigureScaleMm = 51.4; // 1.8m / 35
+    groundSize = 15.0;
+  } else if (scaleStr === '1/48') {
+    realHeightMeters = 3.8; // Spitfire
+    physicalHeightMm = 79.0;
+    humanFigureScaleMm = 37.5;
+    groundSize = 20.0;
+  } else if (scaleStr === '1/24') {
+    realHeightMeters = 1.35; // Sports car
+    physicalHeightMm = 56.0;
+    humanFigureScaleMm = 75.0;
+    groundSize = 10.0;
+  } else if (scaleStr === '1/450' || scaleStr === '1/700') {
+    realHeightMeters = 50.0; // Battleship
+    physicalHeightMm = 111.0;
+    humanFigureScaleMm = 4.0;
+    groundSize = 300.0;
+  } else if (scaleStr === '1/1') {
+    realHeightMeters = 0.14; // Megami Device
+    physicalHeightMm = 140.0;
+    humanFigureScaleMm = 140.0;
+    groundSize = 1.0;
+  }
+
+  const defaultLighting: DioramaLightingPreset =
+    kit.category === 'military'
+      ? 'military-hangar'
+      : kit.category === 'automotive'
+      ? 'sunset'
+      : 'studio';
+
+  return {
+    kitId: kit.id,
+    kitName: kit.name,
+    brand: kit.brand,
+    scale: kit.scale,
+    category: kit.category,
+    modelUrl: kit.model3dUrl || `/assets/models/kits/${kit.id}.glb`,
+    modelFormat: kit.model3dFormat || 'procedural',
+    meshType,
+    realHeightMeters,
+    physicalHeightMm,
+    humanFigureScaleMm,
+    defaultLighting,
+    defaultViewMode: 'shaded',
+    arSupported: true,
+    dioramaGroundSizeMeters: groundSize
+  };
 }
 
 export interface BrandSummary {

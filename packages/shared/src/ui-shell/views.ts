@@ -164,17 +164,20 @@ export function renderViews(
               <span>Año: ${k.releaseYear || 'N/A'}</span>
               ${k.grade ? '<span>• ' + k.grade + '</span>' : ''}
             </div>
-            ${
-              k.scalematesUrl
-                ? `
-              <div style="margin-top: auto; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
-                <a href="${k.scalematesUrl}" target="_blank" rel="noopener" style="font-size: 0.8rem; color: var(--accent); text-decoration: none;">
-                  Ver ficha en Scalemates ➔
+            <div style="margin-top: auto; padding-top: 0.75rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="filter-pill" onclick="openKit3dViewerModal('${k.id}')" style="font-size: 0.75rem; padding: 0.25rem 0.55rem; color: #c084fc; border-color: rgba(168, 85, 247, 0.4); display: inline-flex; align-items: center; gap: 0.25rem;">
+                <span>📐</span> Visor 3D
+              </button>
+              ${
+                k.scalematesUrl
+                  ? `
+                <a href="${k.scalematesUrl}" target="_blank" rel="noopener" style="font-size: 0.75rem; color: var(--accent); text-decoration: none;">
+                  Scalemates ➔
                 </a>
-              </div>
-            `
-                : ''
-            }
+              `
+                  : ''
+              }
+            </div>
           </div>
         `
           )
@@ -423,6 +426,9 @@ export function renderViews(
               <button id="btn-scan-barcode-header" class="btn-primary" onclick="openBarcodeScannerModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; background: linear-gradient(135deg, #0ea5e9, #6366f1); display: inline-flex; align-items: center; gap: 0.35rem; border: none; box-shadow: 0 4px 12px rgba(14,165,233,0.25);">
                 <span>📷</span> Escanear Caja (JAN)
               </button>
+              <button id="btn-open-diorama-studio" class="filter-pill" onclick="openKit3dViewerModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(168, 85, 247, 0.4); color: #c084fc; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <span>📐</span> Diorama Studio 3D
+              </button>
               <button class="filter-pill" onclick="openEditProfileModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <span>✏️</span> Editar Perfil
               </button>
@@ -493,6 +499,9 @@ export function renderViews(
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
               <button id="btn-scan-barcode-stash" class="btn-primary" onclick="openBarcodeScannerModal()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; background: linear-gradient(135deg, #0ea5e9, #6366f1); display: inline-flex; align-items: center; gap: 0.35rem; border: none;">
                 📷 Escanear Caja (JAN / EAN)
+              </button>
+              <button id="btn-diorama-studio-stash" class="filter-pill" onclick="openKit3dViewerModal()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; border-color: rgba(168, 85, 247, 0.4); color: #c084fc; display: inline-flex; align-items: center; gap: 0.35rem;">
+                📐 Diorama Studio 3D
               </button>
               <button class="filter-pill" onclick="openAddStashModal()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem;">
                 + Agregar Manual

@@ -4,9 +4,13 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
-- **Interactive Workbench 3D / AR Viewer:** Model 3D inspection and pose staging in Mi Taller for planning diorama compositions.
+- **AI Workbench Smart Builder Assistant:** Computer vision inspection of runner parts and sprue cleanup quality.
 
 ## Completed Candidates & Parking Lot Items
+
+### 3D-AR-VIEWER -- Visor 3D / AR Interactivo de Maquetas y Diorama Studio (COMPLETED)
+- Goal: Interactive 3D WebGL / AR Model Viewer and Diorama Studio in "Mi Taller" for inspecting scale dimensions, testing poses, lighting presets, scale comparisons with 1:1 human silhouettes, and planning dioramas.
+- Delivered: Endpoints `GET /api/v1/catalog/kits/:id/model-3d` and `GET /api/v1/catalog/models-3d`; scale metadata resolution logic (`resolveKitModel3d`) computing real vs physical height in mm, 1:1 human pilot scale silhouette, mesh classification (`mecha`, `tank`, `aircraft`, `car`, `warship`, `humanoid`), diorama ground size, lighting presets, and AR support flag; vanilla WebGL 1.0 rendering canvas (`#diorama-3d-canvas`) with Blinn-Phong shading, depth testing, orbit controls (rotate, pan, zoom, touch support), and real-time procedural geometries for all model categories; scale comparison silhouette (`#diorama-toggle-human`); 5 lighting presets (Studio White, Neon Cyberpunk, Sunset Golden Hour, Military Hangar, Clay Gray Primer); 4 view modes (Shaded, Clay Primer, Wireframe, Matcap Metallic); camera angle presets (Hero Boxart, Frontal, Isometric, Top-Down); turntable auto-spin; HD snapshot PNG capture (`📸 Captura HD`); mobile WebXR AR trigger (`📱 AR Móvil`); UI quick actions `📐 Diorama Studio 3D` in Workbench and Stash, and `📐 3D` on stash and catalog cards; 6 isolated unit tests (`tests/unit/3d-viewer.test.mjs`, total 97 passing); end-to-end smoketest; and verified live deployment on LXC 190.
 
 ### BARCODE-SCANNER -- Escáner de Código de Barras (JAN / EAN / UPC) y Registro al Stash (COMPLETED)
 - Goal: Camera-based barcode (JAN/EAN/UPC/Code-128) scanning in Mi Taller Workbench for instant kit box registration to personal stash with manufacturer prefix heuristics.

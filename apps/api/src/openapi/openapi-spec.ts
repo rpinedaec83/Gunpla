@@ -146,6 +146,26 @@ export const openApiSpec = {
         }
       }
     },
+    '/api/v1/catalog/kits/{id}/model-3d': {
+      get: {
+        tags: ['Catalog'],
+        summary: 'Get 3D asset metadata, diorama presets, real and physical scale dimensions for a kit',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: '3D model metadata and scale dimensions' },
+          '404': { description: 'Kit not found (RFC 7807)' }
+        }
+      }
+    },
+    '/api/v1/catalog/models-3d': {
+      get: {
+        tags: ['Catalog'],
+        summary: 'List available 3D models for diorama studio and inspection scoped to tenant',
+        responses: {
+          '200': { description: 'List of 3D models and diorama configurations' }
+        }
+      }
+    },
     '/api/v1/catalog/barcode/{barcode}': {
       get: {
         tags: ['Catalog'],

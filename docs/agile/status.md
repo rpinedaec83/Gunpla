@@ -4,12 +4,33 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds & Barcode Scanner Stash Integration Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + 4 Technical Debt resolutions verified via `npm test` (91 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt15-barcode-scanner-stash` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner & Interactive 3D / AR Viewer Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + 4 Technical Debt resolutions verified via `npm test` (97 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt16-interactive-3d-ar-viewer` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Visor 3D / AR Interactivo de Maquetas y Diorama Studio (Interactive 3D / AR Viewer):**
+  - **Resolución de Dimensiones Físicas y Silueta Humana a Escala 1:1:**
+    - Lógica algorítmica en `@gunpla/shared` (`resolveKitModel3d`) que mapea la escala del kit (1/144, 1/100, 1/35, 1/48, 1/24, 1/450, 1/1) calculando altura real en metros, altura física en milímetros y la altura de la silueta humana correspondiente para comparación visual directa sobre la estera de corte / base de diorama.
+    - Soporte multi-categoría para Mechas (18m real -> 125mm / 180mm), Tanques y Blindados Militares (3m real -> 85mm), Aviación (3.8m real -> 79mm), Vehículos Deportivos (1.35m real -> 56mm), Acorazados Navales (50m real -> 111mm) y Figuras Humanoides (1/1).
+  - **Endpoints Especializados de Modelos 3D:**
+    - `GET /api/v1/catalog/kits/:id/model-3d`: Metadatos 3D del kit con dimensiones físicas calculadas, tamaño de base de diorama recomendado, preajustes de iluminación y bandera de soporte AR.
+    - `GET /api/v1/catalog/models-3d`: Listado de maquetas con soporte 3D diorama con soporte multi-inquilino.
+  - **Motor WebGL 1.0 y Diorama Studio en el Web Shell (PlamoScale & GunplaJunkies):**
+    - Modal interactivo `#modal-3d-viewer` con viewport de renderizado WebGL (`#diorama-3d-canvas`) con sombreado Blinn-Phong, depth testing, backface culling y controles orbitales de cámara (rotación, paneo, zoom, gestos táctiles en móviles).
+    - Generación geométrica procedural en tiempo real para todas las categorías (Mecha con cockpit, rejillas, V-fin, hombros, rifle, escudo, propulsores; Tanque con chasis oruga, torreta y cañón; Avión con fuselaje, cabina, alas y hélice; Auto con carrocería, parabrisas y alerón; Acorazado con casco y torretas triples de artillería).
+    - Silueta de piloto/tripulante humano a escala 1:1 (`#diorama-toggle-human`) conmutable en un clic sobre cuadrícula de corte graduada.
+    - 5 Preajustes de iluminación fotográfica (`#diorama-lighting-select`): Estudio Blanco Neutro, Neón Sci-Fi Cyberpunk, Atardecer Golden Hour, Hangar Militar y Base Imprimación Gris (Clay).
+    - 4 Modos de visualización (`#diorama-viewmode-select`): Sombreado Completo (Shaded), Imprimación Gris (Clay Primer), Malla de Alambre (Wireframe) y Metalizado Matcap.
+    - Ángulos de cámara rápidos: Boxart Heroico en ángulo bajo, Vista Frontal, Isométrica y Cenital Superior.
+    - Controles interactivos: Recentrado de cámara, rotación automática en tornamesa 360°, captura instantánea en alta resolución PNG (`📸 Captura HD`) y disparador de Realidad Aumentada Móvil (`📱 AR Móvil`).
+    - Puntos de entrada directos: Botones `📐 Diorama Studio 3D` en la barra de herramientas del Stash y cabecera de Mi Taller, y botón `📐 3D` en cada tarjeta de Stash e inventario del catálogo.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/3d-viewer.test.mjs` (6 pruebas aisladas cubriendo resolución de dimensiones en todas las categorías y consistencia de la base de datos). Total unit tests: 97 passed.
+    - Smoketest automatizado en `scripts/smoketest.mjs` validando endpoints `GET /kits/:id/model-3d`, `GET /models-3d`, manejo de errores 404 RFC 7807 y presencia de controles HTML en los portales web.
+    - Despliegue en vivo en el clúster Proxmox LXC 190 (`http://192.168.1.190:8080`, `http://192.168.1.190:3000`, `http://192.168.1.190:3001`).
 
 - **Escáner de Código de Barras (JAN / EAN / UPC) y Registro Instantáneo al Stash (Barcode Box Scanner):**
   - **Mapeo Heurístico y Normalización de Prefijos de Fabricante:**

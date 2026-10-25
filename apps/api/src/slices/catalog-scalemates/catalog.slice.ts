@@ -12,7 +12,10 @@ import {
   BarcodeLookupResponse,
   normalizeBarcode,
   detectBarcodeFormat,
-  getManufacturerHintFromBarcode
+  getManufacturerHintFromBarcode,
+  KitModel3dResponse,
+  KitModel3dMetadata,
+  resolveKitModel3d
 } from '@gunpla/shared';
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
@@ -160,6 +163,58 @@ catalogRouter.get('/barcode/:barcode', (req: Request, res: Response) => {
   };
 
   return res.json(response);
+});
+
+/**
+ * GET /api/v1/catalog/kits/:id/model-3d
+ * Returns 3D asset metadata, diorama presets, real and physical scale dimensions for a kit
+ */
+catalogRouter.get('/kits/:id/model-3d', (req: Request, res: Response) => {
+  const db = getDb();
+  const kit = db.kits.find(k => k.id === req.params.id);
+
+  if (!kit) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Kit No Encontrado',
+      `No se encontró ningún modelo a escala con id '${req.params.id}'.`,
+      'not-found'
+    );
+  }
+
+  const model3d = resolveKitModel3d(kit);
+  const response: KitModel3dResponse = {
+    kit,
+    model3d
+  };
+
+  return res.json(response);
+});
+
+/**
+ * GET /api/v1/catalog/models-3d
+ * List 3D models available for dioramas and inspection scoped to tenant
+ */
+catalogRouter.get('/models-3d', (req: Request, res: Response) => {
+  const db = getDb();
+  const tenant = req.tenant;
+  let allowedCategories = tenant ? tenant.allowedCategories : [];
+  if (allowedCategories.length === 0) {
+    allowedCategories = ['gunpla-mecha', 'military', 'aviation', 'automotive', 'naval', 'figures', 'scifi', 'diorama'];
+  }
+
+  const filteredKits = db.kits.filter(kit => allowedCategories.includes(kit.category));
+  const items: KitModel3dResponse[] = filteredKits.map(kit => ({
+    kit,
+    model3d: resolveKitModel3d(kit)
+  }));
+
+  return res.json({
+    items,
+    totalCount: items.length
+  });
 });
 
 /**

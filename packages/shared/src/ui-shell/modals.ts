@@ -1594,6 +1594,115 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Modal: Interactive 3D / AR Viewer & Diorama Studio -->
+<div id="modal-3d-viewer" class="custom-modal" onclick="closeKit3dViewerModal(event)">
+  <div class="auth-box" style="max-width: 940px; width: 95%; max-height: 92vh; display: flex; flex-direction: column; padding: 1.25rem;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeKit3dViewerModal()">&times;</span>
+
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <span style="font-size: 1.6rem;">📐</span>
+        <div>
+          <h3 id="diorama-modal-title" style="font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0;">Visor 3D & Diorama Studio</h3>
+          <p id="diorama-modal-subtitle" style="font-size: 0.78rem; color: #38bdf8; margin: 0.15rem 0 0;">Cargando modelo a escala...</p>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.4rem;">
+        <select id="diorama-kit-select" class="auth-input" style="padding: 0.35rem 0.6rem; font-size: 0.78rem; max-width: 240px;" onchange="switchDioramaKit(this.value)">
+          <option value="">Selecciona Maqueta...</option>
+        </select>
+        <button type="button" class="btn-primary" style="font-size: 0.75rem; padding: 0.35rem 0.7rem; background: linear-gradient(135deg, #0ea5e9, #6366f1); border: none;" onclick="triggerARViewer()">
+          📱 AR Móvil
+        </button>
+      </div>
+    </div>
+
+    <!-- WebGL 3D Canvas Viewport -->
+    <div id="diorama-canvas-container" style="position: relative; width: 100%; height: 420px; background: radial-gradient(circle at 50% 35%, #1e293b 0%, #030712 100%); border-radius: 8px; overflow: hidden; border: 1px solid #334155; user-select: none;">
+      <canvas id="diorama-3d-canvas" style="width: 100%; height: 100%; display: block; cursor: grab;"></canvas>
+
+      <!-- Viewport HUD Overlay: Top Left -->
+      <div style="position: absolute; top: 12px; left: 12px; display: flex; flex-direction: column; gap: 0.3rem; pointer-events: none;">
+        <span id="diorama-scale-badge" style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 4px; font-weight: 600;">
+          Escala: 1/144 • 125mm
+        </span>
+        <span id="diorama-human-ref-badge" style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 4px; font-weight: 600;">
+          👤 Silueta Humana: 12.5mm
+        </span>
+      </div>
+
+      <!-- Viewport HUD Overlay: Top Right -->
+      <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 0.35rem;">
+        <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.25rem 0.55rem; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px);" onclick="resetDioramaCamera()">
+          🎯 Centrar
+        </button>
+        <button type="button" id="diorama-turntable-btn" class="filter-pill" style="font-size: 0.72rem; padding: 0.25rem 0.55rem; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px);" onclick="toggleDioramaTurntable()">
+          🔄 360° Off
+        </button>
+        <button type="button" class="btn-primary" style="font-size: 0.72rem; padding: 0.25rem 0.6rem;" onclick="captureDioramaRender()">
+          📸 Captura HD
+        </button>
+      </div>
+
+      <!-- Viewport HUD Overlay: Bottom Left Controls Hint -->
+      <div style="position: absolute; bottom: 10px; left: 12px; font-size: 0.7rem; color: #64748b; background: rgba(15, 23, 42, 0.7); padding: 0.2rem 0.5rem; border-radius: 4px; pointer-events: none;">
+        Arrastra para rotar • Rueda o pellizca para zoom • Clic derecho para mover
+      </div>
+    </div>
+
+    <!-- Studio Controls Toolbar -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-top: 0.85rem; background: rgba(15, 23, 42, 0.6); padding: 0.75rem; border-radius: 8px; border: 1px solid #334155;">
+      <!-- Control 1: Lighting Preset -->
+      <div>
+        <label class="auth-label" style="font-size: 0.72rem; margin-bottom: 0.25rem;">💡 Iluminación de Estudio</label>
+        <select id="diorama-lighting-select" class="auth-input" style="padding: 0.35rem; font-size: 0.75rem;" onchange="setDioramaLighting(this.value)">
+          <option value="studio" selected>Estudio Fotográfico (Neutro)</option>
+          <option value="neon-scifi">Neón Sci-Fi Cyberpunk (Cyan/Magenta)</option>
+          <option value="sunset">Atardecer Dorado (Golden Hour)</option>
+          <option value="military-hangar">Hangar Militar (Luz Fría Cenital)</option>
+          <option value="clay-primer">Gris Neutro (Inspección de Superficie)</option>
+        </select>
+      </div>
+
+      <!-- Control 2: View / Render Mode -->
+      <div>
+        <label class="auth-label" style="font-size: 0.72rem; margin-bottom: 0.25rem;">🎨 Modo de Visualización</label>
+        <select id="diorama-viewmode-select" class="auth-input" style="padding: 0.35rem; font-size: 0.75rem;" onchange="setDioramaViewMode(this.value)">
+          <option value="shaded" selected>Sombreado Completo (Color & Brillo)</option>
+          <option value="clay">Imprimación Gris Mate (Clay Primer)</option>
+          <option value="wireframe">Malla Poligonal Wireframe (Holográfico)</option>
+          <option value="matcap">Capa Metálica / Esmalte Brillante</option>
+        </select>
+      </div>
+
+      <!-- Control 3: Camera Angles -->
+      <div>
+        <label class="auth-label" style="font-size: 0.72rem; margin-bottom: 0.25rem;">📐 Ángulo de Cámara</label>
+        <div style="display: flex; gap: 0.3rem;">
+          <button type="button" class="filter-pill" style="font-size: 0.7rem; padding: 0.35rem 0.5rem; flex: 1;" onclick="setDioramaCameraAngle('hero')">Hero (Boxart)</button>
+          <button type="button" class="filter-pill" style="font-size: 0.7rem; padding: 0.35rem 0.5rem; flex: 1;" onclick="setDioramaCameraAngle('front')">Frontal</button>
+          <button type="button" class="filter-pill" style="font-size: 0.7rem; padding: 0.35rem 0.5rem; flex: 1;" onclick="setDioramaCameraAngle('isometric')">Isométrico</button>
+          <button type="button" class="filter-pill" style="font-size: 0.7rem; padding: 0.35rem 0.5rem; flex: 1;" onclick="setDioramaCameraAngle('top')">Cenital</button>
+        </div>
+      </div>
+
+      <!-- Control 4: Staging Overlays -->
+      <div>
+        <label class="auth-label" style="font-size: 0.72rem; margin-bottom: 0.25rem;">📏 Elementos de Diorama</label>
+        <div style="display: flex; gap: 0.75rem; align-items: center; padding-top: 0.2rem;">
+          <label style="font-size: 0.75rem; color: #cbd5e1; display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer;">
+            <input type="checkbox" id="diorama-toggle-grid" checked onchange="toggleDioramaGrid(this.checked)" /> Rejilla
+          </label>
+          <label style="font-size: 0.75rem; color: #cbd5e1; display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer;">
+            <input type="checkbox" id="diorama-toggle-human" checked onchange="toggleDioramaHuman(this.checked)" /> Piloto (1:1)
+          </label>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 
 `;
 }

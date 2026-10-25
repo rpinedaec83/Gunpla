@@ -3775,6 +3775,859 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     }
   }
 
+  // --- Interactive 3D / AR Viewer & Diorama Studio Engine ---
+  let dioramaGl = null;
+  let dioramaProgram = null;
+  let dioramaAnimFrame = null;
+  let dioramaCurrentKitId = null;
+  let dioramaCurrentMetadata = null;
+  let dioramaAvailableKits = [];
+
+  let dioramaRotX = 18;
+  let dioramaRotY = -35;
+  let dioramaZoom = 1.0;
+  let dioramaPanX = 0;
+  let dioramaPanY = 0;
+  let dioramaTurntable = false;
+  let dioramaLighting = 'studio';
+  let dioramaViewMode = 0; // 0: shaded, 1: clay, 2: wireframe, 3: matcap
+  let dioramaShowGrid = true;
+  let dioramaShowHuman = true;
+
+  let dioramaIsDragging = false;
+  let dioramaIsPanning = false;
+  let dioramaMouseX = 0;
+  let dioramaMouseY = 0;
+
+  let dioramaModelBuffers = null;
+  let dioramaGridBuffers = null;
+  let dioramaHumanBuffers = null;
+
+  async function openKit3dViewerModal(preselectedKitId) {
+    const m = document.getElementById('modal-3d-viewer');
+    if (!m) return;
+    m.classList.add('active');
+
+    // Fetch available 3D kits if dropdown is empty
+    const kitSelect = document.getElementById('diorama-kit-select');
+    if (kitSelect && kitSelect.options.length <= 1) {
+      try {
+        const res = await fetch('/api/v1/catalog/models-3d');
+        if (res.ok) {
+          const data = await res.json();
+          dioramaAvailableKits = data.items || [];
+          kitSelect.innerHTML = '<option value="">-- Seleccionar Maqueta --</option>' +
+            dioramaAvailableKits.map(function(item) {
+              const k = item.kit;
+              return '<option value="' + k.id + '">' + escapeHtml(k.name) + ' (' + escapeHtml(k.scale) + ')</option>';
+            }).join('');
+        }
+      } catch (err) {
+        console.warn('Could not list 3D catalog:', err);
+      }
+    }
+
+    const targetKitId = preselectedKitId || (dioramaAvailableKits[0] && dioramaAvailableKits[0].kit.id) || 'kit-rg-hinu';
+    if (kitSelect) kitSelect.value = targetKitId;
+    loadKit3dData(targetKitId);
+  }
+
+  function closeKit3dViewerModal(e) {
+    if (!e || e.target.id === 'modal-3d-viewer' || e.target.classList.contains('auth-close')) {
+      const m = document.getElementById('modal-3d-viewer');
+      if (m) m.classList.remove('active');
+      if (dioramaAnimFrame) {
+        cancelAnimationFrame(dioramaAnimFrame);
+        dioramaAnimFrame = null;
+      }
+      dioramaTurntable = false;
+      const tBtn = document.getElementById('diorama-turntable-btn');
+      if (tBtn) tBtn.textContent = '🔄 360° Off';
+    }
+  }
+
+  async function switchDioramaKit(kitId) {
+    if (!kitId) return;
+    loadKit3dData(kitId);
+  }
+
+  async function loadKit3dData(kitId) {
+    dioramaCurrentKitId = kitId;
+    const titleEl = document.getElementById('diorama-modal-title');
+    const subtitleEl = document.getElementById('diorama-modal-subtitle');
+    const scaleBadge = document.getElementById('diorama-scale-badge');
+    const humanBadge = document.getElementById('diorama-human-ref-badge');
+
+    if (subtitleEl) subtitleEl.textContent = 'Cargando malla tridimensional...';
+
+    try {
+      const res = await fetch('/api/v1/catalog/kits/' + encodeURIComponent(kitId) + '/model-3d');
+      if (!res.ok) throw new Error('Error al cargar metadata 3D');
+      const data = await res.json();
+      dioramaCurrentMetadata = data.model3d;
+
+      if (titleEl) titleEl.textContent = '📐 ' + (data.kit.name || 'Visor 3D & Diorama');
+      if (subtitleEl) subtitleEl.textContent = data.kit.brand + ' • ' + data.kit.scale + ' • Altura Real: ~' + data.model3d.realHeightMeters + 'm';
+      if (scaleBadge) scaleBadge.textContent = 'Escala: ' + data.kit.scale + ' • Altura Maqueta: ' + data.model3d.physicalHeightMm + 'mm';
+      if (humanBadge) humanBadge.textContent = '👤 Piloto Escala (1:1): ' + data.model3d.humanFigureScaleMm + 'mm';
+
+      // Set default studio lighting from kit category
+      const lightSelect = document.getElementById('diorama-lighting-select');
+      if (lightSelect && data.model3d.defaultLighting) {
+        lightSelect.value = data.model3d.defaultLighting;
+        dioramaLighting = data.model3d.defaultLighting;
+      }
+
+      initDioramaWebGL();
+      buildDioramaGeometry(data.model3d);
+    } catch (err) {
+      console.error('Failed to load 3d kit:', err);
+      if (subtitleEl) subtitleEl.textContent = 'Error al cargar el modelo 3D.';
+    }
+  }
+
+  // --- WebGL 3D Engine & Matrix Mathematics ---
+  function initDioramaWebGL() {
+    const canvas = document.getElementById('diorama-3d-canvas');
+    if (!canvas) return;
+
+    // Resize canvas
+    canvas.width = canvas.clientWidth * window.devicePixelRatio;
+    canvas.height = canvas.clientHeight * window.devicePixelRatio;
+
+    if (!dioramaGl) {
+      const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true, antialias: true }) || canvas.getContext('experimental-webgl');
+      if (!gl) {
+        console.warn('WebGL is not supported in this browser.');
+        return;
+      }
+      dioramaGl = gl;
+
+      // Compile Shaders
+      const vsSource = [
+        'attribute vec3 aPosition;',
+        'attribute vec3 aNormal;',
+        'attribute vec4 aColor;',
+        'uniform mat4 uMatrix;',
+        'uniform mat4 uNormMatrix;',
+        'varying vec3 vNormal;',
+        'varying vec4 vColor;',
+        'varying vec3 vPosition;',
+        'void main() {',
+        '  vNormal = normalize((uNormMatrix * vec4(aNormal, 0.0)).xyz);',
+        '  vColor = aColor;',
+        '  vPosition = aPosition;',
+        '  gl_Position = uMatrix * vec4(aPosition, 1.0);',
+        '}'
+      ].join(String.fromCharCode(10));
+
+      const fsSource = [
+        'precision mediump float;',
+        'varying vec3 vNormal;',
+        'varying vec4 vColor;',
+        'varying vec3 vPosition;',
+        'uniform int uViewMode;',
+        'uniform vec3 uLightDir1;',
+        'uniform vec3 uLightColor1;',
+        'uniform vec3 uLightDir2;',
+        'uniform vec3 uLightColor2;',
+        'uniform vec3 uAmbientColor;',
+        'void main() {',
+        '  if (uViewMode == 1) {', // Clay primer
+        '    vec3 n = normalize(vNormal);',
+        '    float diff = max(dot(n, normalize(vec3(0.5, 1.0, 0.7))), 0.0);',
+        '    vec3 col = vec3(0.58, 0.62, 0.67) * (0.35 + 0.65 * diff);',
+        '    gl_FragColor = vec4(col, 1.0);',
+        '    return;',
+        '  }',
+        '  if (uViewMode == 2) {', // Wireframe
+        '    gl_FragColor = vec4(0.06, 0.78, 0.95, 1.0);',
+        '    return;',
+        '  }',
+        '  if (uViewMode == 3) {', // Matcap metallic
+        '    vec3 n = normalize(vNormal);',
+        '    float spec = pow(max(dot(n, normalize(vec3(0.0, 0.8, 0.6))), 0.0), 16.0);',
+        '    float rim = 1.0 - max(dot(n, vec3(0.0, 0.0, 1.0)), 0.0);',
+        '    vec3 col = vec3(0.72, 0.78, 0.88) * 0.45 + vec3(spec) * 0.6 + vec3(0.2, 0.6, 1.0) * pow(rim, 2.5);',
+        '    gl_FragColor = vec4(col, 1.0);',
+        '    return;',
+        '  }',
+        '  // Mode 0: Shaded Blinn-Phong',
+        '  vec3 n = normalize(vNormal);',
+        '  float diff1 = max(dot(n, normalize(uLightDir1)), 0.0);',
+        '  float diff2 = max(dot(n, normalize(uLightDir2)), 0.0);',
+        '  vec3 light = uAmbientColor + uLightColor1 * diff1 + uLightColor2 * diff2;',
+        '  gl_FragColor = vec4(vColor.rgb * light, vColor.a);',
+        '}'
+      ].join(String.fromCharCode(10));
+
+      const vs = compileDioramaShader(gl, gl.VERTEX_SHADER, vsSource);
+      const fs = compileDioramaShader(gl, gl.FRAGMENT_SHADER, fsSource);
+      dioramaProgram = gl.createProgram();
+      gl.attachShader(dioramaProgram, vs);
+      gl.attachShader(dioramaProgram, fs);
+      gl.linkProgram(dioramaProgram);
+
+      gl.enable(gl.DEPTH_TEST);
+      gl.enable(gl.CULL_FACE);
+      gl.cullFace(gl.BACK);
+
+      setupDioramaCanvasEvents(canvas);
+    }
+
+    if (!dioramaAnimFrame) {
+      startDioramaRenderLoop();
+    }
+  }
+
+  function compileDioramaShader(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    return shader;
+  }
+
+  function setupDioramaCanvasEvents(canvas) {
+    canvas.addEventListener('mousedown', function(e) {
+      if (e.button === 2) {
+        dioramaIsPanning = true;
+      } else {
+        dioramaIsDragging = true;
+      }
+      dioramaMouseX = e.clientX;
+      dioramaMouseY = e.clientY;
+      canvas.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', function(e) {
+      if (!dioramaIsDragging && !dioramaIsPanning) return;
+      const dx = e.clientX - dioramaMouseX;
+      const dy = e.clientY - dioramaMouseY;
+      dioramaMouseX = e.clientX;
+      dioramaMouseY = e.clientY;
+
+      if (dioramaIsDragging) {
+        dioramaRotY += dx * 0.6;
+        dioramaRotX += dy * 0.6;
+        dioramaRotX = Math.max(-85, Math.min(85, dioramaRotX));
+      } else if (dioramaIsPanning) {
+        dioramaPanX += dx * 0.005;
+        dioramaPanY -= dy * 0.005;
+      }
+    });
+
+    window.addEventListener('mouseup', function() {
+      dioramaIsDragging = false;
+      dioramaIsPanning = false;
+      canvas.style.cursor = 'grab';
+    });
+
+    canvas.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+
+    canvas.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      dioramaZoom *= (e.deltaY > 0 ? 1.08 : 0.92);
+      dioramaZoom = Math.max(0.35, Math.min(3.5, dioramaZoom));
+    }, { passive: false });
+
+    // Touch Support for mobile/tablets
+    let lastTouchDist = 0;
+    canvas.addEventListener('touchstart', function(e) {
+      if (e.touches.length === 1) {
+        dioramaIsDragging = true;
+        dioramaMouseX = e.touches[0].clientX;
+        dioramaMouseY = e.touches[0].clientY;
+      } else if (e.touches.length === 2) {
+        dioramaIsDragging = false;
+        lastTouchDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    }, { passive: true });
+
+    canvas.addEventListener('touchmove', function(e) {
+      if (e.touches.length === 1 && dioramaIsDragging) {
+        const dx = e.touches[0].clientX - dioramaMouseX;
+        const dy = e.touches[0].clientY - dioramaMouseY;
+        dioramaMouseX = e.touches[0].clientX;
+        dioramaMouseY = e.touches[0].clientY;
+        dioramaRotY += dx * 0.7;
+        dioramaRotX += dy * 0.7;
+        dioramaRotX = Math.max(-85, Math.min(85, dioramaRotX));
+      } else if (e.touches.length === 2) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        if (lastTouchDist > 0) {
+          const factor = lastTouchDist / dist;
+          dioramaZoom *= factor;
+          dioramaZoom = Math.max(0.35, Math.min(3.5, dioramaZoom));
+        }
+        lastTouchDist = dist;
+      }
+    }, { passive: true });
+
+    canvas.addEventListener('touchend', function() {
+      dioramaIsDragging = false;
+      lastTouchDist = 0;
+    });
+  }
+
+  // --- Procedural 3D Geometric Mesh Builders ---
+  function buildDioramaGeometry(meta) {
+    if (!dioramaGl) return;
+    const gl = dioramaGl;
+
+    // 1. Build Model Geometry according to meshType
+    const modelV = [];
+    const modelN = [];
+    const modelC = [];
+
+    const meshType = meta.meshType || 'mecha';
+    if (meshType === 'mecha') {
+      buildMechaModel(modelV, modelN, modelC);
+    } else if (meshType === 'tank') {
+      buildTankModel(modelV, modelN, modelC);
+    } else if (meshType === 'aircraft') {
+      buildAircraftModel(modelV, modelN, modelC);
+    } else if (meshType === 'car') {
+      buildCarModel(modelV, modelN, modelC);
+    } else if (meshType === 'warship') {
+      buildWarshipModel(modelV, modelN, modelC);
+    } else {
+      buildHumanoidModel(modelV, modelN, modelC);
+    }
+
+    dioramaModelBuffers = createGLBuffers(gl, modelV, modelN, modelC);
+
+    // 2. Build Diorama Measurement Ground Grid
+    const gridV = [];
+    const gridN = [];
+    const gridC = [];
+    buildGridFloor(gridV, gridN, gridC, 4.0, 0.4);
+    dioramaGridBuffers = createGLBuffers(gl, gridV, gridN, gridC);
+
+    // 3. Build 1:1 Scale Human Pilot Silhouette
+    const humanV = [];
+    const humanN = [];
+    const humanC = [];
+    const humanHeight = (meta.humanFigureScaleMm || 12.5) / 100.0; // scale factor
+    buildHumanSilhouette(humanV, humanN, humanC, 0.85, 0.35, Math.max(0.12, Math.min(0.35, humanHeight)));
+    dioramaHumanBuffers = createGLBuffers(gl, humanV, humanN, humanC);
+  }
+
+  function createGLBuffers(gl, v, n, c) {
+    const vBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v), gl.STATIC_DRAW);
+
+    const nBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, nBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(n), gl.STATIC_DRAW);
+
+    const cBuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(c), gl.STATIC_DRAW);
+
+    return {
+      vBuf: vBuf,
+      nBuf: nBuf,
+      cBuf: cBuf,
+      count: v.length / 3
+    };
+  }
+
+  // --- Geometric Solid Helpers ---
+  function addBoxFace(v, n, c, p1, p2, p3, p4, normal, color) {
+    v.push(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2], p3[0], p3[1], p3[2]);
+    v.push(p1[0], p1[1], p1[2], p3[0], p3[1], p3[2], p4[0], p4[1], p4[2]);
+    for (let i = 0; i < 6; i++) {
+      n.push(normal[0], normal[1], normal[2]);
+      c.push(color[0], color[1], color[2], 1.0);
+    }
+  }
+
+  function addBox(v, n, c, cx, cy, cz, sx, sy, sz, r, g, b) {
+    const x0 = cx - sx / 2, x1 = cx + sx / 2;
+    const y0 = cy - sy / 2, y1 = cy + sy / 2;
+    const z0 = cz - sz / 2, z1 = cz + sz / 2;
+    const col = [r, g, b];
+
+    // Front, Back, Top, Bottom, Right, Left
+    addBoxFace(v, n, c, [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1], [0, 0, 1], col);
+    addBoxFace(v, n, c, [x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0], [0, 0, -1], col);
+    addBoxFace(v, n, c, [x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0], [0, 1, 0], col);
+    addBoxFace(v, n, c, [x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1], [0, -1, 0], col);
+    addBoxFace(v, n, c, [x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [1, 0, 0], col);
+    addBoxFace(v, n, c, [x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0], [-1, 0, 0], col);
+  }
+
+  function buildMechaModel(v, n, c) {
+    // Torso / Chest (Blue)
+    addBox(v, n, c, 0, 0.55, 0, 0.42, 0.38, 0.32, 0.12, 0.28, 0.65);
+    // Cockpit hatch (Red)
+    addBox(v, n, c, 0, 0.48, 0.17, 0.16, 0.18, 0.12, 0.88, 0.15, 0.15);
+    // Yellow Vents
+    addBox(v, n, c, -0.12, 0.62, 0.17, 0.08, 0.06, 0.04, 0.95, 0.82, 0.1);
+    addBox(v, n, c, 0.12, 0.62, 0.17, 0.08, 0.06, 0.04, 0.95, 0.82, 0.1);
+    // Collar & Neck (White)
+    addBox(v, n, c, 0, 0.77, 0, 0.22, 0.08, 0.2, 0.92, 0.92, 0.95);
+    // Head unit (White)
+    addBox(v, n, c, 0, 0.88, 0.02, 0.2, 0.18, 0.22, 0.96, 0.96, 0.98);
+    // Faceplate / Chin (Red)
+    addBox(v, n, c, 0, 0.82, 0.13, 0.06, 0.08, 0.06, 0.88, 0.15, 0.15);
+    // Eyes / Sensor (Green)
+    addBox(v, n, c, 0, 0.88, 0.13, 0.12, 0.04, 0.04, 0.1, 0.92, 0.4);
+    // V-Fin Crest (Yellow)
+    addBox(v, n, c, -0.16, 0.98, 0.08, 0.24, 0.04, 0.04, 0.95, 0.82, 0.1);
+    addBox(v, n, c, 0.16, 0.98, 0.08, 0.24, 0.04, 0.04, 0.95, 0.82, 0.1);
+    addBox(v, n, c, 0, 0.94, 0.12, 0.06, 0.06, 0.04, 0.88, 0.15, 0.15);
+    // Backpack (Dark Gray) + Thrusters
+    addBox(v, n, c, 0, 0.58, -0.22, 0.32, 0.34, 0.18, 0.2, 0.22, 0.28);
+    addBox(v, n, c, -0.1, 0.44, -0.25, 0.09, 0.14, 0.09, 0.7, 0.72, 0.78);
+    addBox(v, n, c, 0.1, 0.44, -0.25, 0.09, 0.14, 0.09, 0.7, 0.72, 0.78);
+    // Shoulders (White)
+    addBox(v, n, c, -0.34, 0.62, 0, 0.24, 0.22, 0.28, 0.92, 0.92, 0.95);
+    addBox(v, n, c, 0.34, 0.62, 0, 0.24, 0.22, 0.28, 0.92, 0.92, 0.95);
+    // Arms
+    addBox(v, n, c, -0.34, 0.42, 0, 0.14, 0.22, 0.14, 0.88, 0.88, 0.9);
+    addBox(v, n, c, -0.34, 0.22, 0.04, 0.16, 0.22, 0.16, 0.92, 0.92, 0.95);
+    addBox(v, n, c, 0.34, 0.42, 0, 0.14, 0.22, 0.14, 0.88, 0.88, 0.9);
+    addBox(v, n, c, 0.34, 0.22, 0.04, 0.16, 0.22, 0.16, 0.92, 0.92, 0.95);
+    // Weapon (Beam Rifle in Right Hand)
+    addBox(v, n, c, 0.34, 0.18, 0.3, 0.08, 0.1, 0.55, 0.25, 0.27, 0.32);
+    addBox(v, n, c, 0.34, 0.24, 0.22, 0.06, 0.1, 0.14, 0.1, 0.85, 0.4);
+    // Shield (on Left Arm)
+    addBox(v, n, c, -0.48, 0.28, 0.05, 0.06, 0.62, 0.28, 0.88, 0.15, 0.15);
+    addBox(v, n, c, -0.5, 0.42, 0.05, 0.04, 0.18, 0.22, 0.95, 0.95, 0.98);
+    // Waist & Skirts (White)
+    addBox(v, n, c, 0, 0.32, 0, 0.34, 0.14, 0.26, 0.88, 0.15, 0.15);
+    addBox(v, n, c, -0.1, 0.22, 0.13, 0.12, 0.16, 0.04, 0.92, 0.92, 0.95);
+    addBox(v, n, c, 0.1, 0.22, 0.13, 0.12, 0.16, 0.04, 0.92, 0.92, 0.95);
+    // Legs
+    addBox(v, n, c, -0.14, 0.06, 0, 0.16, 0.28, 0.18, 0.92, 0.92, 0.95);
+    addBox(v, n, c, 0.14, 0.06, 0, 0.16, 0.28, 0.18, 0.92, 0.92, 0.95);
+    // Knees
+    addBox(v, n, c, -0.14, -0.1, 0.09, 0.14, 0.12, 0.08, 0.88, 0.15, 0.15);
+    addBox(v, n, c, 0.14, -0.1, 0.09, 0.14, 0.12, 0.08, 0.88, 0.15, 0.15);
+    // Calves
+    addBox(v, n, c, -0.14, -0.3, 0, 0.2, 0.34, 0.24, 0.92, 0.92, 0.95);
+    addBox(v, n, c, 0.14, -0.3, 0, 0.2, 0.34, 0.24, 0.92, 0.92, 0.95);
+    // Feet (Red)
+    addBox(v, n, c, -0.14, -0.52, 0.06, 0.22, 0.12, 0.36, 0.88, 0.15, 0.15);
+    addBox(v, n, c, 0.14, -0.52, 0.06, 0.22, 0.12, 0.36, 0.88, 0.15, 0.15);
+  }
+
+  function buildTankModel(v, n, c) {
+    // Chassis Hull (German Panzer Gray / Olive)
+    addBox(v, n, c, 0, -0.15, 0, 0.95, 0.32, 1.45, 0.38, 0.42, 0.35);
+    // Glacis Plate
+    addBox(v, n, c, 0, -0.05, 0.65, 0.9, 0.18, 0.3, 0.35, 0.4, 0.32);
+    // Left Track (Dark Metal)
+    addBox(v, n, c, -0.58, -0.22, 0, 0.26, 0.34, 1.6, 0.18, 0.2, 0.22);
+    // Right Track
+    addBox(v, n, c, 0.58, -0.22, 0, 0.26, 0.34, 1.6, 0.18, 0.2, 0.22);
+    // Turret Dome
+    addBox(v, n, c, 0, 0.18, -0.05, 0.75, 0.35, 0.85, 0.4, 0.45, 0.37);
+    // Commander Cupola
+    addBox(v, n, c, -0.2, 0.4, -0.15, 0.25, 0.15, 0.25, 0.32, 0.35, 0.3);
+    // Main Gun Mantlet & Barrel (88mm KwK 36)
+    addBox(v, n, c, 0, 0.18, 0.45, 0.3, 0.22, 0.2, 0.32, 0.35, 0.3);
+    addBox(v, n, c, 0, 0.18, 1.25, 0.08, 0.08, 1.45, 0.22, 0.24, 0.25);
+    addBox(v, n, c, 0, 0.18, 2.0, 0.14, 0.14, 0.18, 0.15, 0.18, 0.2); // Muzzle brake
+  }
+
+  function buildAircraftModel(v, n, c) {
+    // Main Fuselage (Spitfire Camouflage / Sky)
+    addBox(v, n, c, 0, 0, 0, 0.32, 0.34, 1.95, 0.35, 0.42, 0.38);
+    // Glass Cockpit Canopy (Tinted Blue)
+    addBox(v, n, c, 0, 0.24, -0.05, 0.22, 0.18, 0.55, 0.3, 0.65, 0.85);
+    // Elliptical Wings
+    addBox(v, n, c, 0, -0.05, 0.15, 2.7, 0.06, 0.65, 0.38, 0.45, 0.4);
+    // Horizontal Tail Stabilizers
+    addBox(v, n, c, 0, 0.05, -0.85, 0.95, 0.04, 0.3, 0.38, 0.45, 0.4);
+    // Vertical Tail Fin & Rudder
+    addBox(v, n, c, 0, 0.32, -0.85, 0.04, 0.48, 0.35, 0.42, 0.48, 0.42);
+    // Propeller Nose Cone (Yellow spinner)
+    addBox(v, n, c, 0, 0, 1.05, 0.2, 0.2, 0.25, 0.95, 0.8, 0.1);
+    // 3 Propeller Blades
+    addBox(v, n, c, 0, 0.42, 1.02, 0.06, 0.65, 0.04, 0.15, 0.15, 0.15);
+    addBox(v, n, c, -0.36, -0.22, 1.02, 0.55, 0.06, 0.04, 0.15, 0.15, 0.15);
+    addBox(v, n, c, 0.36, -0.22, 1.02, 0.55, 0.06, 0.04, 0.15, 0.15, 0.15);
+  }
+
+  function buildCarModel(v, n, c) {
+    // Lower Chassis (Skyline Metallic Blue/Black)
+    addBox(v, n, c, 0, -0.15, 0, 0.85, 0.22, 1.8, 0.12, 0.35, 0.75);
+    // Cabin Greenhouse & Windshield (Tinted glass)
+    addBox(v, n, c, 0, 0.08, -0.1, 0.68, 0.26, 0.95, 0.2, 0.25, 0.35);
+    // Hood & Trunk
+    addBox(v, n, c, 0, -0.06, 0.55, 0.82, 0.12, 0.65, 0.12, 0.35, 0.75);
+    addBox(v, n, c, 0, -0.06, -0.65, 0.82, 0.12, 0.5, 0.12, 0.35, 0.75);
+    // Rear Wing / Spoiler
+    addBox(v, n, c, 0, 0.15, -0.85, 0.82, 0.04, 0.18, 0.1, 0.1, 0.1);
+    // 4 Wheels
+    addBox(v, n, c, -0.46, -0.22, 0.55, 0.16, 0.3, 0.3, 0.15, 0.15, 0.15);
+    addBox(v, n, c, 0.46, -0.22, 0.55, 0.16, 0.3, 0.3, 0.15, 0.15, 0.15);
+    addBox(v, n, c, -0.46, -0.22, -0.55, 0.16, 0.3, 0.3, 0.15, 0.15, 0.15);
+    addBox(v, n, c, 0.46, -0.22, -0.55, 0.16, 0.3, 0.3, 0.15, 0.15, 0.15);
+  }
+
+  function buildWarshipModel(v, n, c) {
+    // Battleship Yamato Hull (Battleship Gray & Waterline Red)
+    addBox(v, n, c, 0, -0.25, 0, 0.55, 0.25, 2.6, 0.6, 0.18, 0.18); // Red bottom
+    addBox(v, n, c, 0, 0, 0, 0.62, 0.25, 2.7, 0.52, 0.55, 0.58); // Gray upper hull
+    // Main Pagoda Superstructure (Bridge)
+    addBox(v, n, c, 0, 0.32, 0, 0.32, 0.4, 0.9, 0.48, 0.5, 0.54);
+    addBox(v, n, c, 0, 0.65, 0.05, 0.18, 0.3, 0.35, 0.45, 0.48, 0.5);
+    // Triple 46cm Main Gun Turrets (2 Front, 1 Aft)
+    addBox(v, n, c, 0, 0.2, 0.75, 0.36, 0.16, 0.4, 0.5, 0.53, 0.55);
+    addBox(v, n, c, 0, 0.2, 1.25, 0.06, 0.06, 0.7, 0.3, 0.32, 0.35); // Barrels
+    addBox(v, n, c, 0, 0.28, 0.5, 0.36, 0.16, 0.4, 0.5, 0.53, 0.55);
+    addBox(v, n, c, 0, 0.28, 1.0, 0.06, 0.06, 0.7, 0.3, 0.32, 0.35);
+    addBox(v, n, c, 0, 0.2, -0.75, 0.36, 0.16, 0.4, 0.5, 0.53, 0.55);
+    addBox(v, n, c, 0, 0.2, -1.25, 0.06, 0.06, 0.7, 0.3, 0.32, 0.35);
+  }
+
+  function buildHumanoidModel(v, n, c) {
+    // Megami Device / Anime Figure (Mecha Girl)
+    addBox(v, n, c, 0, 0.45, 0, 0.22, 0.35, 0.16, 0.95, 0.88, 0.85); // Bodice
+    addBox(v, n, c, 0, 0.75, 0, 0.18, 0.2, 0.18, 0.98, 0.9, 0.86); // Head
+    addBox(v, n, c, 0, 0.82, -0.06, 0.24, 0.3, 0.22, 0.95, 0.45, 0.15); // Hair (Orange)
+    addBox(v, n, c, -0.22, 0.4, 0, 0.09, 0.45, 0.09, 0.95, 0.88, 0.85); // Arms
+    addBox(v, n, c, 0.22, 0.4, 0, 0.09, 0.45, 0.09, 0.95, 0.88, 0.85);
+    addBox(v, n, c, -0.1, -0.1, 0, 0.12, 0.75, 0.12, 0.2, 0.2, 0.25); // Mecha Leg armor
+    addBox(v, n, c, 0.1, -0.1, 0, 0.12, 0.75, 0.12, 0.2, 0.2, 0.25);
+    // Archer Great Bow (Mecha Accessory)
+    addBox(v, n, c, 0.35, 0.3, 0.2, 0.06, 1.2, 0.08, 0.85, 0.15, 0.15);
+  }
+
+  function buildGridFloor(v, n, c, size, step) {
+    const half = size / 2;
+    for (let x = -half; x <= half; x += step) {
+      addBox(v, n, c, x, -0.6, 0, 0.015, 0.01, size, 0.2, 0.35, 0.45);
+    }
+    for (let z = -half; z <= half; z += step) {
+      addBox(v, n, c, 0, -0.6, z, size, 0.01, 0.015, 0.2, 0.35, 0.45);
+    }
+    // Outer Base Rim (Cutting Mat dark green)
+    addBox(v, n, c, 0, -0.62, 0, size + 0.1, 0.02, size + 0.1, 0.06, 0.18, 0.12);
+  }
+
+  function buildHumanSilhouette(v, n, c, cx, cz, height) {
+    // 1:1 Scale human pilot silhouette (Technician / Pilot)
+    const y0 = -0.6;
+    const bodyH = height * 0.45;
+    const headH = height * 0.18;
+    const legH = height * 0.37;
+    const w = height * 0.25;
+
+    // Legs
+    addBox(v, n, c, cx, y0 + legH / 2, cz, w * 0.8, legH, w * 0.4, 0.1, 0.85, 0.45);
+    // Torso
+    addBox(v, n, c, cx, y0 + legH + bodyH / 2, cz, w, bodyH, w * 0.5, 0.1, 0.85, 0.45);
+    // Head
+    addBox(v, n, c, cx, y0 + legH + bodyH + headH / 2, cz, w * 0.5, headH, w * 0.5, 0.1, 0.85, 0.45);
+  }
+
+  // --- Render Loop & Animation Frame ---
+  function startDioramaRenderLoop() {
+    function frame() {
+      if (!dioramaGl || !dioramaProgram) return;
+
+      if (dioramaTurntable) {
+        dioramaRotY += 0.5;
+      }
+
+      renderDioramaScene();
+      dioramaAnimFrame = requestAnimationFrame(frame);
+    }
+    dioramaAnimFrame = requestAnimationFrame(frame);
+  }
+
+  function renderDioramaScene() {
+    const gl = dioramaGl;
+    const canvas = gl.canvas;
+
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(0.02, 0.04, 0.08, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    gl.useProgram(dioramaProgram);
+
+    // Compute View Projection Matrix
+    const aspect = canvas.width / canvas.height;
+    const proj = mat4Perspective(45 * Math.PI / 180, aspect, 0.1, 100.0);
+
+    const view = mat4Identity();
+    mat4Translate(view, [dioramaPanX, dioramaPanY, -3.2 * dioramaZoom]);
+    mat4RotateX(view, dioramaRotX * Math.PI / 180);
+    mat4RotateY(view, dioramaRotY * Math.PI / 180);
+
+    const mvp = mat4Mul(proj, view);
+    const normMat = mat4Identity();
+    mat4RotateX(normMat, dioramaRotX * Math.PI / 180);
+    mat4RotateY(normMat, dioramaRotY * Math.PI / 180);
+
+    const uMatrixLoc = gl.getUniformLocation(dioramaProgram, 'uMatrix');
+    const uNormLoc = gl.getUniformLocation(dioramaProgram, 'uNormMatrix');
+    const uViewModeLoc = gl.getUniformLocation(dioramaProgram, 'uViewMode');
+
+    gl.uniformMatrix4fv(uMatrixLoc, false, new Float32Array(mvp));
+    gl.uniformMatrix4fv(uNormLoc, false, new Float32Array(normMat));
+    gl.uniform1i(uViewModeLoc, dioramaViewMode);
+
+    // Setup Lighting Preset Uniforms
+    setupLightingUniforms(gl);
+
+    // 1. Draw 3D Model
+    if (dioramaModelBuffers) {
+      drawBufferObject(gl, dioramaModelBuffers, dioramaViewMode === 2 ? gl.LINES : gl.TRIANGLES);
+    }
+
+    // 2. Draw Ground Grid (Always shaded / wire)
+    if (dioramaShowGrid && dioramaGridBuffers) {
+      gl.uniform1i(uViewModeLoc, 0); // shaded for grid
+      drawBufferObject(gl, dioramaGridBuffers, gl.TRIANGLES);
+      gl.uniform1i(uViewModeLoc, dioramaViewMode); // restore
+    }
+
+    // 3. Draw Human Scale Silhouette (Green marker)
+    if (dioramaShowHuman && dioramaHumanBuffers) {
+      gl.uniform1i(uViewModeLoc, 0);
+      drawBufferObject(gl, dioramaHumanBuffers, gl.TRIANGLES);
+      gl.uniform1i(uViewModeLoc, dioramaViewMode);
+    }
+  }
+
+  function setupLightingUniforms(gl) {
+    const l1DirLoc = gl.getUniformLocation(dioramaProgram, 'uLightDir1');
+    const l1ColLoc = gl.getUniformLocation(dioramaProgram, 'uLightColor1');
+    const l2DirLoc = gl.getUniformLocation(dioramaProgram, 'uLightDir2');
+    const l2ColLoc = gl.getUniformLocation(dioramaProgram, 'uLightColor2');
+    const ambLoc = gl.getUniformLocation(dioramaProgram, 'uAmbientColor');
+
+    if (dioramaLighting === 'neon-scifi') {
+      gl.uniform3f(l1DirLoc, 0.6, 0.8, 0.8);
+      gl.uniform3f(l1ColLoc, 0.05, 0.85, 0.95); // Cyan key light
+      gl.uniform3f(l2DirLoc, -0.8, -0.3, -0.6);
+      gl.uniform3f(l2ColLoc, 0.95, 0.15, 0.65); // Magenta rim light
+      gl.uniform3f(ambLoc, 0.15, 0.15, 0.25);
+    } else if (dioramaLighting === 'sunset') {
+      gl.uniform3f(l1DirLoc, 0.8, 0.4, 0.5);
+      gl.uniform3f(l1ColLoc, 1.0, 0.65, 0.25); // Golden amber
+      gl.uniform3f(l2DirLoc, -0.6, 0.6, -0.5);
+      gl.uniform3f(l2ColLoc, 0.35, 0.4, 0.7); // Twilight blue
+      gl.uniform3f(ambLoc, 0.25, 0.2, 0.22);
+    } else if (dioramaLighting === 'military-hangar') {
+      gl.uniform3f(l1DirLoc, 0.1, 1.0, 0.2); // Cool overhead fluorescent
+      gl.uniform3f(l1ColLoc, 0.85, 0.92, 0.98);
+      gl.uniform3f(l2DirLoc, -0.5, -0.2, 0.5);
+      gl.uniform3f(l2ColLoc, 0.4, 0.45, 0.5);
+      gl.uniform3f(ambLoc, 0.28, 0.3, 0.35);
+    } else if (dioramaLighting === 'clay-primer') {
+      gl.uniform3f(l1DirLoc, 0.4, 0.9, 0.6);
+      gl.uniform3f(l1ColLoc, 0.9, 0.9, 0.9);
+      gl.uniform3f(l2DirLoc, -0.4, 0.3, -0.6);
+      gl.uniform3f(l2ColLoc, 0.4, 0.4, 0.4);
+      gl.uniform3f(ambLoc, 0.4, 0.4, 0.4);
+    } else {
+      // Default: Studio White
+      gl.uniform3f(l1DirLoc, 0.5, 0.8, 0.7);
+      gl.uniform3f(l1ColLoc, 0.95, 0.95, 0.95);
+      gl.uniform3f(l2DirLoc, -0.6, 0.3, -0.4);
+      gl.uniform3f(l2ColLoc, 0.4, 0.45, 0.5);
+      gl.uniform3f(ambLoc, 0.35, 0.35, 0.38);
+    }
+  }
+
+  function drawBufferObject(gl, buffers, drawMode) {
+    const posLoc = gl.getAttribLocation(dioramaProgram, 'aPosition');
+    const normLoc = gl.getAttribLocation(dioramaProgram, 'aNormal');
+    const colLoc = gl.getAttribLocation(dioramaProgram, 'aColor');
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.vBuf);
+    gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(posLoc);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.nBuf);
+    gl.vertexAttribPointer(normLoc, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(normLoc);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.cBuf);
+    gl.vertexAttribPointer(colLoc, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(colLoc);
+
+    gl.drawArrays(drawMode, 0, buffers.count);
+  }
+
+  // --- Matrix 4x4 Mathematics ---
+  function mat4Identity() {
+    return [
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1
+    ];
+  }
+
+  function mat4Perspective(fovRad, aspect, near, far) {
+    const f = Math.tan(Math.PI * 0.5 - 0.5 * fovRad);
+    const rangeInv = 1.0 / (near - far);
+    return [
+      f / aspect, 0, 0, 0,
+      0, f, 0, 0,
+      0, 0, (near + far) * rangeInv, -1,
+      0, 0, near * far * rangeInv * 2, 0
+    ];
+  }
+
+  function mat4Mul(a, b) {
+    const out = new Array(16);
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        out[r * 4 + c] =
+          a[r * 4 + 0] * b[0 * 4 + c] +
+          a[r * 4 + 1] * b[1 * 4 + c] +
+          a[r * 4 + 2] * b[2 * 4 + c] +
+          a[r * 4 + 3] * b[3 * 4 + c];
+      }
+    }
+    return out;
+  }
+
+  function mat4Translate(m, v) {
+    const x = v[0], y = v[1], z = v[2];
+    m[12] = m[0] * x + m[4] * y + m[8] * z + m[12];
+    m[13] = m[1] * x + m[5] * y + m[9] * z + m[13];
+    m[14] = m[2] * x + m[6] * y + m[10] * z + m[14];
+    m[15] = m[3] * x + m[7] * y + m[11] * z + m[15];
+  }
+
+  function mat4RotateX(m, rad) {
+    const s = Math.sin(rad), c = Math.cos(rad);
+    const m1 = m[1], m2 = m[2];
+    const m5 = m[5], m6 = m[6];
+    const m9 = m[9], m10 = m[10];
+    const m13 = m[13], m14 = m[14];
+
+    m[1] = m1 * c + m2 * s;
+    m[2] = m1 * -s + m2 * c;
+    m[5] = m5 * c + m6 * s;
+    m[6] = m5 * -s + m6 * c;
+    m[9] = m9 * c + m10 * s;
+    m[10] = m9 * -s + m10 * c;
+    m[13] = m13 * c + m14 * s;
+    m[14] = m13 * -s + m14 * c;
+  }
+
+  function mat4RotateY(m, rad) {
+    const s = Math.sin(rad), c = Math.cos(rad);
+    const m0 = m[0], m2 = m[2];
+    const m4 = m[4], m6 = m[6];
+    const m8 = m[8], m10 = m[10];
+    const m12 = m[12], m14 = m[14];
+
+    m[0] = m0 * c - m2 * s;
+    m[2] = m0 * s + m2 * c;
+    m[4] = m4 * c - m6 * s;
+    m[6] = m4 * s + m6 * c;
+    m[8] = m8 * c - m10 * s;
+    m[10] = m8 * s + m10 * c;
+    m[12] = m12 * c - m14 * s;
+    m[14] = m12 * s + m14 * c;
+  }
+
+  // --- Studio Controls Handlers ---
+  function setDioramaLighting(preset) {
+    dioramaLighting = preset;
+  }
+
+  function setDioramaViewMode(mode) {
+    if (mode === 'clay') dioramaViewMode = 1;
+    else if (mode === 'wireframe') dioramaViewMode = 2;
+    else if (mode === 'matcap') dioramaViewMode = 3;
+    else dioramaViewMode = 0; // shaded
+  }
+
+  function setDioramaCameraAngle(angle) {
+    if (angle === 'hero') {
+      dioramaRotX = 14;
+      dioramaRotY = -28;
+      dioramaZoom = 1.25;
+      dioramaPanX = 0;
+      dioramaPanY = -0.15;
+    } else if (angle === 'front') {
+      dioramaRotX = 0;
+      dioramaRotY = 0;
+      dioramaZoom = 1.0;
+      dioramaPanX = 0;
+      dioramaPanY = 0;
+    } else if (angle === 'isometric') {
+      dioramaRotX = 32;
+      dioramaRotY = -45;
+      dioramaZoom = 1.1;
+      dioramaPanX = 0;
+      dioramaPanY = 0;
+    } else if (angle === 'top') {
+      dioramaRotX = 86;
+      dioramaRotY = 0;
+      dioramaZoom = 1.3;
+      dioramaPanX = 0;
+      dioramaPanY = 0;
+    }
+  }
+
+  function resetDioramaCamera() {
+    dioramaRotX = 18;
+    dioramaRotY = -35;
+    dioramaZoom = 1.0;
+    dioramaPanX = 0;
+    dioramaPanY = 0;
+  }
+
+  function toggleDioramaTurntable() {
+    dioramaTurntable = !dioramaTurntable;
+    const btn = document.getElementById('diorama-turntable-btn');
+    if (btn) {
+      btn.textContent = dioramaTurntable ? '⏸️ Pausar 360°' : '🔄 360° Off';
+      btn.classList.toggle('active', dioramaTurntable);
+    }
+  }
+
+  function toggleDioramaGrid(checked) {
+    dioramaShowGrid = checked;
+  }
+
+  function toggleDioramaHuman(checked) {
+    dioramaShowHuman = checked;
+  }
+
+  function captureDioramaRender() {
+    const canvas = document.getElementById('diorama-3d-canvas');
+    if (!canvas) return;
+    try {
+      const dataUrl = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      const kitName = (dioramaCurrentMetadata && dioramaCurrentMetadata.kitName) ? dioramaCurrentMetadata.kitName.replace(/[^a-zA-Z0-9]/g, '_') : 'diorama';
+      a.download = 'diorama_' + kitName + '.png';
+      a.click();
+      showShareToast('📸 Captura 3D HD descargada');
+    } catch (err) {
+      console.warn('Canvas export error:', err);
+      alert('No se pudo capturar la imagen del render.');
+    }
+  }
+
+  function triggerARViewer() {
+    const kitName = dioramaCurrentMetadata ? dioramaCurrentMetadata.kitName : 'Maqueta';
+    const scale = dioramaCurrentMetadata ? dioramaCurrentMetadata.scale : '1/144';
+    alert('📱 Realidad Aumentada (AR):\\n\\nPara proyectar ' + kitName + ' a escala ' + scale + ' sobre tu mesa de corte o taller real, abre esta página desde tu smartphone (Safari iOS con QuickLook o Chrome Android con WebXR/SceneViewer).');
+  }
+
   // Modal open/close handlers
   function openAddStashModal() {
     const m = document.getElementById('modal-add-stash');
@@ -4837,6 +5690,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
                   '</select>' +
                   '<div style="display: flex; gap: 0.4rem;">' +
                     '<button class="btn-primary" style="font-size: 0.72rem; padding: 0.3rem 0.6rem; flex: 1; justify-content: center;" onclick="openNewBuildModal(&quot;' + (kit.id || '') + '&quot;)">🛠️ Bitácora</button>' +
+                    '<button class="filter-pill" style="font-size: 0.72rem; padding: 0.3rem 0.6rem; color: #c084fc; border-color: rgba(168, 85, 247, 0.4);" onclick="openKit3dViewerModal(&quot;' + (kit.id || '') + '&quot;)">📐 3D</button>' +
                     '<button class="filter-pill" style="font-size: 0.72rem; padding: 0.3rem 0.6rem; color: #ef4444;" onclick="deleteStashItem(&quot;' + item.id + '&quot;)">🗑️</button>' +
                   '</div>' +
                 '</div>' +

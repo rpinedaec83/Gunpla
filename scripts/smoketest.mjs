@@ -2298,7 +2298,57 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT15 Barcode Scanner & Instant Stash Registration verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER CHECKS PASSED ===');
+    // -------------------------------------------------------------------------
+    // DT16: Interactive 3D / AR Viewer & Diorama Studio
+    // -------------------------------------------------------------------------
+    console.log('--- Verifying DT16 Interactive 3D / AR Viewer & Diorama Studio ---');
+
+    // 1. Fetch 3D Model Metadata for Gunpla Kit (RG Hi-Nu)
+    const m3dHiNuRes = await fetch(`${baseUrl}/api/v1/catalog/kits/kit-rg-hinu/model-3d`);
+    assert.equal(m3dHiNuRes.status, 200, 'GET /catalog/kits/:id/model-3d must return 200');
+    const m3dHiNuData = await m3dHiNuRes.json();
+    assert.ok(m3dHiNuData.model3d);
+    assert.equal(m3dHiNuData.model3d.meshType, 'mecha');
+    assert.equal(m3dHiNuData.model3d.realHeightMeters, 18.0);
+    assert.equal(m3dHiNuData.model3d.physicalHeightMm, 125.0);
+    assert.equal(m3dHiNuData.model3d.humanFigureScaleMm, 12.5);
+    assert.equal(m3dHiNuData.model3d.defaultLighting, 'studio');
+    assert.equal(m3dHiNuData.model3d.arSupported, true);
+
+    // 2. Fetch 3D Model Metadata for Military Tank (Tiger I)
+    const m3dTankRes = await fetch(`${baseUrl}/api/v1/catalog/kits/kit-tamiya-tiger1/model-3d`);
+    assert.equal(m3dTankRes.status, 200);
+    const m3dTankData = await m3dTankRes.json();
+    assert.equal(m3dTankData.model3d.meshType, 'tank');
+    assert.equal(m3dTankData.model3d.defaultLighting, 'military-hangar');
+    assert.equal(m3dTankData.model3d.humanFigureScaleMm, 51.4);
+
+    // 3. List 3D Models in Catalog
+    const list3dRes = await fetch(`${baseUrl}/api/v1/catalog/models-3d`);
+    assert.equal(list3dRes.status, 200, 'GET /catalog/models-3d must return 200');
+    const list3dData = await list3dRes.json();
+    assert.ok(list3dData.items && list3dData.items.length >= 8);
+    assert.ok(list3dData.totalCount >= 8);
+
+    // 4. Non-existent Kit 3D Lookup (404 Problem Details)
+    const m3dMissingRes = await fetch(`${baseUrl}/api/v1/catalog/kits/non-existent-kit-xyz/model-3d`);
+    assert.equal(m3dMissingRes.status, 404, 'Missing kit must return 404');
+    const m3dMissingErr = await m3dMissingRes.json();
+    assert.equal(m3dMissingErr.status, 404);
+
+    // 5. Verify Web UI 3D Viewer Elements
+    assert.ok(plamoWebShellHtml.includes('id="btn-open-diorama-studio"'), 'PlamoScale must render header diorama studio button');
+    assert.ok(plamoWebShellHtml.includes('id="btn-diorama-studio-stash"'), 'PlamoScale must render stash diorama studio button');
+    assert.ok(plamoWebShellHtml.includes('id="modal-3d-viewer"'), 'PlamoScale must render 3D viewer modal');
+    assert.ok(plamoWebShellHtml.includes('id="diorama-3d-canvas"'), 'PlamoScale must render WebGL 3D canvas');
+    assert.ok(plamoWebShellHtml.includes('id="diorama-lighting-select"'), 'PlamoScale must render lighting preset selector');
+    assert.ok(plamoWebShellHtml.includes('id="diorama-viewmode-select"'), 'PlamoScale must render viewmode selector');
+    assert.ok(plamoWebShellHtml.includes('id="diorama-toggle-grid"'), 'PlamoScale must render grid toggle');
+    assert.ok(plamoWebShellHtml.includes('id="diorama-toggle-human"'), 'PlamoScale must render human silhouette scale toggle');
+
+    console.log('[PASS] DT16 Interactive 3D / AR Viewer & Diorama Studio verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();
