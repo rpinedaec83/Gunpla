@@ -4,10 +4,13 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
-- **Exportacion de Inventario a PDF / Ficha de Seguro:** Generacion de reporte consolidado en PDF con fotografias de vitrina y tasacion patrimonial del Stash y vitrina.
 - **Pistas de Sonido / Soundscapes de Taller:** Reproductor integrado de audio ambiente relajante para sesiones de pintura y montaje (lluvia, hangar sci-fi, compresor suave).
 
 ## Completed Candidates & Parking Lot Items
+
+### STASH-INSURANCE -- Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) (COMPLETED)
+- Goal: Itemized inventory and collectibles insurance valuation report exporter for scale modelers. Aggregates stash and showcase kits with boxart/thumbnails, brands, scales, grades, acquisition cost, estimated market replacement value, category breakdown, and generates print-ready PDF/HTML report with appraiser signature blocks and accounting CSV export.
+- Delivered: Endpoints `GET /api/v1/workbench/stash/export/insurance-summary` and `GET /api/v1/workbench/stash/export/insurance-report` (supporting `format=html`, `format=json`, and `format=csv`); data models in `@gunpla/shared` (`StashInsuranceItem`, `StashInsuranceValuationSummary`, `StashInsuranceReportConfig`); pure calculation logic `calculateStashValuation` applying 1.5x on built vitrines, 1.15x on unbuilt boxed stash, 1.25x on WIP, and computing brand/category breakdowns; pure HTML appraisal sheet generator `generateInsuranceReportHtml` with `@page` and `@media print` rules, official disclaimer, and signature lines; Web UI modal `#modal-stash-insurance-report` with real-time KPI cards, currency selector (USD, EUR, MXN, JPY), policy number field, status filters, table preview, and one-click print/CSV triggers; toolbar button `📄 Ficha de Seguro / Tasacion` in `#wb-subtab-stash`; 5 isolated unit tests (`tests/unit/stash-insurance.test.mjs`, total 131 passing); end-to-end smoketest; and verified live deployment on LXC 190.
 
 ### SMART-BUILDER-AI -- Asistente Inteligente de Taller con Vision AI (COMPLETED)
 - Goal: Multimodal AI-powered workbench assistant for scale modelers. Inspects photos of plastic runners/sprues to identify remaining parts, track assembly progress, and evaluates close-up photos of gate connections/nub marks to score cut quality (0-100), diagnose stress marks or gouges, and provide professional sanding/cleanup corrective actions. Supports Google Gemini 3.5 Flash multimodal vision with transparent deterministic local fallback.

@@ -2597,7 +2597,58 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT19 AI Workbench Smart Builder Assistant verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI CHECKS PASSED ===');
+    // =========================================================================
+    // DT20: Stash Inventory & Insurance Valuation Report
+    // =========================================================================
+    console.log('\n--- Verifying DT20 Stash Inventory & Insurance Valuation Report ---');
+
+    // 1. Unauthenticated request to insurance summary returns 401
+    const unauthInsRes = await fetch(`${baseUrl}/api/v1/workbench/stash/export/insurance-summary`);
+    assert.equal(unauthInsRes.status, 401, 'Unauthenticated /insurance-summary must return 401');
+
+    // 2. Authenticated request returns 200 with structured valuation metrics
+    const insSummaryRes = await fetch(`${baseUrl}/api/v1/workbench/stash/export/insurance-summary?currency=USD`, {
+      headers: { Authorization: `Bearer ${aperichToken}` }
+    });
+    assert.equal(insSummaryRes.status, 200, 'GET /insurance-summary must return 200');
+    const insSummary = await insSummaryRes.json();
+    assert.equal(insSummary.currency, 'USD', 'Currency must be USD');
+    assert.ok(insSummary.totalKitsCount >= 0, 'totalKitsCount must be >= 0');
+    assert.ok(insSummary.totalAcquisitionInvestment >= 0, 'totalAcquisitionInvestment must be >= 0');
+    assert.ok(insSummary.totalEstimatedReplacementValue >= 0, 'totalEstimatedReplacementValue must be >= 0');
+    assert.ok(Array.isArray(insSummary.items), 'items must be an array');
+    assert.ok(insSummary.breakdownByCategory, 'breakdownByCategory must exist');
+    assert.ok(insSummary.breakdownByBrand, 'breakdownByBrand must exist');
+
+    // 3. HTML Printable Appraisal Report format
+    const insHtmlRes = await fetch(`${baseUrl}/api/v1/workbench/stash/export/insurance-report?format=html&policyNumber=SMOKE-TEST-POL`, {
+      headers: { Authorization: `Bearer ${aperichToken}` }
+    });
+    assert.equal(insHtmlRes.status, 200, 'GET /insurance-report?format=html must return 200');
+    assert.ok((insHtmlRes.headers.get('content-type') || '').includes('text/html'), 'Content-Type must be text/html');
+    const insHtml = await insHtmlRes.text();
+    assert.ok(insHtml.includes('TASACION PATRIMONIAL'), 'HTML report must include header title');
+    assert.ok(insHtml.includes('SMOKE-TEST-POL'), 'HTML report must include policy number');
+    assert.ok(insHtml.includes('@media print'), 'HTML report must include print media styles');
+
+    // 4. CSV Accounting Export format
+    const insCsvRes = await fetch(`${baseUrl}/api/v1/workbench/stash/export/insurance-report?format=csv`, {
+      headers: { Authorization: `Bearer ${aperichToken}` }
+    });
+    assert.equal(insCsvRes.status, 200, 'GET /insurance-report?format=csv must return 200');
+    assert.ok((insCsvRes.headers.get('content-type') || '').includes('text/csv'), 'Content-Type must be text/csv');
+    const insCsv = await insCsvRes.text();
+    assert.ok(insCsv.startsWith('Nro,Modelo,Marca,Escala,Categoria,Estado,Costo_Adquisicion,Valor_Reposicion,Moneda,Notas'), 'CSV must start with header row');
+
+    // 5. Verify Web Shell UI elements in PlamoScale frontend
+    assert.ok(plamoWebShellHtml.includes('id="btn-insurance-report-stash"'), 'PlamoScale must render insurance report toolbar button');
+    assert.ok(plamoWebShellHtml.includes('id="modal-stash-insurance-report"'), 'PlamoScale must render modal-stash-insurance-report');
+    assert.ok(plamoWebShellHtml.includes('id="btn-export-insurance-csv"'), 'PlamoScale must render CSV download button');
+    assert.ok(plamoWebShellHtml.includes('id="btn-print-insurance-pdf"'), 'PlamoScale must render printable PDF button');
+
+    console.log('[PASS] DT20 Stash Inventory & Insurance Valuation Report verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

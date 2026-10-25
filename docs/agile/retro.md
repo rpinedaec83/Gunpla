@@ -665,3 +665,35 @@ Decisions made:
 Lessons learned:
 - Combining runner part remaining counts with visual completion percentages gives scale modelers a clear, motivational progress tracker during long multi-day builds.
 Usage: Moderate -- self-estimated
+
+### DT20 -- Stash Inventory & Insurance Valuation Report (Ficha de Tasacion de Inventario y Seguro Patrimonial) | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Designed shared data models and valuation calculation logic in `packages/shared/src/index.ts`:
+  - `StashInsuranceItem`, `StashInsuranceValuationSummary`, `StashInsuranceReportConfig`.
+  - Authored pure deterministic calculation logic `calculateStashValuation(items, userId, userName, preferredCurrency)` applying scale modeling valuation multipliers:
+    - Built vitrines: `1.5x` (150%) acquisition price (reflects paint, primers, topcoats, aftermarket resin/photo-etch, and skilled modeling labor).
+    - Unbuilt boxed stash: `1.15x` (115%) acquisition price (reflects out-of-print scarcity, P-Bandai market appreciation, and replacement inflation).
+    - In progress WIP: `1.25x` (125%).
+    - For trade: `1.10x` (110%).
+    - Wishlist: `1.0x` (recorded for reference, excluded from active portfolio balance).
+    - Brand and category aggregated breakdowns.
+  - Authored pure HTML appraisal report generator `generateInsuranceReportHtml(summary, config)` producing tenant-branded A4 sheets formatted with `@page` and `@media print` CSS rules, policy reference, appraisal disclaimer, and collector/appraiser signature blocks.
+- Implemented backend endpoints in `apps/api/src/slices/workbench-stash/workbench.slice.ts`:
+  - `GET /api/v1/workbench/stash/export/insurance-summary`: Returns structured JSON valuation summary.
+  - `GET /api/v1/workbench/stash/export/insurance-report`: Generates printable HTML appraisal sheet (`format=html`), structured JSON (`format=json`), or CSV spreadsheet download (`format=csv`).
+- Updated OpenAPI 3.1 specification in `docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`.
+- Implemented Web UI shell in `packages/shared/src/ui-shell/`:
+  - In `views.ts`: Added toolbar button `📄 Ficha de Seguro / Tasacion` (`#btn-insurance-report-stash`) in Stash tab in Mi Taller.
+  - In `modals.ts`: Authored modal `#modal-stash-insurance-report` featuring KPI valuation cards, currency selector (USD, EUR, MXN, JPY), policy number field, status filter checkboxes, itemized table preview, CSV export (`#btn-export-insurance-csv`), and printable PDF trigger (`#btn-print-insurance-pdf`).
+  - In `app-shell.ts`: Added `openInsuranceReportModal`, `closeInsuranceReportModal`, `loadInsuranceValuationData`, `filterInsurancePreview`, `downloadInsuranceCsv`, and `openPrintableInsuranceReport`.
+- Authored isolated unit test suite `tests/unit/stash-insurance.test.mjs` (5 test cases covering multiplier accuracy, brand/category breakdowns, price fallbacks, printable layout rendering, and wishlist filtering). Total unit tests: 131 passed in 440ms.
+- Extended end-to-end regression smoketest in `scripts/smoketest.mjs` verifying authentication protection (401), JSON summary, HTML print view, CSV export, and Web Shell UI elements.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190:8080`, `:3000`, `:3001`).
+Issues hit:
+- In `app-shell.ts`, unescaped backtick template literals inside the outer TypeScript template string caused compiler parse errors; converted all inner client string building to strict string concatenation with single quotes.
+- In `workbench.slice.ts`, the edit tool initially matched two occurrences of `return res.json({ items: populated, totalCount: populated.length });` (stash and paints); promptly cleaned up the duplicated block before compilation.
+Decisions made:
+- Providing both a direct printable A4 HTML view (which leverages native browser PDF export with exact `@page` formatting and high-res vector CSS) and an accounting CSV download gives modelers both a legal document for insurance agents and a data file for personal spreadsheets.
+Lessons learned:
+- Differentiating between built showcase models (+50% for artisan labor and materials) and mint boxed stash (+15% for scarcity/inflation) accurately mirrors real-world collectibles insurance underwriting practices.
+Usage: Moderate -- self-estimated

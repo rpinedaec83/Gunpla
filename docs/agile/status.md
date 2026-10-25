@@ -4,12 +4,42 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio & Smart Builder AI Assistant Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + 4 Technical Debt resolutions verified via `npm test` (126 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt19-ai-builder-assistant` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio, Smart Builder AI Assistant & Stash Insurance Valuation Report Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) + 4 Technical Debt resolutions verified via `npm test` (131 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt20-stash-insurance-report` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Ficha de Tasación de Inventario y Seguro Patrimonial (Stash Inventory & Insurance Valuation Report - DT20):**
+  - **Tasación Financiera y Multiplicadores de Valor de Reposición:**
+    - Lógica algorítmica pura en `@gunpla/shared` (`calculateStashValuation`):
+      - Modelos armados en vitrina (`built`): Multiplicador de **1.5x (150%)** sobre el costo de adquisición declarado para reconocer insumos consumidos (imprimantes, pinturas, lacas, barnices, fotograbados, calcas al agua) y mano de obra artesanal de acabado.
+      - Cajas selladas en stash (`unbuilt`): Multiplicador de **1.15x (115%)** para contemplar apreciación comercial en maquetas descontinuadas, ediciones limitadas P-Bandai e inflación de reposición.
+      - Proyectos en taller (`in_progress`): Multiplicador de **1.25x (125%)**.
+      - Modelos para canje (`for_trade`): Multiplicador de **1.10x (110%)**.
+      - Lista de deseos (`wishlist`): Registrados como referencia sin computar en el saldo de inventario activo.
+      - Desglose pericial por categorías de modelismo y marcas fabricantes (Bandai Spirits, Tamiya, Hasegawa, Kotobukiya, etc.).
+  - **Certificado Imprimible Oficial (Printable A4 Report / PDF):**
+    - Lógica en `@gunpla/shared` (`generateInsuranceReportHtml`):
+      - Hoja de tasación A4 formateada con reglas CSS `@page` y `@media print`.
+      - Membrete institucional con marca blanca del portal (`PlamoScale` o `GunplaJunkies`).
+      - Ficha de expediente con número de póliza, fecha de emisión, divisa base y datos del titular.
+      - Resumen ejecutivo de 4 KPIs: Valor Total de Reposición, Inversión Declarada, Maquetas en Vitrina y Stash sin armar.
+      - Tabla pormenorizada con miniatura de boxart, modelo, marca, escala, estado, costo de adquisición y valor estimado de reposición.
+      - Bloque de firmas oficiales: Firma del Coleccionista/Titular y Sello de Peritaje de Plataforma.
+      - Cláusula de exención de responsabilidad y alcance legal de la tasación para aseguradoras.
+  - **Endpoints Especializados en API:**
+    - `GET /api/v1/workbench/stash/export/insurance-summary`: Retorna métricas agregadas de tasación en JSON.
+    - `GET /api/v1/workbench/stash/export/insurance-report`: Genera reporte formal en HTML imprimible (`format=html`), JSON (`format=json`) o CSV descargable para hojas contables (`format=csv`).
+  - **Interfaz de Usuario Web Shell (PlamoScale & GunplaJunkies):**
+    - Botón `📄 Ficha de Seguro / Tasación` en la barra de herramientas de Stash en Mi Taller.
+    - Modal pericial `#modal-stash-insurance-report` con tarjetas de métricas en tiempo real, selector de divisas (USD, EUR, MXN, JPY), campo de póliza de seguro, filtros interactivos por estado y previsualización de tabla.
+    - Botones de acción directa: `🖨️ Generar Ficha Oficial / Imprimir PDF` (abre el certificado listo para imprimir en navegador) e `📥 Descargar CSV / Excel`.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/stash-insurance.test.mjs` (5 pruebas completas verificando multiplicadores, desglose por marcas/categorías, fallbacks de precios y generación de HTML/CSV). Total: 131 tests unitarios pasando.
+    - Smoketest automatizado en `scripts/smoketest.mjs` validando autenticación, endpoints HTML/CSV/JSON y controles UI.
+    - Despliegue en vivo en el clúster Proxmox LXC 190.
 
 - **Asistente Inteligente de Taller con Visión AI (AI Workbench Smart Builder Assistant):**
   - **Inspección Multimodal de Grapas y Piezas con Google Gemini Vision:**
