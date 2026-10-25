@@ -512,6 +512,9 @@ export function renderViews(
               <button id="btn-diorama-studio-stash" class="filter-pill" onclick="openKit3dViewerModal()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; border-color: rgba(168, 85, 247, 0.4); color: #c084fc; display: inline-flex; align-items: center; gap: 0.35rem;">
                 📐 Diorama Studio 3D
               </button>
+              <button id="btn-insurance-report-stash" class="filter-pill" onclick="openInsuranceReportModal()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; border-color: rgba(234, 179, 8, 0.4); color: #facc15; display: inline-flex; align-items: center; gap: 0.35rem;">
+                📄 Ficha de Seguro / Tasación
+              </button>
               <button class="filter-pill" onclick="openAddStashModal()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem;">
                 + Agregar Manual
               </button>

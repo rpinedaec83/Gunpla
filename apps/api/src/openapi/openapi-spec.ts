@@ -299,6 +299,40 @@ export const openApiSpec = {
         }
       }
     },
+    '/api/v1/workbench/stash/export/insurance-summary': {
+      get: {
+        tags: ['Workbench'],
+        summary: 'Get itemized stash insurance and replacement valuation summary',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'currency', in: 'query', schema: { type: 'string', default: 'USD' } }
+        ],
+        responses: {
+          '200': { description: 'Aggregated insurance valuation metrics and itemized list' },
+          '401': { description: 'Unauthorized' }
+        }
+      }
+    },
+    '/api/v1/workbench/stash/export/insurance-report': {
+      get: {
+        tags: ['Workbench'],
+        summary: 'Generate printable insurance appraisal sheet (HTML/PDF), JSON summary, or CSV file',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'format', in: 'query', schema: { type: 'string', enum: ['html', 'json', 'csv'], default: 'html' } },
+          { name: 'currency', in: 'query', schema: { type: 'string', default: 'USD' } },
+          { name: 'policyNumber', in: 'query', schema: { type: 'string' } },
+          { name: 'includeUnbuilt', in: 'query', schema: { type: 'boolean', default: true } },
+          { name: 'includeBuilt', in: 'query', schema: { type: 'boolean', default: true } },
+          { name: 'includeInProgress', in: 'query', schema: { type: 'boolean', default: true } },
+          { name: 'includeWishlist', in: 'query', schema: { type: 'boolean', default: false } }
+        ],
+        responses: {
+          '200': { description: 'Generated appraisal report or CSV file' },
+          '401': { description: 'Unauthorized' }
+        }
+      }
+    },
     '/api/v1/workbench/import/stash': {
       post: {
         tags: ['Workbench'],

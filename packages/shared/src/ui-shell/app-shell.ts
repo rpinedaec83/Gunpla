@@ -5502,6 +5502,234 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     }
   }
 
+  // --- DT20: Stash Insurance & Valuation Appraisal Report ---
+  let currentInsuranceSummary = null;
+
+  function openInsuranceReportModal() {
+    if (!currentUser) {
+      openAuthModal();
+      return;
+    }
+    const m = document.getElementById('modal-stash-insurance-report');
+    if (!m) return;
+    m.classList.add('active');
+    loadInsuranceValuationData();
+  }
+
+  function closeInsuranceReportModal(e) {
+    if (!e || e.target.id === 'modal-stash-insurance-report' || e.target.classList.contains('auth-close') || !e.target) {
+      const m = document.getElementById('modal-stash-insurance-report');
+      if (m) m.classList.remove('active');
+    }
+  }
+
+  async function loadInsuranceValuationData() {
+    const curSelect = document.getElementById('ins-currency-select');
+    const currency = curSelect ? curSelect.value : 'USD';
+    const tbody = document.getElementById('ins-table-body');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="5" style="padding: 1.5rem; text-align: center; color: #64748b;">Calculando tasacion pericial...</td></tr>';
+    }
+
+    try {
+      const res = await fetch('/api/v1/workbench/stash/export/insurance-summary?currency=' + encodeURIComponent(currency), {
+        headers: {
+          'Authorization': 'Bearer ' + currentToken
+        }
+      });
+      if (!res.ok) throw new Error('Error al calcular valoracion de seguro');
+      const data = await res.json();
+      currentInsuranceSummary = data;
+
+      // Update KPI banners
+      const statTotal = document.getElementById('ins-stat-total-kits');
+      const statBreakdown = document.getElementById('ins-stat-counts-breakdown');
+      const statAcquisition = document.getElementById('ins-stat-acquisition-cost');
+      const statReplacement = document.getElementById('ins-stat-replacement-val');
+      const statDelta = document.getElementById('ins-stat-delta-ratio');
+
+      const symbol = currency === 'EUR' ? 'EUR ' : currency === 'JPY' ? 'JPY ' : '$';
+
+      if (statTotal) statTotal.textContent = data.valuationPortfolioTotalKits;
+      if (statBreakdown) {
+        statBreakdown.textContent = data.builtVitrinesCount + ' vitrina · ' + data.unbuiltStashCount + ' en caja · ' + data.inProgressCount + ' WIP';
+      }
+      if (statAcquisition) {
+        statAcquisition.textContent = symbol + data.totalAcquisitionDeclared.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+      if (statReplacement) {
+        statReplacement.textContent = symbol + data.totalReplacementEstimated.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+      if (statDelta) {
+        const deltaPct = data.totalAcquisitionDeclared > 0
+          ? (((data.totalReplacementEstimated - data.totalAcquisitionDeclared) / data.totalAcquisitionDeclared) * 100).toFixed(1)
+          : '0.0';
+        statDelta.textContent = '+' + deltaPct + '% plusvalia / mano de obra';
+      }
+
+      filterInsurancePreview();
+    } catch (err) {
+      console.error('Error loading insurance summary:', err);
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding: 1.5rem; text-align: center; color: #ef4444;">No se pudo cargar la valoracion. Intenta de nuevo.</td></tr>';
+      }
+    }
+  }
+
+  function filterInsurancePreview() {
+    if (!currentInsuranceSummary || !currentInsuranceSummary.items) return;
+
+    const chkBuiltEl = document.getElementById('ins-chk-built');
+    const chkUnbuiltEl = document.getElementById('ins-chk-unbuilt');
+    const chkWipEl = document.getElementById('ins-chk-wip');
+    const chkWishlistEl = document.getElementById('ins-chk-wishlist');
+
+    const chkBuilt = chkBuiltEl ? chkBuiltEl.checked : true;
+    const chkUnbuilt = chkUnbuiltEl ? chkUnbuiltEl.checked : true;
+    const chkWip = chkWipEl ? chkWipEl.checked : true;
+    const chkWishlist = chkWishlistEl ? chkWishlistEl.checked : false;
+
+    const filtered = currentInsuranceSummary.items.filter(item => {
+      if (item.status === 'built' && !chkBuilt) return false;
+      if (item.status === 'unbuilt' && !chkUnbuilt) return false;
+      if (item.status === 'in_progress' && !chkWip) return false;
+      if (item.status === 'wishlist' && !chkWishlist) return false;
+      return true;
+    });
+
+    const countLabel = document.getElementById('ins-preview-count-label');
+    if (countLabel) countLabel.textContent = filtered.length + ' de ' + currentInsuranceSummary.items.length + ' maquetas';
+
+    const tbody = document.getElementById('ins-table-body');
+    if (!tbody) return;
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="padding: 1.5rem; text-align: center; color: #64748b;">No hay maquetas para los filtros seleccionados.</td></tr>';
+      return;
+    }
+
+    const cur = currentInsuranceSummary.currency || 'USD';
+    const sym = cur === 'EUR' ? 'EUR ' : cur === 'JPY' ? 'JPY ' : '$';
+
+    tbody.innerHTML = filtered.map(it => {
+      let statusColor = '#94a3b8';
+      let statusBg = 'rgba(148, 163, 184, 0.15)';
+      let statusLabel = it.status;
+      if (it.status === 'built') {
+        statusColor = '#4ade80';
+        statusBg = 'rgba(74, 222, 128, 0.15)';
+        statusLabel = 'Vitrina (1.5x)';
+      } else if (it.status === 'unbuilt') {
+        statusColor = '#38bdf8';
+        statusBg = 'rgba(56, 189, 248, 0.15)';
+        statusLabel = 'En Caja (1.15x)';
+      } else if (it.status === 'in_progress') {
+        statusColor = '#facc15';
+        statusBg = 'rgba(250, 204, 21, 0.15)';
+        statusLabel = 'En Proceso';
+      } else if (it.status === 'wishlist') {
+        statusColor = '#c084fc';
+        statusBg = 'rgba(192, 132, 252, 0.15)';
+        statusLabel = 'Wishlist';
+      }
+
+      return '<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">' +
+        '<td style="padding: 0.5rem 0.75rem;">' +
+          '<div style="font-weight: 600; color: #f1f5f9;">' + (it.kitName || '') + '</div>' +
+          '<div style="font-size: 0.7rem; color: #64748b;">' + (it.brand || '') + ' · ' + (it.category || '') + '</div>' +
+        '</td>' +
+        '<td style="padding: 0.5rem 0.75rem;">' +
+          '<span style="background: ' + statusBg + '; color: ' + statusColor + '; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">' +
+            statusLabel +
+          '</span>' +
+        '</td>' +
+        '<td style="padding: 0.5rem 0.75rem; color: #94a3b8;">' + (it.scale || '') + '</td>' +
+        '<td style="padding: 0.5rem 0.75rem; text-align: right; color: #cbd5e1; font-family: monospace;">' +
+          sym + it.declaredPricePaid.toFixed(2) +
+        '</td>' +
+        '<td style="padding: 0.5rem 0.75rem; text-align: right; font-weight: 700; color: #eab308; font-family: monospace;">' +
+          sym + it.estimatedReplacementValue.toFixed(2) +
+        '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  async function downloadInsuranceCsv() {
+    if (!currentUser) return;
+    const curSelect = document.getElementById('ins-currency-select');
+    const currency = curSelect ? curSelect.value : 'USD';
+    try {
+      const res = await fetch('/api/v1/workbench/stash/export/insurance-report?format=csv&currency=' + encodeURIComponent(currency), {
+        headers: {
+          'Authorization': 'Bearer ' + currentToken
+        }
+      });
+      if (!res.ok) throw new Error('Error al descargar CSV de tasacion');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'inventario-tasacion-seguro-' + currency + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading CSV:', err);
+      alert('Error al descargar el archivo CSV');
+    }
+  }
+
+  async function openPrintableInsuranceReport() {
+    if (!currentUser) return;
+    const curSelect = document.getElementById('ins-currency-select');
+    const currency = curSelect ? curSelect.value : 'USD';
+    const policyInput = document.getElementById('ins-policy-input');
+    const policyNumber = policyInput ? policyInput.value.trim() : '';
+
+    const chkBuiltEl = document.getElementById('ins-chk-built');
+    const chkUnbuiltEl = document.getElementById('ins-chk-unbuilt');
+    const chkWipEl = document.getElementById('ins-chk-wip');
+    const chkWishlistEl = document.getElementById('ins-chk-wishlist');
+
+    const chkBuilt = chkBuiltEl ? chkBuiltEl.checked : true;
+    const chkUnbuilt = chkUnbuiltEl ? chkUnbuiltEl.checked : true;
+    const chkWip = chkWipEl ? chkWipEl.checked : true;
+    const chkWishlist = chkWishlistEl ? chkWishlistEl.checked : false;
+
+    const query = new URLSearchParams({
+      format: 'html',
+      currency: currency,
+      policyNumber: policyNumber,
+      includeBuilt: String(chkBuilt),
+      includeUnbuilt: String(chkUnbuilt),
+      includeInProgress: String(chkWip),
+      includeWishlist: String(chkWishlist)
+    });
+
+    try {
+      const res = await fetch('/api/v1/workbench/stash/export/insurance-report?' + query.toString(), {
+        headers: {
+          'Authorization': 'Bearer ' + currentToken
+        }
+      });
+      if (!res.ok) throw new Error('Error al generar ficha de tasacion');
+      const htmlText = await res.text();
+
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.open();
+        printWindow.document.write(htmlText);
+        printWindow.document.close();
+      } else {
+        alert('Por favor permite ventanas emergentes para ver e imprimir la ficha oficial');
+      }
+    } catch (err) {
+      console.error('Error printing appraisal report:', err);
+      alert('Error al generar la ficha pericial para impresion');
+    }
+  }
+
   // --- Bulk Import Tool Engine (CSV / TSV / Excel for Stash & Paint Rack) ---
   let currentBulkImportTab = 'stash';
 

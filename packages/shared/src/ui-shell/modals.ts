@@ -2095,6 +2095,126 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Modal: DT20 Stash Insurance & Appraisal Report -->
+<div id="modal-stash-insurance-report" class="auth-modal-overlay" onclick="closeInsuranceReportModal(event)">
+  <div class="auth-modal" style="max-width: 820px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; background: #0f172a; border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);" onclick="event.stopPropagation()">
+    <!-- Header -->
+    <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(15,23,42,0.95) 100%); display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 0.65rem;">
+        <span style="font-size: 1.5rem;">📋</span>
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Ficha de Seguro y Tasación de Inventario</h3>
+          <p style="font-size: 0.78rem; color: #facc15; margin: 0.15rem 0 0 0;">Valoración pericial de maquetas, vitrinas y piezas raras para cobertura de pólizas</p>
+        </div>
+      </div>
+      <span style="font-size: 1.5rem; color: #94a3b8; cursor: pointer; line-height: 1;" onclick="closeInsuranceReportModal()">&times;</span>
+    </div>
+
+    <!-- Body -->
+    <div style="padding: 1.25rem 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.2rem;">
+      <!-- KPI Stats Banner -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.85rem;">
+        <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.85rem; text-align: center;">
+          <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Inventario Valorable</div>
+          <div id="ins-stat-total-kits" style="font-size: 1.4rem; font-weight: 800; color: #f8fafc; margin-top: 0.2rem;">0</div>
+          <div id="ins-stat-counts-breakdown" style="font-size: 0.7rem; color: #64748b; margin-top: 0.1rem;">0 vitrina · 0 en caja</div>
+        </div>
+        <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.85rem; text-align: center;">
+          <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Costo Adquisición Total</div>
+          <div id="ins-stat-acquisition-cost" style="font-size: 1.4rem; font-weight: 800; color: #38bdf8; margin-top: 0.2rem;">$0.00</div>
+          <div style="font-size: 0.7rem; color: #64748b; margin-top: 0.1rem;">Gasto histórico declarado</div>
+        </div>
+        <div style="background: rgba(234, 179, 8, 0.08); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 8px; padding: 0.85rem; text-align: center;">
+          <div style="font-size: 0.72rem; color: #facc15; text-transform: uppercase; font-weight: 700;">Valor Tasado / Reposición</div>
+          <div id="ins-stat-replacement-val" style="font-size: 1.45rem; font-weight: 900; color: #eab308; margin-top: 0.2rem;">$0.00</div>
+          <div id="ins-stat-delta-ratio" style="font-size: 0.7rem; color: #4ade80; font-weight: 600; margin-top: 0.1rem;">+0.0% plusvalía / mano de obra</div>
+        </div>
+      </div>
+
+      <!-- Config & Controls -->
+      <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+          <div style="flex: 1; min-width: 220px;">
+            <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.3rem;">Nro de Póliza / Aseguradora (Opcional)</label>
+            <input id="ins-policy-input" type="text" placeholder="Ej: MAPFRE-COL-892144" style="width: 100%; padding: 0.45rem 0.75rem; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #fff; font-size: 0.82rem;" />
+          </div>
+          <div style="width: 120px;">
+            <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.3rem;">Moneda</label>
+            <select id="ins-currency-select" onchange="loadInsuranceValuationData()" style="width: 100%; padding: 0.45rem 0.75rem; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #fff; font-size: 0.82rem;">
+              <option value="USD" selected>USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="MXN">MXN ($)</option>
+              <option value="JPY">JPY (¥)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.6rem;">
+          <label style="font-size: 0.75rem; color: #cbd5e1; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+            <input id="ins-chk-built" type="checkbox" checked onchange="filterInsurancePreview()" />
+            🏆 Vitrinas / Terminados (1.5x)
+          </label>
+          <label style="font-size: 0.75rem; color: #cbd5e1; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+            <input id="ins-chk-unbuilt" type="checkbox" checked onchange="filterInsurancePreview()" />
+            📦 En Caja / Stash (1.15x)
+          </label>
+          <label style="font-size: 0.75rem; color: #cbd5e1; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+            <input id="ins-chk-wip" type="checkbox" checked onchange="filterInsurancePreview()" />
+            🔧 En Proceso (1.25x)
+          </label>
+          <label style="font-size: 0.75rem; color: #cbd5e1; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+            <input id="ins-chk-wishlist" type="checkbox" onchange="filterInsurancePreview()" />
+            ⭐ Wishlist (Referencia)
+          </label>
+        </div>
+      </div>
+
+      <!-- Itemized Table Preview -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <div style="font-size: 0.82rem; font-weight: 700; color: #f1f5f9;">Desglose Individual de Piezas</div>
+          <span id="ins-preview-count-label" style="font-size: 0.72rem; color: #94a3b8;">0 elementos</span>
+        </div>
+        <div id="ins-table-container" style="max-height: 240px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: rgba(15, 23, 42, 0.4);">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; text-align: left;">
+            <thead>
+              <tr style="background: rgba(30, 41, 59, 0.8); border-bottom: 1px solid rgba(255,255,255,0.08); color: #94a3b8; font-weight: 600;">
+                <th style="padding: 0.5rem 0.75rem;">Modelo</th>
+                <th style="padding: 0.5rem 0.75rem;">Estado</th>
+                <th style="padding: 0.5rem 0.75rem;">Escala</th>
+                <th style="padding: 0.5rem 0.75rem; text-align: right;">Costo Compra</th>
+                <th style="padding: 0.5rem 0.75rem; text-align: right;">Valor Tasado</th>
+              </tr>
+            </thead>
+            <tbody id="ins-table-body">
+              <tr>
+                <td colspan="5" style="padding: 1.5rem; text-align: center; color: #64748b;">Cargando inventario...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Actions -->
+    <div style="padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.95); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+      <div style="display: flex; gap: 0.5rem;">
+        <button id="btn-export-insurance-csv" type="button" class="filter-pill" onclick="downloadInsuranceCsv()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; border-color: rgba(34, 197, 94, 0.4); color: #4ade80; display: inline-flex; align-items: center; gap: 0.35rem;">
+          📥 Descargar CSV / Excel
+        </button>
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="button" class="filter-pill" onclick="closeInsuranceReportModal()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem;">
+          Cerrar
+        </button>
+        <button id="btn-print-insurance-pdf" type="button" class="btn-primary" onclick="openPrintableInsuranceReport()" style="font-size: 0.8rem; padding: 0.45rem 1rem; background: linear-gradient(135deg, #eab308, #ca8a04); border: none; font-weight: 700; color: #000; display: inline-flex; align-items: center; gap: 0.4rem;">
+          🖨️ Generar Ficha Oficial / Imprimir PDF
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 
 `;

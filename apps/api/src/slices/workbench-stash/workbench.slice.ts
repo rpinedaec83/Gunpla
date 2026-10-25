@@ -24,7 +24,11 @@ import {
   ScanStashResponse,
   normalizeBarcode,
   detectBarcodeFormat,
-  getManufacturerHintFromBarcode
+  getManufacturerHintFromBarcode,
+  calculateStashValuation,
+  generateInsuranceReportHtml,
+  StashInsuranceValuationSummary,
+  StashInsuranceReportConfig
 } from '@gunpla/shared';
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
@@ -127,6 +131,105 @@ workbenchRouter.get('/stash', (req: Request, res: Response) => {
     items: populated,
     totalCount: populated.length
   });
+});
+
+/**
+ * GET /api/v1/workbench/stash/export/insurance-summary
+ * Get aggregated valuation summary for insurance and financial tracking
+ */
+workbenchRouter.get('/stash/export/insurance-summary', (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const db = getDb();
+  const user = db.users.find(u => u.id === userId);
+  const preferredCurrency = (req.query.currency as string) || 'USD';
+
+  const userStash = db.stashItems
+    .filter(item => item.userId === userId)
+    .map(item => ({
+      ...item,
+      kit: db.kits.find(k => k.id === item.kitId)
+    }));
+
+  const summary = calculateStashValuation(
+    userStash,
+    userId,
+    user?.displayName || user?.username || user?.email,
+    preferredCurrency
+  );
+
+  return res.json(summary);
+});
+
+/**
+ * GET /api/v1/workbench/stash/export/insurance-report
+ * Printable formal PDF/HTML appraisal sheet or CSV export
+ */
+workbenchRouter.get('/stash/export/insurance-report', (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const db = getDb();
+  const user = db.users.find(u => u.id === userId);
+  const tenantSlug = req.tenant?.slug || 'plamoscale';
+  const tenantName = tenantSlug === 'gunplajunkies' ? 'GunplaJunkies' : 'PlamoScale';
+
+  const format = (req.query.format as string) || 'html';
+  const preferredCurrency = (req.query.currency as string) || 'USD';
+  const policyNumber = req.query.policyNumber as string | undefined;
+
+  const userStash = db.stashItems
+    .filter(item => item.userId === userId)
+    .map(item => ({
+      ...item,
+      kit: db.kits.find(k => k.id === item.kitId)
+    }));
+
+  const summary = calculateStashValuation(
+    userStash,
+    userId,
+    user?.displayName || user?.username || user?.email,
+    preferredCurrency
+  );
+
+  const reportConfig: StashInsuranceReportConfig = {
+    includeUnbuilt: req.query.includeUnbuilt !== 'false',
+    includeBuilt: req.query.includeBuilt !== 'false',
+    includeInProgress: req.query.includeInProgress !== 'false',
+    includeWishlist: req.query.includeWishlist === 'true',
+    includePhotos: req.query.includePhotos !== 'false',
+    insurancePolicyNumber: policyNumber,
+    tenantName
+  };
+
+  if (format === 'csv') {
+    const csvHeader = 'Nro,Modelo,Marca,Escala,Categoria,Estado,Costo_Adquisicion,Valor_Reposicion,Moneda,Notas\n';
+    const csvRows = summary.items.map((it, idx) => {
+      const escape = (val: string = '') => `"${val.replace(/"/g, '""')}"`;
+      return [
+        idx + 1,
+        escape(it.kitName),
+        escape(it.brand),
+        escape(it.scale),
+        escape(it.category),
+        escape(it.status),
+        it.declaredPricePaid.toFixed(2),
+        it.estimatedReplacementValue.toFixed(2),
+        escape(it.currency),
+        escape(it.notes || '')
+      ].join(',');
+    }).join('\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="inventario-tasacion-${tenantSlug}.csv"`);
+    return res.send(csvHeader + csvRows);
+  }
+
+  if (format === 'json') {
+    return res.json(summary);
+  }
+
+  // Default: HTML print view
+  const html = generateInsuranceReportHtml(summary, reportConfig);
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  return res.send(html);
 });
 
 /**

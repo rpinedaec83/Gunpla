@@ -1839,6 +1839,302 @@ export function analyzeNubPhotoOffline(partName: string = 'Pieza General', plast
   };
 }
 
+// =============================================================================
+// Stash Inventory & Insurance Valuation Report (DT20)
+// =============================================================================
+
+export interface StashInsuranceItem {
+  stashId: string;
+  kitId: string;
+  kitName: string;
+  brand: string;
+  scale: string;
+  grade?: string;
+  category: ScaleCategory;
+  kitNumber?: string;
+  barcode?: string;
+  status: StashStatus;
+  boxartUrl?: string;
+  declaredPricePaid: number;
+  estimatedReplacementValue: number;
+  currency: string;
+  acquiredAt?: string;
+  completedAt?: string;
+  notes?: string;
+}
+
+export interface StashInsuranceValuationSummary {
+  userId: string;
+  userName?: string;
+  totalKitsCount: number;
+  valuationPortfolioTotalKits?: number;
+  builtVitrinesCount: number;
+  unbuiltStashCount: number;
+  inProgressCount: number;
+  wishlistCount: number;
+  forTradeCount: number;
+  totalAcquisitionInvestment: number;
+  totalAcquisitionDeclared?: number;
+  totalEstimatedReplacementValue: number;
+  totalReplacementEstimated?: number;
+  currency: string;
+  breakdownByCategory: Record<string, { count: number; totalValue: number }>;
+  categoryBreakdown?: Record<string, { count: number; totalValue: number }>;
+  breakdownByBrand: Record<string, { count: number; totalValue: number }>;
+  brandBreakdown?: Record<string, { count: number; totalValue: number }>;
+  items: StashInsuranceItem[];
+  generatedAt: string;
+}
+
+export interface StashInsuranceReportConfig {
+  includeUnbuilt?: boolean;
+  includeBuilt?: boolean;
+  includeInProgress?: boolean;
+  includeWishlist?: boolean;
+  includePhotos?: boolean;
+  insurancePolicyNumber?: string;
+  appraiserName?: string;
+  tenantName?: string;
+}
+
+export function calculateStashValuation(
+  items: StashItemRecord[],
+  userId: string = 'unknown-user',
+  userName?: string,
+  preferredCurrency: string = 'USD'
+): StashInsuranceValuationSummary {
+  let builtVitrinesCount = 0;
+  let unbuiltStashCount = 0;
+  let inProgressCount = 0;
+  let wishlistCount = 0;
+  let forTradeCount = 0;
+
+  let totalAcquisition = 0;
+  let totalReplacement = 0;
+
+  const categoryMap: Record<string, { count: number; totalValue: number }> = {};
+  const brandMap: Record<string, { count: number; totalValue: number }> = {};
+
+  const evaluatedItems: StashInsuranceItem[] = (items || []).map((item) => {
+    const kit = item.kit || ({} as Partial<KitRecord>);
+    const status = item.status || 'unbuilt';
+
+    if (status === 'built') builtVitrinesCount++;
+    else if (status === 'unbuilt') unbuiltStashCount++;
+    else if (status === 'in_progress') inProgressCount++;
+    else if (status === 'wishlist') wishlistCount++;
+    else if (status === 'for_trade') forTradeCount++;
+
+    const declaredPrice = Number(item.pricePaid || 35.0);
+    const itemCurrency = item.currency || preferredCurrency;
+
+    // Multiplier for insurance valuation
+    // Finished built models reflect invested labor & paint supplies
+    let replacementMultiplier = 1.15;
+    if (status === 'built') replacementMultiplier = 1.5;
+    else if (status === 'in_progress') replacementMultiplier = 1.25;
+    else if (status === 'for_trade') replacementMultiplier = 1.1;
+    else if (status === 'wishlist') replacementMultiplier = 1.0;
+
+    const estimatedValue = Math.round(declaredPrice * replacementMultiplier * 100) / 100;
+
+    // Only count non-wishlist items towards inventory balance
+    if (status !== 'wishlist') {
+      totalAcquisition += declaredPrice;
+      totalReplacement += estimatedValue;
+
+      const cat = kit.category || 'gunpla-mecha';
+      if (!categoryMap[cat]) categoryMap[cat] = { count: 0, totalValue: 0 };
+      categoryMap[cat].count++;
+      categoryMap[cat].totalValue = Math.round((categoryMap[cat].totalValue + estimatedValue) * 100) / 100;
+
+      const br = kit.brand || 'Bandai Spirits';
+      if (!brandMap[br]) brandMap[br] = { count: 0, totalValue: 0 };
+      brandMap[br].count++;
+      brandMap[br].totalValue = Math.round((brandMap[br].totalValue + estimatedValue) * 100) / 100;
+    }
+
+    return {
+      stashId: item.id,
+      kitId: item.kitId,
+      kitName: kit.name || 'Maqueta No Catalogada',
+      brand: kit.brand || 'Bandai Spirits',
+      scale: kit.scale || '1/144',
+      grade: kit.grade,
+      category: (kit.category || 'gunpla-mecha') as ScaleCategory,
+      kitNumber: kit.kitNumber,
+      barcode: kit.barcode,
+      status,
+      boxartUrl: kit.boxartUrl,
+      declaredPricePaid: declaredPrice,
+      estimatedReplacementValue: estimatedValue,
+      currency: itemCurrency,
+      acquiredAt: item.acquiredAt,
+      completedAt: item.completedAt,
+      notes: item.notes
+    };
+  });
+
+  const totalAcq = Math.round(totalAcquisition * 100) / 100;
+  const totalRep = Math.round(totalReplacement * 100) / 100;
+  const portfolioKits = (items || []).filter(i => (i.status || 'unbuilt') !== 'wishlist').length;
+
+  return {
+    userId,
+    userName: userName || userId,
+    totalKitsCount: items.length,
+    valuationPortfolioTotalKits: portfolioKits,
+    builtVitrinesCount,
+    unbuiltStashCount,
+    inProgressCount,
+    wishlistCount,
+    forTradeCount,
+    totalAcquisitionInvestment: totalAcq,
+    totalAcquisitionDeclared: totalAcq,
+    totalEstimatedReplacementValue: totalRep,
+    totalReplacementEstimated: totalRep,
+    currency: preferredCurrency,
+    breakdownByCategory: categoryMap,
+    categoryBreakdown: categoryMap,
+    breakdownByBrand: brandMap,
+    brandBreakdown: brandMap,
+    items: evaluatedItems,
+    generatedAt: new Date().toISOString()
+  };
+}
+
+export function generateInsuranceReportHtml(
+  summary: StashInsuranceValuationSummary,
+  config: StashInsuranceReportConfig = {}
+): string {
+  const tenant = config.tenantName || 'PlamoScale';
+  const policyNum = config.insurancePolicyNumber || 'VAL-STASH-' + Date.now().toString(36).toUpperCase();
+  const appraiser = config.appraiserName || 'Peritaje Oficial PlamoScale / GunplaJunkies';
+
+  const filteredItems = summary.items.filter((it) => {
+    if (it.status === 'unbuilt' && config.includeUnbuilt === false) return false;
+    if (it.status === 'built' && config.includeBuilt === false) return false;
+    if (it.status === 'in_progress' && config.includeInProgress === false) return false;
+    if (it.status === 'wishlist' && config.includeWishlist !== true) return false;
+    return true;
+  });
+
+  const rows = filteredItems.map((it, idx) => {
+    const photoCell = config.includePhotos !== false
+      ? `<td style="padding: 6px; text-align: center;"><img src="${it.boxartUrl || '/assets/boxart-placeholder.png'}" alt="${escapeXml(it.kitName)}" style="width: 44px; height: 32px; object-fit: cover; border-radius: 3px; border: 1px solid #cbd5e1;" onerror="this.style.display='none'" /></td>`
+      : '';
+    const statusLabel = it.status === 'built' ? 'Vitrina (Armado)' : it.status === 'in_progress' ? 'En Taller' : it.status === 'unbuilt' ? 'En Caja (Stash)' : it.status;
+
+    return `<tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+      <td style="padding: 6px; text-align: center; color: #64748b;">${idx + 1}</td>
+      ${photoCell}
+      <td style="padding: 6px; font-weight: bold; color: #0f172a;">${escapeXml(it.kitName)}</td>
+      <td style="padding: 6px; color: #334155;">${escapeXml(it.brand)}</td>
+      <td style="padding: 6px; text-align: center; color: #334155;">${escapeXml(it.scale)}</td>
+      <td style="padding: 6px; text-align: center; color: #475569;">${statusLabel}</td>
+      <td style="padding: 6px; text-align: right; color: #64748b;">$${it.declaredPricePaid.toFixed(2)}</td>
+      <td style="padding: 6px; text-align: right; font-weight: bold; color: #0f172a;">$${it.estimatedReplacementValue.toFixed(2)}</td>
+    </tr>`;
+  }).join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Certificado de Tasacion Patrimonial e Inventario de Coleccionismo - ${escapeXml(tenant)}</title>
+  <style>
+    @page { size: A4; margin: 15mm; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; background: #fff; font-size: 12px; line-height: 1.4; }
+    .header-box { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 15px; }
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; }
+    .kpi-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; text-align: center; }
+    .kpi-value { font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 4px; }
+    .kpi-title { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th { background: #f1f5f9; padding: 7px 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; text-align: left; border-bottom: 1px solid #cbd5e1; }
+    .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 30px; page-break-inside: avoid; }
+    .signature-line { border-top: 1px solid #0f172a; padding-top: 6px; text-align: center; font-size: 11px; }
+    .disclaimer { font-size: 9px; color: #64748b; margin-top: 25px; line-height: 1.3; border-top: 1px dashed #cbd5e1; padding-top: 8px; }
+    @media print { .no-print { display: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="background: #0ea5e9; color: #fff; padding: 10px 15px; text-align: center; font-weight: bold; margin-bottom: 15px;">
+    📄 Vista de Impresion Oficial para Seguro / Ficha de Inventario. Usa <em>Archivo -> Imprimir</em> o <em>Guardar como PDF</em>.
+  </div>
+
+  <div class="header-box">
+    <div>
+      <h1 style="font-size: 20px; margin: 0; font-weight: 900; letter-spacing: -0.5px; color: #0f172a;">${escapeXml(tenant).toUpperCase()} • TASACION PATRIMONIAL</h1>
+      <div style="font-size: 11px; color: #475569; margin-top: 2px;">Ficha Oficial de Inventario y Valor de Reposicion para Seguro de Bienes & Coleccionismo</div>
+      <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Coleccionista Titular: <strong>${escapeXml(summary.userName || summary.userId)}</strong></div>
+    </div>
+    <div style="text-align: right; font-size: 11px;">
+      <div>Ref. Poliza/Expediente: <strong>${escapeXml(policyNum)}</strong></div>
+      <div>Fecha de Emision: <strong>${new Date(summary.generatedAt).toLocaleDateString()}</strong></div>
+      <div style="color: #64748b;">Moneda Base: <strong>${summary.currency}</strong></div>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-title">Valor Reposicion Total</div>
+      <div class="kpi-value" style="color: #059669;">$${summary.totalEstimatedReplacementValue.toFixed(2)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Inversion Declarada</div>
+      <div class="kpi-value">$${summary.totalAcquisitionInvestment.toFixed(2)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Modelos en Vitrina</div>
+      <div class="kpi-value" style="color: #2563eb;">${summary.builtVitrinesCount} kits</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-title">Stash Sin Armar</div>
+      <div class="kpi-value" style="color: #d97706;">${summary.unbuiltStashCount} kits</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 25px; text-align: center;">#</th>
+        ${config.includePhotos !== false ? '<th style="width: 50px; text-align: center;">Foto</th>' : ''}
+        <th>Modelo / Descripcion</th>
+        <th>Marca</th>
+        <th style="width: 50px; text-align: center;">Escala</th>
+        <th style="width: 90px; text-align: center;">Estado</th>
+        <th style="width: 75px; text-align: right;">Costo Adq.</th>
+        <th style="width: 85px; text-align: right;">Val. Reposicion</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows}
+    </tbody>
+  </table>
+
+  <div class="signature-grid">
+    <div>
+      <div class="signature-line">
+        <strong>${escapeXml(summary.userName || summary.userId)}</strong><br />
+        Firma del Coleccionista / Titular
+      </div>
+    </div>
+    <div>
+      <div class="signature-line">
+        <strong>${escapeXml(appraiser)}</strong><br />
+        Perito Valuador / Sello de Plataforma
+      </div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>Aviso Legal & Alcance de la Tasacion:</strong> El presente documento detalla el valor de mercado estimado y costo de reposicion de los modelos a escala especificados. Para maquetas terminadas en vitrina, el valor de tasacion contempla un factor del 150% del valor base para reconocer insumos consumidos (primer, pinturas, barnices, calcas al agua) y mano de obra artesanal de acabado. Para cajas selladas en stash, se aplica la tasa de valor de mercado segun disponibilidad comercial.
+  </div>
+</body>
+</html>`;
+}
+
 
 export * from './ui-shell/app-shell';
 export * from './ui-shell/views';
