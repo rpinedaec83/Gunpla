@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
@@ -52,9 +52,34 @@ export function createApp() {
 
   // Serve preserved legacy images from plamoscale.com so all 92 photos work out of the box
   const legacyDir = resolveLegacyPlamoscaleDir();
+  const imagesBaseDir = path.join(legacyDir, 'images');
+
+  // Case-insensitive fallback middleware for Linux (ext4) environments (.JPG vs .jpg)
+  app.use('/legacy-media/plamoscale/images', (req: Request, res: Response, next: NextFunction) => {
+    const reqPath = decodeURIComponent(req.path);
+    const fullPath = path.join(imagesBaseDir, reqPath);
+    if (fs.existsSync(fullPath)) {
+      return next();
+    }
+
+    // Try case-insensitive matching in the target directory
+    const dir = path.dirname(fullPath);
+    const base = path.basename(fullPath).toLowerCase();
+    if (fs.existsSync(dir)) {
+      try {
+        const files = fs.readdirSync(dir);
+        const match = files.find(f => f.toLowerCase() === base);
+        if (match) {
+          return res.sendFile(path.join(dir, match));
+        }
+      } catch {}
+    }
+    next();
+  });
+
   app.use(
     '/legacy-media/plamoscale/images',
-    express.static(path.join(legacyDir, 'images'))
+    express.static(imagesBaseDir)
   );
 
   // Serve uploaded media files

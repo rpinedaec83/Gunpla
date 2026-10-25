@@ -136,7 +136,7 @@ export const INITIAL_CONTEST_ENTRIES: ContestEntryRecord[] = [
     userDisplayName: 'Aldo Perich',
     title: 'RG 1/144 Hi-Nu Gundam Titanium Finish Custom',
     category: 'gunpla-mecha',
-    coverImageUrl: '/legacy-media/plamoscale/images/aperich/fulls/1.jpg',
+    coverImageUrl: '/legacy-media/plamoscale/images/aperich/fulls/1.JPG',
     voteCount: 14,
     votedByUserIds: ['user-dcampos', 'user-cluna', 'user-fog1labs1'],
     status: 'approved',

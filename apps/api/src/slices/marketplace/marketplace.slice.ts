@@ -76,7 +76,7 @@ export const INITIAL_COMMISSION_BUILDERS: CommissionBuilderRecord[] = [
     acceptingCommissions: true,
     startingPricePEN: 180,
     portfolioSampleUrls: [
-      '/legacy-media/plamoscale/images/aperich/fulls/1.jpg',
+      '/legacy-media/plamoscale/images/aperich/fulls/1.JPG',
       '/legacy-media/plamoscale/images/aperich/fulls/14.jpg'
     ],
     whatsappUrl: 'https://chat.whatsapp.com/GJsVix10Hqy2ywwYmh8EYx',
