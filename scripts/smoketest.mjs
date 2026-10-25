@@ -1782,7 +1782,104 @@ async function runSmoketest() {
 
     console.log('[PASS] Direct WhatsApp Community Inquiries verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES CHECKS PASSED ===');
+    // --- Verifying Bulk Import Tool (CSV/TSV/Excel for Stash & Paint Rack) ---
+    console.log('\n--- Verifying Bulk Import Tool (CSV/TSV/Excel for Stash & Paint Rack) ---');
+
+    // 1. Stash import dry run
+    const stashImportDryRunRes = await fetch(`${baseUrl}/api/v1/workbench/import/stash`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        csvContent: `Nombre,Marca,Escala,Grado,Estado,Notas
+RG Hi-Nu Gundam,Bandai Spirits,1/144,RG,unbuilt,Importado desde Akihabara
+Garage Kit Kshatriya,The 51,1/100,Resin,in_progress,Resina de taller`,
+        dryRun: true
+      })
+    });
+    assert.equal(stashImportDryRunRes.status, 200, 'POST /api/v1/workbench/import/stash dryRun must return 200 OK');
+    const stashDryData = await stashImportDryRunRes.json();
+    assert.equal(stashDryData.dryRun, true);
+    assert.equal(stashDryData.totalParsed, 2);
+    assert.equal(stashDryData.importedCount, 2);
+    assert.ok(stashDryData.matchedCatalogCount >= 1, 'Should match RG Hi-Nu Gundam in catalog');
+    assert.ok(stashDryData.createdCustomCount >= 1, 'Should mark Garage Kit Kshatriya as custom');
+
+    // 2. Stash import live execution
+    const stashImportLiveRes = await fetch(`${baseUrl}/api/v1/workbench/import/stash`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        csvContent: `Nombre,Marca,Escala,Grado,Estado,Notas
+RG Hi-Nu Gundam,Bandai Spirits,1/144,RG,unbuilt,Importado desde Akihabara`,
+        dryRun: false
+      })
+    });
+    assert.equal(stashImportLiveRes.status, 201, 'POST /api/v1/workbench/import/stash live must return 201 Created');
+    const stashLiveData = await stashImportLiveRes.json();
+    assert.equal(stashLiveData.dryRun, false);
+    assert.equal(stashLiveData.importedCount, 1);
+
+    // 3. Paint Rack import dry run
+    const paintImportDryRunRes = await fetch(`${baseUrl}/api/v1/workbench/import/paints`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        csvContent: `Codigo;Marca;Nombre;Tipo;Color;Cantidad;Estado
+XF-1;Tamiya;Flat Black;Enamel;#000000;2;owned
+CUSTOM-GOLD;Alclad;Super Gold;Lacquer;#ffd700;1;owned`,
+        dryRun: true
+      })
+    });
+    assert.equal(paintImportDryRunRes.status, 200, 'POST /api/v1/workbench/import/paints dryRun must return 200 OK');
+    const paintDryData = await paintImportDryRunRes.json();
+    assert.equal(paintDryData.dryRun, true);
+    assert.equal(paintDryData.totalParsed, 2);
+    assert.equal(paintDryData.importedCount, 2);
+    assert.ok(paintDryData.matchedCatalogCount >= 1, 'Should match XF-1 in paints catalog');
+    assert.ok(paintDryData.createdCustomCount >= 1, 'Should mark CUSTOM-GOLD as custom paint');
+
+    // 4. Paint Rack import live execution
+    const paintImportLiveRes = await fetch(`${baseUrl}/api/v1/workbench/import/paints`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        csvContent: `Codigo,Marca,Nombre,Cantidad,Estado
+XF-1,Tamiya,Flat Black,2,owned`,
+        dryRun: false
+      })
+    });
+    assert.equal(paintImportLiveRes.status, 201, 'POST /api/v1/workbench/import/paints live must return 201 Created');
+    const paintLiveData = await paintImportLiveRes.json();
+    assert.equal(paintLiveData.dryRun, false);
+    assert.equal(paintLiveData.importedCount, 1);
+
+    // 5. UI Elements check on web frontends
+    assert.ok(plamoHofHtml.includes('id="modal-bulk-import"'), 'PlamoScale must render #modal-bulk-import');
+    assert.ok(plamoHofHtml.includes('openBulkImportModal'), 'PlamoScale must include openBulkImportModal');
+    assert.ok(plamoHofHtml.includes('executeBulkImport'), 'PlamoScale must include executeBulkImport');
+    assert.ok(plamoHofHtml.includes('id="btn-import-stash-csv"'), 'PlamoScale must render import stash button');
+    assert.ok(plamoHofHtml.includes('id="btn-import-paints-csv"'), 'PlamoScale must render import paints button');
+
+    assert.ok(gunplaHofHtml.includes('id="modal-bulk-import"'), 'GunplaJunkies must render #modal-bulk-import');
+    assert.ok(gunplaHofHtml.includes('openBulkImportModal'), 'GunplaJunkies must include openBulkImportModal');
+    assert.ok(gunplaHofHtml.includes('id="btn-import-stash-csv"'), 'GunplaJunkies must render import stash button');
+    assert.ok(gunplaHofHtml.includes('id="btn-import-paints-csv"'), 'GunplaJunkies must render import paints button');
+
+    console.log('[PASS] Bulk Import Tool (Stash & Paint Rack) verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

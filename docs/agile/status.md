@@ -4,12 +4,30 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame & WhatsApp Inquiries Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + 4 Technical Debt resolutions verified via `npm test` (43 unit tests + full integration suite) and live LXC 190 deployment.
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries & Bulk Import Tool Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel para Stash & Paint Rack + 4 Technical Debt resolutions verified via `npm test` (54 unit tests + full integration suite) and live LXC 190 deployment.
 - Current branch or release line: `feature/dt9-google-oauth-sso` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Herramienta de Importacion Masiva CSV / Excel para Stash y Paint Rack (Bulk Import Tool):**
+  - **Motor Determinista de Parseo y Normalizacion (`parseDelimitedText`):**
+    - Autodeteccion inteligente de delimitadores (comas `,`, tabs `\t`, punto y coma `;` tipicos de Excel en espanol) en base a frecuencias de la primera fila.
+    - Soporte completo para valores entrecomillados con comas o delimitadores internos.
+    - Mapeo bidireccional multilingue (espanol / ingles): nombres de columnas (`Nombre`/`Name`, `Marca`/`Brand`, `Escala`/`Scale`, `Codigo`/`Code`, `Cantidad`/`Quantity`, `Estado`/`Status`, `Notas`/`Notes`) o fallback posicional (`col_0`, `col_1`, ...).
+    - Normalizacion semantica de estados de maquetas (`unbuilt`, `in_progress`, `built`, `wishlist`, `for_trade`) y pinturas (`owned`, `low_stock`, `wishlist`).
+    - Clasificacion automatica de categorias de escala (`gunpla-mecha`, `aviation`, `military`, `automotive`, `naval`) segun patrones de texto, marcas y escalas.
+  - **Endpoints Especializados de Importacion Masiva:**
+    - `POST /api/v1/workbench/import/stash`: Importa maquetas al Stash personal con emparejamiento inteligente contra el catalogo de kits (`db.kits`) o creacion limpia de kits personalizados (`kit-custom-...`) con `source: 'user-import'`, soportando previsualizacion (`dryRun: true`) sin persistir cambios.
+    - `POST /api/v1/workbench/import/paints`: Importa frascos al Paint Rack con emparejamiento por codigo/marca contra `db.paints` o creacion de pinturas personalizadas (`paint-custom-...`). Si la pintura ya existe en el rack, incrementa ordenadamente la cantidad existente.
+  - **Integracion UI Completa en Workbench (Mi Taller):**
+    - Boton `📥 Importar CSV / Excel` en subpestana Maquetas (`#wb-subtab-stash`).
+    - Boton `📥 Importar CSV Pinturas` en subpestana Rack de Pinturas (`#wb-subtab-paints`).
+    - Modal interactivo `#modal-bulk-import` con tabs de seleccion (Maquetas / Pinturas), selector de archivos (.csv, .tsv, .txt), area de texto pegable, boton de plantilla rapida de ejemplo (`insertBulkImportSample`), caja de resumen con badges de emparejamiento, tabla de previsualizacion en vivo y confirmacion directa con recarga de taller.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/bulk-import.test.mjs` (10 casos de prueba cubriendo delimitadores, campos entrecomillados, fallback sin encabezados, clasificacion de categorias, normalizacion y extraccion de filas). Total unit tests: 54 passed in 163ms.
+    - Extensión de `scripts/smoketest.mjs` con cobertura end-to-end de `dryRun` y ejecucion real para Stash y Pinturas, junto con verificacion de renderizado HTML en PlamoScale y GunplaJunkies.
 
 - **Canales de Consulta Directa por WhatsApp en Obras del Showcase y Bitácoras (Direct WhatsApp Community Inquiries):**
   - **Generador Determinista de Enlaces y Plantillas (`generateWhatsAppInquiry`):**

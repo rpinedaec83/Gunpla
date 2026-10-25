@@ -406,6 +406,9 @@ export function renderViews(
               <button class="filter-pill" onclick="openEditProfileModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <span>✏️</span> Editar Perfil
               </button>
+              <button id="btn-import-stash-csv" class="filter-pill" onclick="openBulkImportModal('stash')" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(34, 197, 94, 0.4); color: #4ade80; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <span>📥</span> Importar CSV / Excel
+              </button>
               <button class="btn-primary" onclick="openAddStashModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem;">
                 + Agregar Kit al Stash
               </button>
@@ -484,6 +487,9 @@ export function renderViews(
               <span id="wb-paints-count-badge" style="background: rgba(192,132,252,0.15); color: #c084fc; border: 1px solid rgba(192,132,252,0.3); font-size: 0.75rem; padding: 0.15rem 0.55rem; border-radius: 9999px; font-weight: 600;">0 frascos</span>
             </div>
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button id="btn-import-paints-csv" class="filter-pill" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; border-color: rgba(34, 197, 94, 0.4); color: #4ade80;" onclick="openBulkImportModal('paints')">
+                📥 Importar CSV Pinturas
+              </button>
               <button class="filter-pill" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; background: linear-gradient(90deg, rgba(56,189,248,0.15), rgba(168,85,247,0.15)); color: #38bdf8; border-color: rgba(56,189,248,0.4);" onclick="openPaintEquivalencesModal()">
                 🧪 Asistente de Equivalencias IA
               </button>

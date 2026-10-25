@@ -234,6 +234,34 @@ export const openApiSpec = {
         }
       }
     },
+    '/api/v1/workbench/import/stash': {
+      post: {
+        tags: ['Workbench'],
+        summary: 'Bulk import model kits to personal stash from CSV/TSV or JSON array with auto-catalog matching',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  csvContent: { type: 'string' },
+                  delimiter: { type: 'string' },
+                  dryRun: { type: 'boolean' },
+                  items: { type: 'array', items: { type: 'object' } }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          '200': { description: 'Dry run import preview results' },
+          '201': { description: 'Bulk items imported successfully' },
+          '400': { description: 'Validation error' }
+        }
+      }
+    },
     '/api/v1/workbench/stash/{id}': {
       patch: {
         tags: ['Workbench'],
@@ -325,6 +353,34 @@ export const openApiSpec = {
         responses: {
           '200': { description: 'Cross-brand equivalences with rack ownership indicators' },
           '404': { description: 'Paint not found' }
+        }
+      }
+    },
+    '/api/v1/workbench/import/paints': {
+      post: {
+        tags: ['Workbench'],
+        summary: 'Bulk import paints to personal paint rack from CSV/TSV or JSON array with auto-catalog matching',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  csvContent: { type: 'string' },
+                  delimiter: { type: 'string' },
+                  dryRun: { type: 'boolean' },
+                  items: { type: 'array', items: { type: 'object' } }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          '200': { description: 'Dry run import preview results' },
+          '201': { description: 'Bulk paints imported successfully' },
+          '400': { description: 'Validation error' }
         }
       }
     },

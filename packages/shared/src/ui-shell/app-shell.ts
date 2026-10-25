@@ -3034,6 +3034,249 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     }
   }
 
+  // --- Bulk Import Tool Engine (CSV / TSV / Excel for Stash & Paint Rack) ---
+  let currentBulkImportTab = 'stash';
+
+  function openBulkImportModal(tab) {
+    const m = document.getElementById('modal-bulk-import');
+    if (!m) return;
+    currentBulkImportTab = (tab === 'paints') ? 'paints' : 'stash';
+    switchBulkImportTab(currentBulkImportTab);
+
+    // Clear previous inputs & preview
+    const textarea = document.getElementById('bulk-import-textarea');
+    if (textarea) textarea.value = '';
+    const fileInput = document.getElementById('bulk-import-file-input');
+    if (fileInput) fileInput.value = '';
+    const previewBox = document.getElementById('bulk-import-preview-box');
+    if (previewBox) previewBox.style.display = 'none';
+
+    m.style.display = 'flex';
+    m.classList.add('active');
+  }
+
+  function closeBulkImportModal(e) {
+    if (!e || e.target.id === 'modal-bulk-import' || e.target.classList.contains('auth-close') || !e.target) {
+      const m = document.getElementById('modal-bulk-import');
+      if (m) {
+        m.classList.remove('active');
+        m.style.display = 'none';
+      }
+    }
+  }
+
+  function switchBulkImportTab(tab) {
+    currentBulkImportTab = (tab === 'paints') ? 'paints' : 'stash';
+    const btnStash = document.getElementById('tab-btn-import-stash');
+    const btnPaints = document.getElementById('tab-btn-import-paints');
+    const guideText = document.getElementById('bulk-import-guide-text');
+    const textarea = document.getElementById('bulk-import-textarea');
+    const previewBox = document.getElementById('bulk-import-preview-box');
+    if (previewBox) previewBox.style.display = 'none';
+
+    if (currentBulkImportTab === 'stash') {
+      if (btnStash) {
+        btnStash.classList.add('active');
+        btnStash.style.background = '#2563eb';
+        btnStash.style.color = '#fff';
+      }
+      if (btnPaints) {
+        btnPaints.classList.remove('active');
+        btnPaints.style.background = '';
+        btnPaints.style.color = '';
+      }
+      if (guideText) {
+        guideText.innerHTML = '<strong>Columnas compatibles para Maquetas:</strong> <code>Nombre, Marca, Escala, Grado, Estado, Notas</code>.<br/><em>El sistema emparejar\u00e1 autom\u00e1ticamente con el cat\u00e1logo oficial o crear\u00e1 maquetas personalizadas.</em>';
+      }
+      if (textarea) {
+        textarea.placeholder = 'Nombre, Marca, Escala, Grado, Estado\\nRG Hi-Nu Gundam, Bandai Spirits, 1/144, RG, unbuilt\\nMG Eclipse Gundam, Bandai Spirits, 1/100, MG, in_progress\\nHG Aerial Rebuild, Bandai Spirits, 1/144, HG, completed';
+      }
+    } else {
+      if (btnPaints) {
+        btnPaints.classList.add('active');
+        btnPaints.style.background = '#2563eb';
+        btnPaints.style.color = '#fff';
+      }
+      if (btnStash) {
+        btnStash.classList.remove('active');
+        btnStash.style.background = '';
+        btnStash.style.color = '';
+      }
+      if (guideText) {
+        guideText.innerHTML = '<strong>Columnas compatibles para Pinturas:</strong> <code>Codigo, Marca, Nombre, Tipo, Color, Cantidad, Estado</code>.<br/><em>C\u00f3digos como XF-1, LP-11, C1 o AV-70950 se emparejan autom\u00e1ticamente.</em>';
+      }
+      if (textarea) {
+        textarea.placeholder = 'Codigo, Marca, Nombre, Tipo, Color, Cantidad, Estado\\nXF-1, Tamiya, Flat Black, Enamel, #000000, 2, full\\nLP-11, Tamiya, Silver, Lacquer, #c0c0c0, 1, half\\nC1, Mr. Color, White, Lacquer, #ffffff, 1, full\\nAV-70950, Vallejo, Black, Acrylic, #111111, 3, unopened';
+      }
+    }
+  }
+
+  function insertBulkImportSample() {
+    const textarea = document.getElementById('bulk-import-textarea');
+    if (!textarea) return;
+    if (currentBulkImportTab === 'stash') {
+      textarea.value = 'Nombre, Marca, Escala, Grado, Estado, Notas\\n' +
+        'RG Hi-Nu Gundam, Bandai Spirits, 1/144, RG, unbuilt, Comprado en Akihabara\\n' +
+        'MG Eclipse Gundam, Bandai Spirits, 1/100, MG, in_progress, Frame ensamblado\\n' +
+        'HG Aerial Rebuild, Bandai Spirits, 1/144, HG, completed, Pintado a mano\\n' +
+        'PG Unleashed RX-78-2, Bandai Spirits, 1/60, PG, backlog, Edici\u00f3n de aniversario\\n' +
+        'Custom Resin Kshatriya, The 51, 1/100, Resin, unbuilt, Kit garage resina';
+    } else {
+      textarea.value = 'Codigo, Marca, Nombre, Tipo, Color, Cantidad, Estado\\n' +
+        'XF-1, Tamiya, Flat Black, Enamel, #000000, 2, full\\n' +
+        'LP-11, Tamiya, Silver, Lacquer, #c0c0c0, 1, half\\n' +
+        'C1, Mr. Color, White, Lacquer, #ffffff, 2, full\\n' +
+        'AV-70950, Vallejo, Black, Acrylic, #111111, 3, unopened\\n' +
+        'MECHA-01, Mecha Color, Steel, Acrylic, #4b5563, 1, full';
+    }
+  }
+
+  function handleBulkImportFileUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const textarea = document.getElementById('bulk-import-textarea');
+      if (textarea && e.target && e.target.result) {
+        textarea.value = e.target.result;
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  async function executeBulkImport(dryRun) {
+    const token = localStorage.getItem('plamo_sso_token');
+    if (!token) {
+      alert('Debes iniciar sesi\u00f3n para importar elementos a tu taller.');
+      openAuthModal();
+      return;
+    }
+
+    const textarea = document.getElementById('bulk-import-textarea');
+    const csvContent = textarea ? textarea.value.trim() : '';
+    if (!csvContent) {
+      alert('Por favor pega contenido en formato CSV/Excel o selecciona un archivo antes de continuar.');
+      return;
+    }
+
+    const btnConfirm = document.getElementById('btn-bulk-import-confirm');
+    const originalBtnText = btnConfirm ? btnConfirm.textContent : '';
+    if (btnConfirm) {
+      btnConfirm.disabled = true;
+      btnConfirm.textContent = dryRun ? '\u23f3 Analizando...' : '\u23f3 Importando...';
+    }
+
+    try {
+      const endpoint = apiBase + '/api/v1/workbench/import/' + currentBulkImportTab;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ csvContent, dryRun: !!dryRun })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al procesar la importaci\u00f3n masiva');
+      }
+
+      const previewBox = document.getElementById('bulk-import-preview-box');
+      const statBadge = document.getElementById('bulk-import-stat-badge');
+      const matchesBadge = document.getElementById('bulk-import-matches-badge');
+      const tableContainer = document.getElementById('bulk-import-preview-table-container');
+
+      if (previewBox) previewBox.style.display = 'block';
+      if (statBadge) {
+        if (dryRun) {
+          statBadge.style.background = 'rgba(56, 189, 248, 0.15)';
+          statBadge.style.color = '#38bdf8';
+          statBadge.textContent = '\ud83d\udd0d Previsualizaci\u00f3n: ' + (data.importedCount || 0) + ' fila(s) detectadas';
+        } else {
+          statBadge.style.background = 'rgba(34, 197, 94, 0.15)';
+          statBadge.style.color = '#4ade80';
+          statBadge.textContent = '\u2705 \u00a1Importaci\u00f3n Exitosa! ' + (data.importedCount || 0) + ' elemento(s) procesados';
+        }
+      }
+      if (matchesBadge) {
+        matchesBadge.textContent = (data.matchedCount || 0) + ' con cat\u00e1logo \u00b7 ' + (data.customCreatedCount || 0) + ' personalizados';
+      }
+
+      if (tableContainer) {
+        const previewItems = data.items || [];
+        if (previewItems.length === 0) {
+          tableContainer.innerHTML = '<p style="color: #94a3b8; font-style: italic; margin: 0.5rem 0;">No se detectaron registros v\u00e1lidos en el texto provisto.</p>';
+        } else {
+          let rowsHtml = '';
+          if (currentBulkImportTab === 'stash') {
+            rowsHtml = '<table style="width: 100%; border-collapse: collapse; text-align: left;">' +
+              '<thead><tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">' +
+              '<th style="padding: 0.35rem 0.5rem;">Maqueta</th>' +
+              '<th style="padding: 0.35rem 0.5rem;">Escala / Grado</th>' +
+              '<th style="padding: 0.35rem 0.5rem;">Estado</th>' +
+              '<th style="padding: 0.35rem 0.5rem;">Tipo</th>' +
+              '</tr></thead><tbody>' +
+              previewItems.map(item => {
+                const k = item.kit || {};
+                const name = k.name || item.name || 'Sin nombre';
+                const scale = k.scale || item.scale || '-';
+                const grade = k.grade || item.grade || '-';
+                const status = item.status || 'unbuilt';
+                const isCatalog = !item.isCustom;
+                return '<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">' +
+                  '<td style="padding: 0.35rem 0.5rem; color: #fff; font-weight: 500;">' + name + '</td>' +
+                  '<td style="padding: 0.35rem 0.5rem; color: #94a3b8;">' + scale + ' \u00b7 ' + grade + '</td>' +
+                  '<td style="padding: 0.35rem 0.5rem;"><span class="status-badge" style="font-size: 0.7rem; padding: 0.1rem 0.4rem;">' + status + '</span></td>' +
+                  '<td style="padding: 0.35rem 0.5rem;">' + (isCatalog ? '<span style="color: #4ade80;">Cat\u00e1logo</span>' : '<span style="color: #38bdf8;">Personalizado</span>') + '</td>' +
+                  '</tr>';
+              }).join('') + '</tbody></table>';
+          } else {
+            rowsHtml = '<table style="width: 100%; border-collapse: collapse; text-align: left;">' +
+              '<thead><tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">' +
+              '<th style="padding: 0.35rem 0.5rem;">C\u00f3digo</th>' +
+              '<th style="padding: 0.35rem 0.5rem;">Nombre / Marca</th>' +
+              '<th style="padding: 0.35rem 0.5rem;">Cant.</th>' +
+              '<th style="padding: 0.35rem 0.5rem;">Estado</th>' +
+              '<th style="padding: 0.35rem 0.5rem;">Tipo</th>' +
+              '</tr></thead><tbody>' +
+              previewItems.map(item => {
+                const p = item.paint || {};
+                const code = p.code || item.code || '-';
+                const name = p.name || item.name || '-';
+                const brand = p.brand || item.brand || '-';
+                const qty = item.quantity || 1;
+                const status = item.status || 'full';
+                const isCatalog = !item.isCustom;
+                return '<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">' +
+                  '<td style="padding: 0.35rem 0.5rem; color: #38bdf8; font-weight: 600;">' + code + '</td>' +
+                  '<td style="padding: 0.35rem 0.5rem; color: #fff;">' + name + ' <small style="color: #94a3b8;">(' + brand + ')</small></td>' +
+                  '<td style="padding: 0.35rem 0.5rem; color: #cbd5e1;">x' + qty + '</td>' +
+                  '<td style="padding: 0.35rem 0.5rem;"><span class="status-badge" style="font-size: 0.7rem; padding: 0.1rem 0.4rem;">' + status + '</span></td>' +
+                  '<td style="padding: 0.35rem 0.5rem;">' + (isCatalog ? '<span style="color: #4ade80;">Cat\u00e1logo</span>' : '<span style="color: #38bdf8;">Personalizada</span>') + '</td>' +
+                  '</tr>';
+              }).join('') + '</tbody></table>';
+          }
+          tableContainer.innerHTML = rowsHtml;
+        }
+      }
+
+      if (!dryRun) {
+        loadWorkbenchData();
+        setTimeout(() => {
+          closeBulkImportModal();
+        }, 1800);
+      }
+    } catch (err) {
+      alert('Error en importaci\u00f3n: ' + (err.message || 'Ocurri\u00f3 un error inesperado'));
+    } finally {
+      if (btnConfirm) {
+        btnConfirm.disabled = false;
+        btnConfirm.textContent = originalBtnText;
+      }
+    }
+  }
+
   // --- AI Paint Equivalences & Recipe Assistant Engine ---
   function openPaintEquivalencesModal(sourceCode, sourceBrand) {
     const m = document.getElementById('modal-paint-equivalences');

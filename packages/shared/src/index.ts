@@ -161,7 +161,7 @@ export interface KitRecord {
   scalematesUrl?: string;
   manualUrl?: string;
   barcode?: string;
-  source: 'manual' | 'scalemates' | 'scalemates-fallback';
+  source: 'manual' | 'scalemates' | 'scalemates-fallback' | 'user-import';
   createdAt: string;
 }
 
@@ -844,6 +844,70 @@ export interface WhatsAppInquiryResponse {
   whatsappUrl: string;
   prefilledMessage: string;
   inquiryType: WhatsAppInquiryType;
+}
+
+export interface BulkStashImportItem {
+  name: string;
+  brand?: string;
+  scale?: string;
+  grade?: string;
+  status?: StashStatus;
+  notes?: string;
+  pricePaid?: number;
+  currency?: string;
+}
+
+export interface BulkPaintImportItem {
+  code: string;
+  brand?: string;
+  name?: string;
+  type?: PaintType;
+  color?: string;
+  quantity?: number;
+  status?: PaintRackStatus;
+  notes?: string;
+}
+
+export interface BulkImportRequest {
+  csvContent?: string;
+  delimiter?: string;
+  dryRun?: boolean;
+  items?: any[];
+}
+
+export interface BulkStashImportResponse {
+  dryRun: boolean;
+  totalParsed: number;
+  importedCount: number;
+  matchedCatalogCount: number;
+  createdCustomCount: number;
+  items: StashItemRecord[];
+  previewRows?: Array<{
+    name: string;
+    brand?: string;
+    matchedKitName?: string;
+    isCatalogMatch: boolean;
+    status: StashStatus;
+  }>;
+  errors?: string[];
+}
+
+export interface BulkPaintImportResponse {
+  dryRun: boolean;
+  totalParsed: number;
+  importedCount: number;
+  matchedCatalogCount: number;
+  createdCustomCount: number;
+  items: PaintRackItemRecord[];
+  previewRows?: Array<{
+    code: string;
+    brand?: string;
+    name?: string;
+    matchedPaintName?: string;
+    isCatalogMatch: boolean;
+    quantity: number;
+  }>;
+  errors?: string[];
 }
 
 export * from './ui-shell/app-shell';

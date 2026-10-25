@@ -4,10 +4,14 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
-- **Bulk Import / CSV Stash & Paint Rack Migration Tool:** Allow modelers to migrate their existing inventories from spreadsheets or external platforms directly into Mi Taller.
 - **Push Notifications & In-App Activity Bell:** Web push notification service worker listener for build comments and stock alert triggers.
+- **Social Sharing OpenGraph Preview Cards:** Auto-generated dynamic preview images for contest podiums and build logs when shared on Facebook and Twitter/X.
 
 ## Completed Candidates & Parking Lot Items
+
+### BULK-IMPORT -- Herramienta de Importacion Masiva CSV / Excel para Stash & Paint Rack (COMPLETED)
+- Goal: Allow modelers to migrate their existing personal inventories of kits and paint racks from CSV, TSV, or Excel spreadsheets directly into Mi Taller with auto-matching against the kit and paint catalogs or automatic custom creation.
+- Delivered: Endpoints `POST /api/v1/workbench/import/stash` and `POST /api/v1/workbench/import/paints`; delimiter autodetection (`,`, `\t`, `;`); quoted field handling; multilingual column mapping (ES/EN) and positional fallback; category classification (`gunpla-mecha`, `aviation`, `military`, `automotive`, `naval`); `dryRun` simulation mode; modal `#modal-bulk-import` with tabs, sample loader, file picker, textarea, and preview table; action buttons in `#wb-subtab-stash` and `#wb-subtab-paints`; 10 unit tests (`tests/unit/bulk-import.test.mjs`, total 54 passing); end-to-end smoketest; and verified live deployment on LXC 190.
 
 ### WHATSAPP-INQUIRIES -- Direct WhatsApp Community Inquiries on Builds & Showcase (COMPLETED)
 - Goal: Direct contact channels between builders and collectors on showcased models and work-in-progress logs for paint recipes, custom commissions, and build purchase inquiries.

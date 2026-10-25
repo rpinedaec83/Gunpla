@@ -1378,6 +1378,79 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Bulk Import Modal (CSV/TSV/Excel for Stash & Paint Rack) -->
+<div id="modal-bulk-import" class="custom-modal modal" onclick="closeBulkImportModal(event)" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+  <div class="modal-box" onclick="event.stopPropagation()" style="background: #0f172a; border: 1px solid rgba(34, 197, 94, 0.4); border-radius: 12px; width: 100%; max-width: 650px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.6); overflow: hidden;">
+    <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(15,23,42,0.95) 100%); display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.4rem;">📥</span>
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Importación Masiva (CSV / Excel)</h3>
+          <p style="font-size: 0.78rem; color: #4ade80; margin: 0.15rem 0 0 0;">Migra tu Stash o Paint Rack en segundos</p>
+        </div>
+      </div>
+      <span style="font-size: 1.5rem; color: #94a3b8; cursor: pointer; line-height: 1;" onclick="closeBulkImportModal()">&times;</span>
+    </div>
+
+    <div style="padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;">
+      <!-- Import Target Tabs -->
+      <div style="display: flex; gap: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.75rem;">
+        <button id="tab-btn-import-stash" type="button" class="filter-pill active" onclick="switchBulkImportTab('stash')" style="flex: 1; justify-content: center; padding: 0.5rem;">
+          📦 Maquetas (Stash)
+        </button>
+        <button id="tab-btn-import-paints" type="button" class="filter-pill" onclick="switchBulkImportTab('paints')" style="flex: 1; justify-content: center; padding: 0.5rem;">
+          🎨 Pinturas (Rack)
+        </button>
+      </div>
+
+      <!-- Format Instructions Banner -->
+      <div id="bulk-import-instructions" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.85rem 1rem;">
+        <div id="bulk-import-guide-text" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.5;">
+          <strong>Columnas compatibles para Maquetas:</strong> <code>Nombre, Marca, Escala, Grado, Estado, Notas</code>.<br/>
+          <em>El sistema emparejará automáticamente con el catálogo oficial o creará maquetas personalizadas.</em>
+        </div>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+          <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.6rem; color: #38bdf8;" onclick="insertBulkImportSample()">
+            📋 Cargar Plantilla de Ejemplo
+          </button>
+        </div>
+      </div>
+
+      <!-- File Picker -->
+      <div>
+        <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.25rem;">Subir archivo (.csv, .tsv, .txt):</label>
+        <input type="file" id="bulk-import-file-input" accept=".csv,.tsv,.txt" onchange="handleBulkImportFileUpload(event)" style="font-size: 0.82rem; color: #cbd5e1;" />
+      </div>
+
+      <!-- Paste Textarea -->
+      <div>
+        <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.25rem;">O pega el contenido separado por comas, tabs o punto y coma:</label>
+        <textarea id="bulk-import-textarea" class="auth-input" rows="5" style="font-family: monospace; font-size: 0.78rem; line-height: 1.4;" placeholder="Nombre, Marca, Escala, Grado, Estado&#10;RG Hi-Nu Gundam, Bandai Spirits, 1/144, RG, unbuilt&#10;MG Eclipse Gundam, Bandai Spirits, 1/100, MG, in_progress"></textarea>
+      </div>
+
+      <!-- Status / Preview Results Box -->
+      <div id="bulk-import-preview-box" style="display: none; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem;">
+        <div id="bulk-import-summary-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+          <span id="bulk-import-stat-badge" class="status-badge" style="background: rgba(34,197,94,0.15); color: #4ade80;"></span>
+          <span id="bulk-import-matches-badge" style="font-size: 0.78rem; color: #38bdf8;"></span>
+        </div>
+        <div id="bulk-import-preview-table-container" style="max-height: 160px; overflow-y: auto; font-size: 0.75rem;"></div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+        <button type="button" class="filter-pill" onclick="closeBulkImportModal()">Cerrar</button>
+        <button type="button" class="filter-pill" style="border-color: rgba(56,189,248,0.4); color: #38bdf8;" onclick="executeBulkImport(true)">
+          👁️ Previsualizar
+        </button>
+        <button type="button" id="btn-bulk-import-confirm" class="btn-primary" style="background: #16a34a; border-color: #16a34a; padding: 0.5rem 1.25rem;" onclick="executeBulkImport(false)">
+          📥 Importar a Mi Taller
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 `;
 }

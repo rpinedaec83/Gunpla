@@ -376,3 +376,27 @@ Decisions made:
 Lessons learned:
 - Storing the current Lightbox context (`window.__LIGHTBOX_CURRENT`) allows seamless transition from browsing full-resolution photos directly to contacting the modeler who created them.
 Usage: Moderate -- self-estimated
+
+### BULK-IMPORT -- Herramienta de Importacion Masiva CSV / Excel para Stash & Paint Rack | eMOE: 5 CU | aMOE: 5 CU
+What was done:
+- Designed and authored shared data models in `packages/shared/src/index.ts`: `BulkStashImportItem`, `BulkPaintImportItem`, `BulkImportRequest`, `BulkStashImportResponse`, and `BulkPaintImportResponse`.
+- Implemented core business logic in `apps/api/src/slices/workbench-stash/workbench.slice.ts`:
+  - `parseDelimitedText`: Robust parser supporting comma, tab, and semicolon delimiters (common in Spanish Excel exports), quoted fields, and headerless positional fallbacks (`col_0`, `col_1`, ...).
+  - Normalization helpers: `inferScaleCategory` (classifying `gunpla-mecha`, `aviation`, `military`, `automotive`, `naval`), `normalizeStashStatus`, `normalizePaintStatus`, `extractStashRow`, and `extractPaintRow`.
+  - Endpoint `POST /api/v1/workbench/import/stash`: Batch imports model kits to user Stash with exact/fuzzy catalog matching against `db.kits`, clean creation of custom kits (`kit-custom-...`) with `source: 'user-import'` ensuring zero dropped records, and `dryRun` preview mode.
+  - Endpoint `POST /api/v1/workbench/import/paints`: Batch imports paint bottles to personal Paint Rack with code/brand catalog matching, quantity incrementing for existing bottles, custom paint fallback (`paint-custom-...`), and `dryRun` preview mode.
+- Documented new endpoints in OpenAPI 3.1 specification (`apps/api/src/openapi/openapi-spec.ts`).
+- Created UI components:
+  - Added action buttons `📥 Importar CSV / Excel` in `#wb-subtab-stash` and `📥 Importar CSV Pinturas` in `#wb-subtab-paints`.
+  - Implemented interactive modal `#modal-bulk-import` with target tabs, format instructions banner, sample loader button (`insertBulkImportSample`), file upload picker, textarea, status/stat badges, live preview table container, and confirm action.
+  - Implemented client handlers in `app-shell.ts`: `openBulkImportModal`, `closeBulkImportModal`, `switchBulkImportTab`, `insertBulkImportSample`, `handleBulkImportFileUpload`, and `executeBulkImport`.
+- Authored isolated unit test suite `tests/unit/bulk-import.test.mjs` (10 test cases). Total unit test suite: 54 passed in 163ms.
+- Extended end-to-end regression smoketest in `scripts/smoketest.mjs` with full coverage for dryRun, live import, and UI verification.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190`) with live curl assertions on API and both web applications.
+Issues hit:
+- In `dryRun` mode, ensured `items` array is still populated with simulated parsed rows so the client-side preview table renders properly before committing to database.
+Decisions made:
+- Autodetecting delimiters (`,`, `\t`, `;`) dynamically by analyzing first-line character frequencies guarantees seamless parsing whether a user pastes from Google Sheets, Microsoft Excel (ES/EN), or a raw CSV file.
+Lessons learned:
+- Incrementing bottle quantities when importing existing paints avoids rack clutter and faithfully mirrors the builder's physical restocks.
+Usage: Moderate -- self-estimated
