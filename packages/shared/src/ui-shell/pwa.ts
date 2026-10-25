@@ -108,7 +108,7 @@ export function generateAppIconSvg(config: AppShellConfig, size = 512): string {
 
 export function generateServiceWorker(config: AppShellConfig): string {
   const tenantSlug = config.tenantSlug;
-  const version = 'v1';
+  const version = 'v2';
 
   return `/**
  * PlamoScale / GunplaJunkies Service Worker
@@ -155,10 +155,15 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
-  const url = new URL(request.url);
+  let url;
+  try {
+    url = new URL(request.url);
+  } catch {
+    return;
+  }
 
-  // Only intercept GET requests
-  if (request.method !== 'GET') {
+  // Only intercept same-origin GET requests; let external CDNs/analytics/OAuth flow natively
+  if (request.method !== 'GET' || url.origin !== self.location.origin) {
     return;
   }
 
@@ -206,7 +211,7 @@ self.addEventListener('fetch', (event) => {
           }
           return networkRes;
         })
-        .catch(() => cachedRes);
+        .catch(() => cachedRes || new Response('', { status: 408 }));
 
       return cachedRes || fetchPromise;
     })
