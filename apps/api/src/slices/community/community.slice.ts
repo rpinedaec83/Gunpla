@@ -151,7 +151,7 @@ export const INITIAL_CONTEST_ENTRIES: ContestEntryRecord[] = [
     userDisplayName: 'Fog1 Labs',
     title: 'Tiger I Early Production - Frente Oriental Kursk 1943',
     category: 'military',
-    coverImageUrl: '/legacy-media/plamoscale/images/fog1labs1/fulls/1.JPG',
+    coverImageUrl: '/legacy-media/plamoscale/images/fog1labs1/fulls/50.jpg',
     voteCount: 18,
     votedByUserIds: ['user-aperich', 'user-dcampos'],
     status: 'approved',

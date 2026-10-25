@@ -92,8 +92,8 @@ export const INITIAL_COMMISSION_BUILDERS: CommissionBuilderRecord[] = [
     acceptingCommissions: true,
     startingPricePEN: 200,
     portfolioSampleUrls: [
-      '/legacy-media/plamoscale/images/fog1labs1/fulls/1.JPG',
-      '/legacy-media/plamoscale/images/fog1labs1/fulls/10.JPG'
+      '/legacy-media/plamoscale/images/fog1labs1/fulls/50.jpg',
+      '/legacy-media/plamoscale/images/fog1labs1/fulls/60.jpg'
     ],
     whatsappUrl: 'https://chat.whatsapp.com/GJsVix10Hqy2ywwYmh8EYx'
   },
@@ -107,8 +107,8 @@ export const INITIAL_COMMISSION_BUILDERS: CommissionBuilderRecord[] = [
     acceptingCommissions: true,
     startingPricePEN: 150,
     portfolioSampleUrls: [
-      '/legacy-media/plamoscale/images/dcampos/fulls/1.jpg',
-      '/legacy-media/plamoscale/images/dcampos/fulls/5.jpg'
+      '/legacy-media/plamoscale/images/dcampos/fulls/29.jpg',
+      '/legacy-media/plamoscale/images/dcampos/fulls/35.jpg'
     ],
     whatsappUrl: 'https://chat.whatsapp.com/GJsVix10Hqy2ywwYmh8EYx',
     instagramUrl: 'https://www.instagram.com/d.de.daniel'

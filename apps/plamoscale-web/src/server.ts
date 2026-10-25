@@ -181,13 +181,13 @@ app.get('/terms', (_req: Request, res: Response) => {
 // PWA & Offline Support: Manifest, Service Worker, and App Icons
 // ---------------------------------------------------------------------------
 app.get('/manifest.json', (_req: Request, res: Response) => {
-  const currentConfig: AppShellConfig = { ...config, apiUrl: getApiUrl() };
+  const currentConfig: AppShellConfig = { ...config, apiUrl: PUBLIC_API_URL };
   res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
   res.json(generateManifest(currentConfig));
 });
 
 app.get('/sw.js', (_req: Request, res: Response) => {
-  const currentConfig: AppShellConfig = { ...config, apiUrl: getApiUrl() };
+  const currentConfig: AppShellConfig = { ...config, apiUrl: PUBLIC_API_URL };
   res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
   res.setHeader('Service-Worker-Allowed', '/');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -195,7 +195,7 @@ app.get('/sw.js', (_req: Request, res: Response) => {
 });
 
 app.get('/icons/:name', async (req: Request, res: Response) => {
-  const currentConfig: AppShellConfig = { ...config, apiUrl: getApiUrl() };
+  const currentConfig: AppShellConfig = { ...config, apiUrl: PUBLIC_API_URL };
   const { name } = req.params;
   const svg = generateAppIconSvg(currentConfig, 512);
 
@@ -234,7 +234,7 @@ app.get('*', async (_req: Request, res: Response) => {
   const data = await fetchTenantData();
   const currentConfig: AppShellConfig = {
     ...config,
-    apiUrl: getApiUrl()
+    apiUrl: PUBLIC_API_URL
   };
   const html = renderAppShell(currentConfig, data);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
