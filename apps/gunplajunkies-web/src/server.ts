@@ -16,7 +16,8 @@ import {
   renderTermsOfService,
   generateManifest,
   generateServiceWorker,
-  generateAppIconSvg
+  generateAppIconSvg,
+  OpenGraphMetadata
 } from '@gunpla/shared';
 
 dotenv.config();
@@ -232,14 +233,82 @@ app.get('/icons/:name', async (req: Request, res: Response) => {
   return res.send(svg);
 });
 
+function resolveOpenGraphMetadata(req: Request, data: AppShellData, currentConfig: AppShellConfig): OpenGraphMetadata {
+  const isGunpla = currentConfig.tenantSlug === 'gunplajunkies';
+  const defaultDomain = isGunpla ? 'gunplajunkies.com' : 'plamoscale.com';
+  const host = req.get('host') || defaultDomain;
+  const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+  const origin = `${protocol}://${host}`;
+
+  const path = req.path;
+
+  // 1. Build log detail: /builds/:slug or /b/:slug
+  if (path.startsWith('/builds/') || path.startsWith('/b/')) {
+    const slug = path.replace(/^\/(builds|b)\//, '').split('/')[0].split('?')[0];
+    const build = (data.builds || []).find((b: any) => b.slug === slug || b.id === slug);
+    if (build) {
+      const statusText = build.status === 'completed' ? 'Terminado' : 'En Progreso';
+      const author = build.userDisplayName || build.username;
+      return {
+        title: `${build.title} por ${author} | ${currentConfig.tenantName}`,
+        description: `${build.subtitle || 'Bitácora de montaje y pintura'}. Escala: ${build.scale || '-'} · Grado: ${build.grade || '-'} · Estado: ${statusText}.`,
+        image: `${origin}/api/v1/og/builds/${encodeURIComponent(slug)}`,
+        url: `${origin}/builds/${encodeURIComponent(slug)}`,
+        type: 'article',
+        siteName: currentConfig.tenantName
+      };
+    }
+  }
+
+  // 2. Contest podium or contest detail: /contests/:id/podium or /contests/:id
+  if (path.startsWith('/contests/')) {
+    const parts = path.split('/').filter(Boolean);
+    const contestId = parts[1];
+    const contest = (data.contests || []).find((c: any) => c.id === contestId || c.slug === contestId);
+    if (contest) {
+      return {
+        title: `Podio y Ganadores: ${contest.title} | ${currentConfig.tenantName}`,
+        description: `Conoce las obras galardonadas con Oro, Plata y Bronce del certamen ${contest.title} en ${currentConfig.tenantName}.`,
+        image: `${origin}/api/v1/og/contests/${encodeURIComponent(contest.id)}`,
+        url: `${origin}/contests/${encodeURIComponent(contest.id)}/podium`,
+        type: 'website',
+        siteName: currentConfig.tenantName
+      };
+    }
+  }
+
+  // 3. Hall of fame: /hall-of-fame
+  if (path === '/hall-of-fame') {
+    return {
+      title: `Salón de la Fama y Galería de Honor | ${currentConfig.tenantName}`,
+      description: 'Los mejores modelistas, obras maestras y medallas condecoradas con evaluación oficial de jurados y voto popular.',
+      image: `${origin}/api/v1/og/hall-of-fame`,
+      url: `${origin}/hall-of-fame`,
+      type: 'website',
+      siteName: currentConfig.tenantName
+    };
+  }
+
+  // 4. Default homepage / fallback
+  return {
+    title: `${currentConfig.tenantName} — ${currentConfig.tenantTagline}`,
+    description: 'Comunidad y plataforma de modelismo a escala. Bitácoras de armado, catálogo de kits, muestrario de pinturas y banco de trabajo personal.',
+    image: `${origin}/api/v1/og/default`,
+    url: `${origin}${path === '/' ? '' : path}`,
+    type: 'website',
+    siteName: currentConfig.tenantName
+  };
+}
+
 // App Shell Main Entry Point
-app.get('*', async (_req: Request, res: Response) => {
+app.get('*', async (req: Request, res: Response) => {
   const data = await fetchTenantData();
   const currentConfig: AppShellConfig = {
     ...config,
     apiUrl: PUBLIC_API_URL
   };
-  const html = renderAppShell(currentConfig, data);
+  const og = resolveOpenGraphMetadata(req, data, currentConfig);
+  const html = renderAppShell(currentConfig, data, og);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(html);
 });

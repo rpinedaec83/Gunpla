@@ -1879,7 +1879,67 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] Bulk Import Tool (Stash & Paint Rack) verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT CHECKS PASSED ===');
+    // --- Verifying Social Sharing OpenGraph Preview Cards & Meta Tags ---
+    console.log('\n--- Verifying Social Sharing OpenGraph Preview Cards & Meta Tags ---');
+
+    // 1. Dynamic Build Card (PNG)
+    const ogBuildPngRes = await fetch(`${baseUrl}/api/v1/og/builds/mg-eclipse-gundam-custom-paint`);
+    assert.equal(ogBuildPngRes.status, 200, 'GET /api/v1/og/builds/:slugOrId must return 200 OK');
+    const ogBuildContentType = ogBuildPngRes.headers.get('content-type') || '';
+    assert.ok(ogBuildContentType.includes('image/png') || ogBuildContentType.includes('image/svg+xml'), 'Must return image');
+    const ogBuildBuffer = Buffer.from(await ogBuildPngRes.arrayBuffer());
+    assert.ok(ogBuildBuffer.length > 500, 'PNG buffer must have non-trivial size');
+
+    // 2. Dynamic Build Card (SVG)
+    const ogBuildSvgRes = await fetch(`${baseUrl}/api/v1/og/builds/mg-eclipse-gundam-custom-paint?format=svg`);
+    assert.equal(ogBuildSvgRes.status, 200, 'GET /api/v1/og/builds/:slugOrId?format=svg must return 200 OK');
+    const ogBuildSvgText = await ogBuildSvgRes.text();
+    assert.ok(ogBuildSvgText.includes('<svg'), 'Must return valid SVG');
+    assert.ok(ogBuildSvgText.includes('MG Eclipse Gundam'), 'SVG must include build title');
+    assert.ok(ogBuildSvgText.includes('1200'), 'SVG must have 1200px width');
+
+    // 3. Dynamic Contest Podium Card
+    const ogContestRes = await fetch(`${baseUrl}/api/v1/og/contests/gocp-2026?format=svg`);
+    assert.equal(ogContestRes.status, 200, 'GET /api/v1/og/contests/:id must return 200 OK');
+    const ogContestSvg = await ogContestRes.text();
+    assert.ok(ogContestSvg.includes('Gunpla Open Cup Peru 2026') || ogContestSvg.includes('Concurso'), 'Must include contest title');
+
+    // 4. Dynamic Hall of Fame Card
+    const ogHofRes = await fetch(`${baseUrl}/api/v1/og/hall-of-fame?format=svg`);
+    assert.equal(ogHofRes.status, 200, 'GET /api/v1/og/hall-of-fame must return 200 OK');
+    const ogHofSvg = await ogHofRes.text();
+    assert.ok(ogHofSvg.includes('Salón de la Fama') || ogHofSvg.includes('FAMA'), 'Must include Hall of Fame header');
+
+    // 5. Default Tenant Card
+    const ogDefaultRes = await fetch(`${baseUrl}/api/v1/og/default?format=svg`);
+    assert.equal(ogDefaultRes.status, 200, 'GET /api/v1/og/default must return 200 OK');
+    const ogDefaultSvg = await ogDefaultRes.text();
+    assert.ok(ogDefaultSvg.includes('<svg') && ogDefaultSvg.includes('1200'), 'Must return valid default card');
+
+    // 6. SSR OpenGraph Tag Injection on PlamoScale Web (/builds/:slug)
+    const plamoBuildWebRes = await fetch(`${plamoUrl}/builds/mg-eclipse-gundam-custom-paint`);
+    assert.equal(plamoBuildWebRes.status, 200, 'PlamoScale SSR build page must return 200');
+    const plamoBuildHtml = await plamoBuildWebRes.text();
+    assert.ok(plamoBuildHtml.includes('<meta property="og:title"'), 'PlamoScale must render og:title');
+    assert.ok(plamoBuildHtml.includes('MG Eclipse Gundam'), 'PlamoScale og:title must contain build title');
+    assert.ok(plamoBuildHtml.includes('<meta property="og:image"'), 'PlamoScale must render og:image');
+    assert.ok(plamoBuildHtml.includes('/api/v1/og/builds/mg-eclipse-gundam-custom-paint'), 'PlamoScale og:image must link dynamic card');
+    assert.ok(plamoBuildHtml.includes('<meta name="twitter:card" content="summary_large_image">'), 'PlamoScale must render twitter:card');
+    assert.ok(plamoBuildHtml.includes('shareSocialLink'), 'PlamoScale must include shareSocialLink function');
+    assert.ok(plamoBuildHtml.includes('🔗 Compartir'), 'PlamoScale must render share button');
+
+    // 7. SSR OpenGraph Tag Injection on GunplaJunkies Web (/hall-of-fame)
+    const gunplaHofWebRes = await fetch(`${gunplaUrl}/hall-of-fame`);
+    assert.equal(gunplaHofWebRes.status, 200, 'GunplaJunkies SSR hall-of-fame page must return 200');
+    const gunplaHofPageHtml = await gunplaHofWebRes.text();
+    assert.ok(gunplaHofPageHtml.includes('<meta property="og:title"'), 'GunplaJunkies must render og:title');
+    assert.ok(gunplaHofPageHtml.includes('Salón de la Fama'), 'GunplaJunkies og:title must contain Hall of Fame title');
+    assert.ok(gunplaHofPageHtml.includes('/api/v1/og/hall-of-fame'), 'GunplaJunkies og:image must link hall of fame card');
+    assert.ok(gunplaHofPageHtml.includes('<meta name="twitter:site" content="@gunplajunkies">'), 'GunplaJunkies must render twitter:site');
+
+    console.log('[PASS] Social Sharing OpenGraph Preview Cards & Meta Tags verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

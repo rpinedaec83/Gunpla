@@ -4,12 +4,32 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries & Bulk Import Tool Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel para Stash & Paint Rack + 4 Technical Debt resolutions verified via `npm test` (54 unit tests + full integration suite) and live LXC 190 deployment.
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool & Social OpenGraph Cards Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + 4 Technical Debt resolutions verified via `npm test` (62 unit tests + full integration suite) and live LXC 190 deployment.
 - Current branch or release line: `feature/dt9-google-oauth-sso` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Tarjetas Dinamicas de Previsualizacion Social OpenGraph & Twitter Cards (Social Sharing OpenGraph Preview Cards):**
+  - **Generador Vectorial de Tarjetas Sociales 1200x630 (`generateSocialCardSvg`):**
+    - Renderiza plantillas graficas de alta fidelidad 1200x630 con estética oscura de lujo (`#0b0f19`), cuadrícula mecha y gradientes dinámicos del tenant (`#2563eb` PlamoScale / `#ef4444` GunplaJunkies).
+    - Adaptación inteligente por tipo de contenido:
+      1. Bitácoras de montaje: título, subtítulo, autor (`@username`), píldoras de escala/grado/categoría, contador de pasos y likes.
+      2. Podio de concursos y Hall of Fame: medallas oficiales (Oro 🥇, Plata 🥈, Bronce 🥉), puntajes de jurado, nombres de ganadores y sellos de certificación.
+      3. Tarjeta general del tenant: highlights del ecosistema de modelismo a escala y comunidades aliadas.
+    - Conversión en tiempo real de SVG a PNG mediante `sharp` a 1200x630 con encabezados de caché `Cache-Control: public, max-age=3600`.
+  - **Endpoints Especializados de OpenGraph:**
+    - `GET /api/v1/og/builds/:slugOrId`: Tarjeta dinámica para bitácoras de armado.
+    - `GET /api/v1/og/contests/:id`: Tarjeta dinámica con podio oficial de concurso.
+    - `GET /api/v1/og/hall-of-fame`: Tarjeta dinámica para el Salón de la Fama público.
+    - `GET /api/v1/og/default`: Tarjeta representativa de la plataforma tenant.
+  - **Inyección Dinámica de Metadatos SSR en Frontends Web:**
+    - En `plamoscale-web` y `gunplajunkies-web`, resolución contextual según ruta solicitada (`/builds/:slug`, `/contests/:id`, `/hall-of-fame`, `/`) inyectando `og:title`, `og:description`, `og:image`, `og:url`, `og:type`, `twitter:card`, `twitter:title`, `twitter:description` y `twitter:image`.
+    - Botones interactivos `🔗 Compartir` en cada tarjeta de bitácora y tarjeta del Salón de la Fama utilizando la Web Share API nativa (`navigator.share`) con fallback automático a copia en portapapeles y notificación flotante (`shareSocialLink`).
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/social-og.test.mjs` (7 casos de prueba aislados cubriendo generación SVG, división de líneas largas, modo podio, escape XML, renderizado PNG con sharp e inyección en `renderAppShell`). Total unit tests: 62 passed in 193ms.
+    - Extensión de `scripts/smoketest.mjs` verificando endpoints de imagen PNG/SVG y metaetiquetas SSR en ambos portales.
 
 - **Herramienta de Importacion Masiva CSV / Excel para Stash y Paint Rack (Bulk Import Tool):**
   - **Motor Determinista de Parseo y Normalizacion (`parseDelimitedText`):**

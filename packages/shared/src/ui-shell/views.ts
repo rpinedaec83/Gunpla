@@ -81,6 +81,7 @@ export function renderViews(
               <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                 <button class="filter-pill" style="font-size: 0.78rem; padding: 0.4rem 0.75rem; background: rgba(56,189,248,0.15); color: #38bdf8; border-color: rgba(56,189,248,0.3);" onclick="openSpecCardModal('${b.id}')">🏷️ Ficha de Mesa & QR</button>
                 <button class="filter-pill" style="font-size: 0.78rem; padding: 0.4rem 0.75rem; background: rgba(37,211,102,0.15); color: #4ade80; border-color: rgba(37,211,102,0.3);" onclick="openWhatsAppInquiryModal('${b.username}', '${escapeHtml(b.title)}', 'build', '${b.slug}')">💬 Consultar WhatsApp</button>
+                <button class="filter-pill" style="font-size: 0.78rem; padding: 0.4rem 0.75rem; background: rgba(168,85,247,0.15); color: #c084fc; border-color: rgba(168,85,247,0.3);" onclick="shareSocialLink('${escapeHtml(b.title)}', '/builds/${b.slug || b.id}', 'Mira la bitácora de ${escapeHtml(b.title)} en ${escapeHtml(config.tenantName)}')">🔗 Compartir</button>
                 <button class="btn-primary" onclick="likeBuild('${b.id}')">❤️ Like</button>
               </div>
             </div>
@@ -638,13 +639,18 @@ export function renderViews(
                     <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.75rem;">
                       Concurso: <strong style="color: #94a3b8;">${escapeHtml(item.contestTitle)}</strong>
                     </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08); gap: 0.35rem; flex-wrap: wrap;">
                       <span style="font-size: 0.8rem; color: #fbbf24; font-weight: 600;">
                         ⭐ ${item.voteCount} votos ${item.judgeAverageScore ? '• ⚖️ ' + item.judgeAverageScore + '/40' : ''}
                       </span>
-                      <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.25rem 0.65rem; color: #fbbf24; border-color: rgba(251, 191, 36, 0.4);" onclick="viewCertificate('${item.contestId}', '${item.entryId}')">
-                        📜 Ver Diploma
-                      </button>
+                      <div style="display: flex; gap: 0.35rem;">
+                        <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.25rem 0.65rem; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" onclick="shareSocialLink('${escapeHtml(item.entryTitle)} - ${escapeHtml(item.awardTitle)}', '/contests/${item.contestId}/podium', 'Mira la obra condecorada ${escapeHtml(item.entryTitle)} en ${escapeHtml(config.tenantName)}')">
+                          🔗 Compartir
+                        </button>
+                        <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.25rem 0.65rem; color: #fbbf24; border-color: rgba(251, 191, 36, 0.4);" onclick="viewCertificate('${item.contestId}', '${item.entryId}')">
+                          📜 Ver Diploma
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

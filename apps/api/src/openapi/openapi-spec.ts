@@ -717,6 +717,80 @@ export const openApiSpec = {
           '404': { description: 'Request not found' }
         }
       }
+    },
+    '/api/v1/og/builds/{slugOrId}': {
+      get: {
+        tags: ['Social Sharing & OpenGraph'],
+        summary: 'Generate dynamic 1200x630 social preview card PNG/SVG for a build project',
+        parameters: [
+          { name: 'slugOrId', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'format', in: 'query', required: false, schema: { type: 'string', enum: ['png', 'svg'] } }
+        ],
+        responses: {
+          '200': {
+            description: '1200x630 Social Card Image',
+            content: {
+              'image/png': { schema: { type: 'string', format: 'binary' } },
+              'image/svg+xml': { schema: { type: 'string' } }
+            }
+          }
+        }
+      }
+    },
+    '/api/v1/og/contests/{id}': {
+      get: {
+        tags: ['Social Sharing & OpenGraph'],
+        summary: 'Generate dynamic 1200x630 social preview card PNG/SVG for contest podium and winner results',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'format', in: 'query', required: false, schema: { type: 'string', enum: ['png', 'svg'] } }
+        ],
+        responses: {
+          '200': {
+            description: '1200x630 Social Card Image',
+            content: {
+              'image/png': { schema: { type: 'string', format: 'binary' } },
+              'image/svg+xml': { schema: { type: 'string' } }
+            }
+          }
+        }
+      }
+    },
+    '/api/v1/og/hall-of-fame': {
+      get: {
+        tags: ['Social Sharing & OpenGraph'],
+        summary: 'Generate dynamic 1200x630 social preview card PNG/SVG for public Hall of Fame gallery',
+        parameters: [
+          { name: 'format', in: 'query', required: false, schema: { type: 'string', enum: ['png', 'svg'] } }
+        ],
+        responses: {
+          '200': {
+            description: '1200x630 Social Card Image',
+            content: {
+              'image/png': { schema: { type: 'string', format: 'binary' } },
+              'image/svg+xml': { schema: { type: 'string' } }
+            }
+          }
+        }
+      }
+    },
+    '/api/v1/og/default': {
+      get: {
+        tags: ['Social Sharing & OpenGraph'],
+        summary: 'Generate default dynamic 1200x630 social preview card PNG/SVG for active tenant',
+        parameters: [
+          { name: 'format', in: 'query', required: false, schema: { type: 'string', enum: ['png', 'svg'] } }
+        ],
+        responses: {
+          '200': {
+            description: '1200x630 Social Card Image',
+            content: {
+              'image/png': { schema: { type: 'string', format: 'binary' } },
+              'image/svg+xml': { schema: { type: 'string' } }
+            }
+          }
+        }
+      }
     }
   }
 };

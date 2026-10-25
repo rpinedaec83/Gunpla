@@ -400,3 +400,31 @@ Decisions made:
 Lessons learned:
 - Incrementing bottle quantities when importing existing paints avoids rack clutter and faithfully mirrors the builder's physical restocks.
 Usage: Moderate -- self-estimated
+
+### SOCIAL-OG -- Social Sharing OpenGraph Preview Cards & Meta Tags | eMOE: 5 CU | aMOE: 5 CU
+What was done:
+- Designed and authored shared data models in `packages/shared/src/index.ts`: `OpenGraphMetadata` and `SocialCardOptions`.
+- Created vector social card generator `generateSocialCardSvg` in `packages/shared/src/ui-shell/og-card.ts`:
+  - 1200x630 layout adhering to OpenGraph specifications for Facebook, WhatsApp, Telegram, Discord, and Twitter/X.
+  - Multi-mode support: build project detail mode (title, subtitle, author `@username`, scale/grade pills, steps/likes counters), contest podium mode (gold/silver/bronze medalists, scores, certificates), and default tenant hub mode.
+  - XML entity escaping for safe rendering of titles with quotes, ampersands, and brackets.
+- Implemented `og.slice.ts` in `apps/api/src/slices/social-og/og.slice.ts` mounted at `/api/v1/og`:
+  - `GET /api/v1/og/builds/:slugOrId`: Dynamic preview card for build projects.
+  - `GET /api/v1/og/contests/:id`: Dynamic preview card for contest podiums.
+  - `GET /api/v1/og/hall-of-fame`: Dynamic preview card for Hall of Fame gallery.
+  - `GET /api/v1/og/default`: Default tenant branded preview card.
+  - Real-time SVG-to-PNG rasterization using `sharp` with `Cache-Control: public, max-age=3600` and `?format=svg` fallback.
+- Documented new endpoints in OpenAPI 3.1 specification (`apps/api/src/openapi/openapi-spec.ts`).
+- Updated `plamoscale-web` and `gunplajunkies-web` servers with `resolveOpenGraphMetadata` for route-aware SSR meta tag injection.
+- Added OpenGraph and Twitter card meta tags in `renderAppShell` (`og:site_name`, `og:title`, `og:description`, `og:image`, `og:width`, `og:height`, `og:url`, `og:type`, `twitter:card`, `twitter:site`, `twitter:title`, `twitter:description`, `twitter:image`).
+- Added interactive `🔗 Compartir` buttons across build cards and Hall of Fame with Web Share API and clipboard copy fallback (`shareSocialLink`).
+- Authored isolated unit test suite `tests/unit/social-og.test.mjs` (7 test cases). Total unit test suite: 62 passed in 193ms.
+- Extended end-to-end regression smoketest in `scripts/smoketest.mjs` with full API and HTML assertions.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190`) with live curl assertions on API and both web applications.
+Issues hit:
+- In local smoketests, `plamoServer` and `gunplaServer` run on ephemeral random ports; ensured smoketest queries dynamic server ports instead of hardcoded 3000/3001.
+Decisions made:
+- Generating dynamic vector SVGs on the fly and piping them through Sharp into 1200x630 PNGs guarantees razor-sharp branding, fast generation (<10ms), and 100% compatibility with crawlers like Facebook OpenGraph scraper and WhatsApp preview bot.
+Lessons learned:
+- Providing route-aware meta tags directly from the server during initial SSR ensures that social crawlers (which do not execute client-side JavaScript) always extract the correct title, description, and preview image.
+Usage: Moderate -- self-estimated

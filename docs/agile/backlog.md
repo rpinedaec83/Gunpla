@@ -5,9 +5,13 @@ Future work queue. Keep this separate from the active burn-down.
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
 - **Push Notifications & In-App Activity Bell:** Web push notification service worker listener for build comments and stock alert triggers.
-- **Social Sharing OpenGraph Preview Cards:** Auto-generated dynamic preview images for contest podiums and build logs when shared on Facebook and Twitter/X.
+- **Advanced Build Step Media Reordering & Multi-Photo Gallery:** Drag-and-drop or reorder controls for build steps and multiple progress photos per milestone.
 
 ## Completed Candidates & Parking Lot Items
+
+### SOCIAL-OG -- Social Sharing OpenGraph Preview Cards & Meta Tags (COMPLETED)
+- Goal: Auto-generated dynamic preview images (1200x630) for contest podiums, build logs, and Hall of Fame when shared on Facebook, WhatsApp, X/Twitter, Discord, and Telegram.
+- Delivered: Endpoints `GET /api/v1/og/builds/:slugOrId`, `GET /api/v1/og/contests/:id`, `GET /api/v1/og/hall-of-fame`, and `GET /api/v1/og/default`; real-time SVG-to-PNG conversion via sharp at 1200x630; dynamic OpenGraph and Twitter card meta tag injection in SSR HTML; interactive `🔗 Compartir` buttons with Web Share API and clipboard copy fallback; 7 isolated unit tests (`tests/unit/social-og.test.mjs`, total 62 passing); end-to-end smoketest; and verified live deployment on LXC 190.
 
 ### BULK-IMPORT -- Herramienta de Importacion Masiva CSV / Excel para Stash & Paint Rack (COMPLETED)
 - Goal: Allow modelers to migrate their existing personal inventories of kits and paint racks from CSV, TSV, or Excel spreadsheets directly into Mi Taller with auto-matching against the kit and paint catalogs or automatic custom creation.

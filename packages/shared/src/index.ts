@@ -910,8 +910,18 @@ export interface BulkPaintImportResponse {
   errors?: string[];
 }
 
+export interface OpenGraphMetadata {
+  title: string;
+  description: string;
+  image: string;
+  url: string;
+  type?: 'website' | 'article';
+  siteName?: string;
+}
+
 export * from './ui-shell/app-shell';
 export * from './ui-shell/views';
 export * from './ui-shell/modals';
 export * from './ui-shell/legal-pages';
 export * from './ui-shell/pwa';
+export * from './ui-shell/og-card';

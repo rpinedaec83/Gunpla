@@ -9,7 +9,7 @@ Goal: Transition persistence to PostgreSQL 16 (`gunpla-db`), ensuring ACID relat
 
 ## Active Tasks
 
-(No active dev tasks pending in this devcycle. DT9 — Google OAuth SSO & Interactive Auth Modal is complete and active in production.)
+(No active dev tasks pending in this devcycle. DT11 -- Social Sharing OpenGraph Preview Cards & Meta Tags is complete and active in production.)
 
 ## Reset
 

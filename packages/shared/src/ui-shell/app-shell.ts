@@ -11,7 +11,8 @@ import {
   ShopRecord,
   MarketplaceListingRecord,
   CommissionBuilderRecord,
-  HallOfFameItem
+  HallOfFameItem,
+  OpenGraphMetadata
 } from '../index';
 
 export interface AppShellConfig {
@@ -54,8 +55,16 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;');
 }
 
-export function renderAppShell(config: AppShellConfig, data: AppShellData): string {
+export function renderAppShell(config: AppShellConfig, data: AppShellData, og?: OpenGraphMetadata): string {
   const isGunpla = config.tenantSlug === 'gunplajunkies';
+  const defaultDomain = isGunpla ? 'gunplajunkies.com' : 'plamoscale.com';
+  const ogTitle = og?.title || `${config.tenantName} — ${config.tenantTagline}`;
+  const ogDesc = og?.description || 'Comunidad y plataforma de modelismo a escala. Bitácoras de armado, catálogo de kits, muestrario de pinturas y banco de trabajo personal.';
+  const ogImage = og?.image || `/api/v1/og/default`;
+  const ogUrl = og?.url || `https://${defaultDomain}/`;
+  const ogType = og?.type || 'website';
+  const ogSiteName = og?.siteName || config.tenantName;
+
   const birthYearOptions = Array.from({ length: 87 }, (_, i) => 2026 - i)
     .map(y => `<option value="${y}">${y}</option>`)
     .join('');
@@ -91,8 +100,27 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${config.tenantName} — ${config.tenantTagline}</title>
-  <meta name="description" content="Comunidad y plataforma de modelismo a escala. Bitácoras de armado, catálogo de kits, muestrario de pinturas y banco de trabajo personal.">
+  <title>${escapeHtml(ogTitle)}</title>
+  <meta name="description" content="${escapeHtml(ogDesc)}">
+
+  <!-- OpenGraph / Social Sharing (Facebook, WhatsApp, Telegram, Discord, LinkedIn) -->
+  <meta property="og:site_name" content="${escapeHtml(ogSiteName)}">
+  <meta property="og:title" content="${escapeHtml(ogTitle)}">
+  <meta property="og:description" content="${escapeHtml(ogDesc)}">
+  <meta property="og:image" content="${escapeHtml(ogImage)}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:url" content="${escapeHtml(ogUrl)}">
+  <meta property="og:type" content="${escapeHtml(ogType)}">
+  <meta property="og:locale" content="es_ES">
+
+  <!-- Twitter / X Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@${isGunpla ? 'gunplajunkies' : 'plamoscale'}">
+  <meta name="twitter:title" content="${escapeHtml(ogTitle)}">
+  <meta name="twitter:description" content="${escapeHtml(ogDesc)}">
+  <meta name="twitter:image" content="${escapeHtml(ogImage)}">
+
   <link rel="manifest" href="/manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1361,6 +1389,57 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
 
     window.open(launchUrl, '_blank');
     closeWhatsAppInquiryModal();
+  }
+
+  // --- Social Sharing & OpenGraph Link Engine ---
+  async function shareSocialLink(title, url, text) {
+    const fullUrl = url || window.location.href;
+    const shareTitle = title || document.title;
+    const shareText = text || ('Mira esta obra en ' + (window.__TENANT_SLUG === 'gunplajunkies' ? 'GunplaJunkies' : 'PlamoScale'));
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: fullUrl
+        });
+        return;
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.warn('[Share] navigator.share error:', err);
+        } else {
+          return;
+        }
+      }
+    }
+
+    // Fallback: Copy to clipboard and alert / toast
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(fullUrl);
+        showShareToast('¡Enlace copiado al portapapeles!');
+      } else {
+        prompt('Copia este enlace para compartir:', fullUrl);
+      }
+    } catch {
+      prompt('Copia este enlace para compartir:', fullUrl);
+    }
+  }
+
+  function showShareToast(message) {
+    let toast = document.getElementById('share-toast-notification');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'share-toast-notification';
+      toast.style.cssText = 'position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #16a34a; color: #fff; padding: 0.75rem 1.25rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 100000; transition: opacity 0.3s ease; opacity: 0; pointer-events: none;';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.opacity = '1';
+    setTimeout(() => {
+      if (toast) toast.style.opacity = '0';
+    }, 2500);
   }
 
   function closeLightbox(e) {
