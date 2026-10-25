@@ -27,6 +27,7 @@ Do not store credentials, keys, tokens, passwords, connection strings, or deploy
 - Project name: PlamoScale & GunplaJunkies SSO
 - Region: Global
 - Service account name: OAuth 2.0 Web Client (`GOOGLE_CLIENT_ID`)
+- Domain ownership verification: Completed in Google Search Console for `gunplajunkies.com` and `plamoscale.com`.
 - Deployment environment notes: Authorized JavaScript origins and redirect URIs configured for `https://plamoscale.com`, `https://gunplajunkies.com`, `https://api.plamoscale.com`, and `http://localhost:*`.
 
 ## Cloudflare
