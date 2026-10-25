@@ -2701,7 +2701,82 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT21 Workshop Soundscapes & Procedural Audio Generator verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES CHECKS PASSED ===');
+    // =========================================================================
+    // DT22: Airbrush PSI & Thinner Ratio Calculator
+    // =========================================================================
+    console.log('\n--- Verifying DT22 Airbrush PSI & Thinner Ratio Calculator ---');
+
+    // 1. Get supported mediums, techniques, and needle sizes
+    const airbrushMediumsRes = await fetch(`${baseUrl}/api/v1/workbench/airbrush/mediums`);
+    assert.equal(airbrushMediumsRes.status, 200, 'GET /airbrush/mediums must return 200');
+    const airbrushMediumsData = await airbrushMediumsRes.json();
+    assert.ok(Array.isArray(airbrushMediumsData.mediums), 'mediums must be an array');
+    assert.equal(airbrushMediumsData.mediums.length, 5, 'Must have 5 supported paint mediums');
+    assert.ok(Array.isArray(airbrushMediumsData.techniques), 'techniques must be an array');
+    assert.equal(airbrushMediumsData.techniques.length, 5, 'Must have 5 supported techniques');
+    assert.deepEqual(airbrushMediumsData.needleSizes, [0.15, 0.2, 0.3, 0.4, 0.5], 'Must have standard needle sizes');
+
+    // 2. Calculate lacquer base coat mix
+    const lacquerCalcRes = await fetch(`${baseUrl}/api/v1/workbench/airbrush/calculate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        medium: 'lacquer',
+        needleSize: 0.3,
+        technique: 'base-coat',
+        paintDrops: 10
+      })
+    });
+    assert.equal(lacquerCalcRes.status, 200, 'POST /airbrush/calculate lacquer must return 200');
+    const lacquerCalc = await lacquerCalcRes.json();
+    assert.equal(lacquerCalc.medium, 'lacquer');
+    assert.equal(lacquerCalc.ratioText, '1 : 1.5');
+    assert.equal(lacquerCalc.calculatedThinnerDrops, 15);
+    assert.deepEqual(lacquerCalc.pressurePsi, [16, 20]);
+    assert.ok(lacquerCalc.recommendedThinnerName.includes('Mr. Color Leveling Thinner'));
+    assert.ok(Array.isArray(lacquerCalc.troubleshooting), 'troubleshooting must be an array');
+    assert.ok(lacquerCalc.troubleshooting.length >= 3);
+
+    // 3. Calculate acrylic-water mix with additives
+    const waterCalcRes = await fetch(`${baseUrl}/api/v1/workbench/airbrush/calculate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        medium: 'acrylic-water',
+        needleSize: 0.3,
+        technique: 'base-coat',
+        paintDrops: 10
+      })
+    });
+    assert.equal(waterCalcRes.status, 200, 'POST /airbrush/calculate acrylic-water must return 200');
+    const waterCalc = await waterCalcRes.json();
+    assert.equal(waterCalc.ratioText, '1 : 0.8');
+    assert.ok(waterCalc.flowImproverDrops >= 1, 'Water acrylic must recommend Flow Improver');
+    assert.ok(waterCalc.retarderDrops >= 1, 'Water acrylic must recommend Retarder');
+
+    // 4. Invalid medium returns RFC 7807 Problem Details
+    const badAirbrushRes = await fetch(`${baseUrl}/api/v1/workbench/airbrush/calculate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        medium: 'unknown-medium'
+      })
+    });
+    assert.equal(badAirbrushRes.status, 400, 'Invalid medium must return 400');
+    const badAirbrushProb = await badAirbrushRes.json();
+    assert.equal(badAirbrushProb.status, 400);
+    assert.ok(badAirbrushProb.title.includes('Inválida') || badAirbrushProb.title.includes('Invalida'));
+
+    // 5. Verify Web Shell UI elements in PlamoScale frontend
+    assert.ok(plamoWebShellHtml.includes('id="btn-open-airbrush-calc"'), 'PlamoScale must render airbrush calculator button in header');
+    assert.ok(plamoWebShellHtml.includes('id="btn-open-airbrush-from-rack"'), 'PlamoScale must render airbrush button in paint rack');
+    assert.ok(plamoWebShellHtml.includes('id="modal-airbrush-calculator"'), 'PlamoScale must render modal-airbrush-calculator');
+    assert.ok(plamoWebShellHtml.includes('id="airbrush-ratio-badge"'), 'PlamoScale must render airbrush ratio badge');
+    assert.ok(plamoWebShellHtml.includes('id="btn-copy-airbrush-recipe"'), 'PlamoScale must render copy recipe button');
+
+    console.log('[PASS] DT22 Airbrush PSI & Thinner Ratio Calculator verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

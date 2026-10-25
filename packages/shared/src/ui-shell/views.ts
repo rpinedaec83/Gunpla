@@ -441,6 +441,9 @@ export function renderViews(
               <button id="btn-open-soundscapes" class="filter-pill" onclick="openSoundscapesModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(20, 184, 166, 0.4); color: #2dd4bf; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <span>🎵</span> Soundscapes
               </button>
+              <button id="btn-open-airbrush-calc" class="filter-pill" onclick="openAirbrushCalculatorModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(249, 115, 22, 0.4); color: #fb923c; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <span>🎨</span> Ratio Aerógrafo
+              </button>
               <button class="filter-pill" onclick="openEditProfileModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <span>✏️</span> Editar Perfil
               </button>
@@ -552,6 +555,9 @@ export function renderViews(
               </button>
               <button class="filter-pill" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; background: linear-gradient(90deg, rgba(56,189,248,0.15), rgba(168,85,247,0.15)); color: #38bdf8; border-color: rgba(56,189,248,0.4);" onclick="openPaintEquivalencesModal()">
                 🧪 Asistente de Equivalencias IA
+              </button>
+              <button id="btn-open-airbrush-from-rack" class="filter-pill" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; border-color: rgba(249, 115, 22, 0.4); color: #fb923c; display: inline-flex; align-items: center; gap: 0.35rem;" onclick="openAirbrushCalculatorModal()">
+                💨 Ratio Dilución & PSI
               </button>
               <button class="btn-primary" style="font-size: 0.8rem; padding: 0.45rem 0.85rem;" onclick="openAddPaintModal()">
                 + Registrar Pintura

@@ -25,6 +25,7 @@ import { ogRouter } from './slices/social-og/og.slice';
 import { decalsRouter } from './slices/decals/decals.slice';
 import { builderAiRouter } from './slices/builder-ai/builder-ai.slice';
 import { soundscapesRouter } from './slices/soundscapes/soundscapes.slice';
+import { airbrushRouter } from './slices/airbrush/airbrush.slice';
 import { openApiSpec } from './openapi/openapi-spec';
 import { initPostgres, getPostgresStats, isPostgresConfigured } from './core/postgres';
 
@@ -149,6 +150,7 @@ export function createApp() {
   app.use('/api/v1/notifications', resendNotificationsRouter);
   app.use('/api/v1/catalog', catalogRouter);
   app.use('/api/v1/workbench/soundscapes', soundscapesRouter);
+  app.use('/api/v1/workbench/airbrush', airbrushRouter);
   app.use('/api/v1/workbench/ai', builderAiRouter);
   app.use('/api/v1/workbench', workbenchRouter);
   app.use('/api/v1/builds', buildsRouter);

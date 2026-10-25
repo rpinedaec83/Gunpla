@@ -9,7 +9,7 @@ Goal: Transition persistence to PostgreSQL 16 (`gunpla-db`), ensuring ACID relat
 
 ## Active Tasks
 
-(No active tasks in burn-down. Next candidates available in backlog.md)
+None. Ready for next devtask.
 
 ## Reset
 

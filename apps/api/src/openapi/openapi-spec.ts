@@ -367,6 +367,45 @@ export const openApiSpec = {
         }
       }
     },
+    '/api/v1/workbench/airbrush/mediums': {
+      get: {
+        tags: ['Workbench'],
+        summary: 'List supported paint chemistry mediums, techniques, and standard airbrush needle sizes',
+        responses: {
+          '200': { description: 'Mediums, techniques, and needle sizes' }
+        }
+      }
+    },
+    '/api/v1/workbench/airbrush/calculate': {
+      post: {
+        tags: ['Workbench'],
+        summary: 'Calculate exact thinner dilution ratio, drops, additives, and compressor PSI/Bar pressure',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['medium'],
+                properties: {
+                  medium: { type: 'string', enum: ['lacquer', 'acrylic-alcohol', 'acrylic-water', 'enamel', 'polyurethane-primer'] },
+                  brand: { type: 'string' },
+                  needleSize: { type: 'number', enum: [0.15, 0.2, 0.3, 0.4, 0.5], default: 0.3 },
+                  technique: { type: 'string', enum: ['detail-shading', 'base-coat', 'primer-surfacer', 'gloss-clear', 'candy-metallic'], default: 'base-coat' },
+                  paintDrops: { type: 'number', default: 10 },
+                  ambientTempCelsius: { type: 'number', default: 22 },
+                  ambientHumidityPercent: { type: 'number', default: 55 }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          '200': { description: 'Calculated mixing ratios, drops, PSI ranges, and diagnostic tips' },
+          '400': { description: 'Validation error (RFC 7807)' }
+        }
+      }
+    },
     '/api/v1/workbench/import/stash': {
       post: {
         tags: ['Workbench'],

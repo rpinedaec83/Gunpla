@@ -2276,6 +2276,353 @@ export function calculateTimerSeconds(mode: SoundscapeTimerMode): number {
   }
 }
 
+// ===========================================================================
+// DT22: Airbrush PSI & Thinner Ratio Calculator
+// ===========================================================================
+
+export type AirbrushMedium =
+  | 'lacquer'
+  | 'acrylic-alcohol'
+  | 'acrylic-water'
+  | 'enamel'
+  | 'polyurethane-primer';
+
+export type AirbrushNeedleSize = 0.15 | 0.2 | 0.3 | 0.4 | 0.5;
+
+export type AirbrushTechnique =
+  | 'detail-shading'
+  | 'base-coat'
+  | 'primer-surfacer'
+  | 'gloss-clear'
+  | 'candy-metallic';
+
+export interface AirbrushMixRequest {
+  medium: AirbrushMedium;
+  brand?: string;
+  needleSize?: AirbrushNeedleSize;
+  technique?: AirbrushTechnique;
+  paintDrops?: number;
+  ambientTempCelsius?: number;
+  ambientHumidityPercent?: number;
+}
+
+export interface AirbrushTroubleshootingItem {
+  symptom: string;
+  issue?: string;
+  probableCause: string;
+  cause?: string;
+  solution: string;
+}
+
+export interface AirbrushMixResult {
+  medium: AirbrushMedium;
+  mediumLabel: string;
+  brand: string;
+  needleSize: AirbrushNeedleSize;
+  technique: AirbrushTechnique;
+  techniqueLabel: string;
+  paintParts: number;
+  thinnerParts: number;
+  ratioText: string;
+  ratioString?: string;
+  recommendedThinnerRatio?: number;
+  recommendedThinnerName: string;
+  recommendedThinner?: string;
+  calculatedPaintDrops: number;
+  recommendedPaintDrops?: number;
+  calculatedThinnerDrops: number;
+  recommendedThinnerDrops?: number;
+  retarderDrops: number;
+  flowImproverDrops: number;
+  recommendedAdditives?: { flowImproverDrops: number; retarderDrops: number };
+  recipeDescription?: string;
+  pressurePsi: [number, number];
+  pressureBar: [number, number];
+  recommendedPressurePsi?: { min: number; max: number };
+  recommendedPressureBar?: { min: number; max: number };
+  sprayDistanceCm: [number, number];
+  sprayingDistanceCm?: { min: number; max: number };
+  viscosityAnalogy: string;
+  expertTips: string[];
+  tips?: string[];
+  troubleshooting: AirbrushTroubleshootingItem[];
+}
+
+export const AIRBRUSH_MEDIUMS: AirbrushMedium[] = [
+  'lacquer',
+  'acrylic-alcohol',
+  'acrylic-water',
+  'enamel',
+  'polyurethane-primer'
+];
+
+export const AIRBRUSH_NEEDLE_SIZES: AirbrushNeedleSize[] = [0.15, 0.2, 0.3, 0.4, 0.5];
+
+export const AIRBRUSH_TECHNIQUES: AirbrushTechnique[] = [
+  'base-coat',
+  'detail-shading',
+  'primer-surfacer',
+  'gloss-clear',
+  'candy-metallic'
+];
+
+export const AIRBRUSH_MEDIUM_LABELS: Record<AirbrushMedium, string> = {
+  'lacquer': 'Laca Acrílica (Mr. Color, Gaia Notes, SMS, Tamiya LP)',
+  'acrylic-alcohol': 'Acrílico Base Alcohol (Tamiya X/XF, Mr. Hobby Aqueous)',
+  'acrylic-water': 'Acrílico Vinílico Base Agua (Vallejo, AK 3Gen, Ammo Mig)',
+  'enamel': 'Esmalte / Enamel (Tamiya Enamel, Humbrol, Testors)',
+  'polyurethane-primer': 'Imprimante Poliuretano / 2K Surfacer (Vallejo Surface Primer, Stynylrez)'
+};
+
+export const AIRBRUSH_TECHNIQUE_LABELS: Record<AirbrushTechnique, string> = {
+  'detail-shading': 'Post-sombreado Fino & Trazos de Detalle',
+  'base-coat': 'Capa Base Uniforme & Opaca',
+  'primer-surfacer': 'Imprimación & Detección de Rayaduras (Surfacer)',
+  'gloss-clear': 'Barniz Brillante / Capa Húmeda Espejo (Wet Coat)',
+  'candy-metallic': 'Efecto Candy & Metálicos Pulidos'
+};
+
+export function calculateAirbrushMix(req: AirbrushMixRequest): AirbrushMixResult {
+  const medium = req.medium || 'lacquer';
+  if (!AIRBRUSH_MEDIUMS.includes(medium as any)) {
+    throw new Error(`Química de pintura no válida: ${medium}`);
+  }
+  const needle: AirbrushNeedleSize = (req.needleSize !== undefined ? Number(req.needleSize) : 0.3) as AirbrushNeedleSize;
+  if (!AIRBRUSH_NEEDLE_SIZES.includes(needle)) {
+    throw new Error(`Diámetro de boquilla no válido: ${needle}`);
+  }
+  const technique: AirbrushTechnique = req.technique || 'base-coat';
+  const paintDrops = req.paintDrops && req.paintDrops > 0 ? Number(req.paintDrops) : 10;
+  const temp = req.ambientTempCelsius !== undefined ? Number(req.ambientTempCelsius) : (req as any).ambientTempC !== undefined ? Number((req as any).ambientTempC) : 22;
+  const humidity = req.ambientHumidityPercent !== undefined ? Number(req.ambientHumidityPercent) : (req as any).ambientHumidityPct !== undefined ? Number((req as any).ambientHumidityPct) : 55;
+
+  let paintParts = 1.0;
+  let thinnerParts = 1.5;
+  let defaultThinner = 'Mr. Color Leveling Thinner (con retardante)';
+  let flowImproverDrops = 0;
+  let retarderDrops = 0;
+  let psiMin = 15;
+  let psiMax = 20;
+  let distMin = 6;
+  let distMax = 10;
+  let viscosity = 'Consistencia fluida como leche descremada; forma una película continua sin acumulación.';
+  const tips: string[] = [];
+
+  // Medium baseline configuration
+  switch (medium) {
+    case 'lacquer':
+      defaultThinner = 'Mr. Color Leveling Thinner o Tamiya Lacquer Thinner Retarder';
+      if (technique === 'detail-shading') {
+        thinnerParts = 2.5;
+        psiMin = 10;
+        psiMax = 14;
+        distMin = 2;
+        distMax = 4;
+        viscosity = 'Semistransparente muy fluido; no debe formar gotas gruesas al rociar a baja presión.';
+        tips.push('Ajusta el gatillo con carrera muy corta para control milimétrico en líneas de panel.');
+      } else if (technique === 'gloss-clear') {
+        thinnerParts = 2.0;
+        psiMin = 14;
+        psiMax = 18;
+        distMin = 5;
+        distMax = 8;
+        tips.push('Aplica primero una capa de niebla (mist coat) y luego dos capas húmedas uniformes.');
+      } else if (technique === 'primer-surfacer') {
+        thinnerParts = 1.2;
+        psiMin = 20;
+        psiMax = 25;
+        distMin = 8;
+        distMax = 12;
+      } else if (technique === 'candy-metallic') {
+        thinnerParts = 2.0;
+        psiMin = 12;
+        psiMax = 16;
+        tips.push('Aplica sobre base negra brillante curada para máxima reflectividad cromada.');
+      } else {
+        thinnerParts = 1.5;
+        psiMin = 16;
+        psiMax = 20;
+      }
+      break;
+
+    case 'acrylic-alcohol':
+      defaultThinner = 'Tamiya X-20A Thinner o Alcohol Isopropílico 70-90%';
+      if (technique === 'detail-shading') {
+        thinnerParts = 2.0;
+        psiMin = 12;
+        psiMax = 15;
+        distMin = 3;
+        distMax = 5;
+      } else if (technique === 'primer-surfacer') {
+        thinnerParts = 1.0;
+        psiMin = 20;
+        psiMax = 24;
+      } else {
+        thinnerParts = 1.2;
+        psiMin = 16;
+        psiMax = 20;
+      }
+      tips.push('El alcohol evapora rápido; si notas pulverizado seco añade 1 gota de retardante cada 15 gotas.');
+      break;
+
+    case 'acrylic-water':
+      defaultThinner = 'Vallejo Airbrush Thinner / AK 3Gen Thinner (nunca agua corriente sola)';
+      flowImproverDrops = Math.max(1, Math.round(paintDrops * 0.1));
+      retarderDrops = Math.max(1, Math.round(paintDrops * 0.05));
+      if (technique === 'detail-shading') {
+        thinnerParts = 1.5;
+        psiMin = 14;
+        psiMax = 18;
+      } else if (technique === 'primer-surfacer') {
+        thinnerParts = 0.3;
+        psiMin = 22;
+        psiMax = 26;
+      } else {
+        thinnerParts = 0.8;
+        psiMin = 18;
+        psiMax = 22;
+      }
+      tips.push('Esencial añadir 1-2 gotas de Flow Improver para lubricar la punta de la aguja y evitar tip-dry.');
+      tips.push('Limpia periódicamente la corona de la aguja con un pincel humedecido en limpiador.');
+      break;
+
+    case 'enamel':
+      defaultThinner = 'Tamiya X-20 Enamel Thinner o Esencia de Trementina / Odorless Spirits';
+      thinnerParts = technique === 'detail-shading' ? 1.8 : 1.0;
+      psiMin = 14;
+      psiMax = 18;
+      distMin = 6;
+      distMax = 10;
+      tips.push('El esmalte tarda más en secar, ideal para acabados ultra lisos sin marcas de spray.');
+      break;
+
+    case 'polyurethane-primer':
+      defaultThinner = 'Vallejo Airbrush Thinner (máximo 10-20% para no quebrar la resina PU)';
+      thinnerParts = 0.25;
+      flowImproverDrops = Math.max(1, Math.round(paintDrops * 0.1));
+      psiMin = 22;
+      psiMax = 28;
+      distMin = 8;
+      distMax = 14;
+      viscosity = 'Más denso; debe pulverizar con abanico amplio sin saturar ranuras de piezas.';
+      tips.push('Usa aguja preferentemente de 0.4mm o 0.5mm para evitar atascos en la compuerta de fluido.');
+      break;
+  }
+
+  // Needle adjustments
+  if (needle <= 0.2) {
+    psiMin = Math.max(8, psiMin - 3);
+    psiMax = Math.max(12, psiMax - 4);
+    thinnerParts = Math.round((thinnerParts + 0.3) * 10) / 10;
+    tips.push(`Con boquilla fina de ${needle}mm es mandatorio colar la pintura para evitar motas.`);
+  } else if (needle >= 0.4) {
+    psiMin += 2;
+    psiMax += 3;
+    distMin += 2;
+    distMax += 3;
+  }
+
+  // Environmental climate adjustments
+  if (temp > 27) {
+    retarderDrops += Math.max(1, Math.round(paintDrops * 0.08));
+    thinnerParts = Math.round((thinnerParts + 0.2) * 10) / 10;
+    tips.push(`Clima cálido (${temp}°C): mayor velocidad de evaporación. Se incrementó retardante para prevenir pulverizado seco.`);
+  }
+
+  if (humidity > 70 && medium === 'lacquer') {
+    tips.push(`Humedad elevada (${humidity}%): usa exclusivamente retardante con agente antihumedad (blushing prevention) para evitar veladuras blancas.`);
+  }
+
+  const calculatedThinnerDrops = Math.round(paintDrops * thinnerParts);
+  const ratioText = `1 : ${thinnerParts.toFixed(1).replace('.0', '')}`;
+
+  const barMin = Math.round((psiMin / 14.5038) * 10) / 10;
+  const barMax = Math.round((psiMax / 14.5038) * 10) / 10;
+
+  const troubleshooting: AirbrushTroubleshootingItem[] = [
+    {
+      symptom: 'Piel de naranja (superficie rugosa e irregular)',
+      issue: 'Piel de naranja (superficie rugosa e irregular)',
+      probableCause: 'Pintura excesivamente espesa, presión demasiado baja o distancia excesiva.',
+      cause: 'Pintura excesivamente espesa, presión demasiado baja o distancia excesiva.',
+      solution: `Incrementa la dilución a 1:${(thinnerParts + 0.5).toFixed(1)} y sube 2 PSI al compresor.`
+    },
+    {
+      symptom: 'Patas de araña / Charcos (Spider webbing)',
+      issue: 'Patas de araña / Charcos (Spider webbing)',
+      probableCause: 'Pintura sobre-diluida, presión muy alta o pulverizado demasiado cercano.',
+      cause: 'Pintura sobre-diluida, presión muy alta o pulverizado demasiado cercano.',
+      solution: 'Reduce el flujo de diluyente, baja la presión 3-4 PSI y mantén el aerógrafo a mínimo 6cm de la pieza.'
+    },
+    {
+      symptom: 'Pulverizado seco / Arenoso (Dry spray)',
+      issue: 'Pulverizado seco / Arenoso (Dry spray)',
+      probableCause: 'La pintura seca en el aire antes de tocar el plástico por calor o diluyente ultra-rápido.',
+      cause: 'La pintura seca en el aire antes de tocar el plástico por calor o diluyente ultra-rápido.',
+      solution: 'Acerca el aerógrafo 3cm y añade 2 gotas de retardante para ralentizar el secado superficial.'
+    },
+    {
+      symptom: 'Obstrucción en la aguja (Tip-dry)',
+      issue: 'Obstrucción en la aguja (Tip-dry)',
+      probableCause: 'Acumulación de pintura seca en el protector de corona (común en acrílicos vinílicos).',
+      cause: 'Acumulación de pintura seca en el protector de corona (común en acrílicos vinílicos).',
+      solution: 'Limpia la punta con bastoncillo con alcohol/cleaner y añade 2 gotas de Flow Improver a la copa.'
+    },
+    {
+      symptom: 'Salpicaduras y chisporroteo (Splattering)',
+      issue: 'Salpicaduras y chisporroteo (Splattering)',
+      probableCause: 'Presión inestable, boquilla floja o suciedad acumulada en el canal de aguja.',
+      cause: 'Presión inestable, boquilla floja o suciedad acumulada en el canal de aguja.',
+      solution: 'Asegura la rosca de la boquilla (nozzel), purga agua del filtro del compresor y vacía la copa para limpiar.'
+    }
+  ];
+
+  let recipeDescription = `${paintDrops} gotas Pintura + ${calculatedThinnerDrops} gotas Diluyente`;
+  if (flowImproverDrops > 0) {
+    recipeDescription += ` + ${flowImproverDrops} gotas Flow Improver`;
+  }
+  if (retarderDrops > 0) {
+    recipeDescription += ` + ${retarderDrops} gotas Retarder`;
+  }
+
+  return {
+    medium,
+    mediumLabel: AIRBRUSH_MEDIUM_LABELS[medium],
+    brand: req.brand || (medium === 'lacquer' ? 'Mr. Color' : medium === 'acrylic-alcohol' ? 'Tamiya' : 'Vallejo'),
+    needleSize: needle,
+    technique,
+    techniqueLabel: AIRBRUSH_TECHNIQUE_LABELS[technique],
+    paintParts,
+    thinnerParts,
+    ratioText,
+    ratioString: ratioText,
+    recommendedThinnerRatio: thinnerParts,
+    recommendedThinnerName: defaultThinner,
+    recommendedThinner: defaultThinner,
+    calculatedPaintDrops: paintDrops,
+    recommendedPaintDrops: paintDrops,
+    calculatedThinnerDrops,
+    recommendedThinnerDrops: calculatedThinnerDrops,
+    retarderDrops,
+    flowImproverDrops,
+    recommendedAdditives: {
+      flowImproverDrops,
+      retarderDrops
+    },
+    recipeDescription,
+    pressurePsi: [psiMin, psiMax],
+    pressureBar: [barMin, barMax],
+    recommendedPressurePsi: { min: psiMin, max: psiMax },
+    recommendedPressureBar: { min: barMin, max: barMax },
+    sprayDistanceCm: [distMin, distMax],
+    sprayingDistanceCm: { min: distMin, max: distMax },
+    viscosityAnalogy: viscosity,
+    expertTips: tips,
+    tips,
+    troubleshooting
+  };
+}
+
 export * from './ui-shell/app-shell';
 export * from './ui-shell/views';
 export * from './ui-shell/modals';

@@ -4,12 +4,40 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio, Smart Builder AI Assistant, Stash Insurance Valuation Report & Workshop Ambient Soundscapes Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) + Pistas de Sonido y Soundscapes de Taller (DT21) + 4 Technical Debt resolutions verified via `npm test` (138 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt21-workshop-soundscapes` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio, Smart Builder AI Assistant, Stash Insurance Valuation Report, Workshop Ambient Soundscapes & Airbrush PSI/Thinner Calculator Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) + Pistas de Sonido y Soundscapes de Taller (DT21) + Calculadora de Dilución y Presión de Aerógrafo (DT22) + 4 Technical Debt resolutions verified via `npm test` (143 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt22-airbrush-calculator` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Calculadora de Dilución y Presión de Aerógrafo (Airbrush PSI & Thinner Ratio Calculator - DT22):**
+  - **Motor de Mezcla y Química de Pintura para Modelismo Escala:**
+    - Algoritmo en `@gunpla/shared` (`calculateAirbrushMix`) con formulación técnica precisa:
+      - **Laca Acrílica** (*Mr. Color, Gaia Notes, SMS, Tamiya LP*): Dilución base 1:1.5, sombreado de detalle 1:2.5, barniz brillante 1:2.0; presión 10-20 PSI con Mr. Color Leveling Thinner.
+      - **Acrílico Base Alcohol** (*Tamiya X/XF, Mr. Hobby Aqueous*): Dilución base 1:1.2, sombreado 1:2.0; presión 12-20 PSI con alcohol isopropílico 70-90% o X-20A.
+      - **Acrílico Vinílico Base Agua** (*Vallejo Model/Game Color, AK 3Gen, Ammo Mig*): Dilución base 1:0.8; cálculo automático de aditivos indispensables (1-2 gotas de Flow Improver por cada 10 gotas de pintura + 1 gota de retardante) para lubricar la aguja y erradicar el secado prematuro en punta (*tip-dry*).
+      - **Esmalte / Enamel** (*Tamiya Enamel, Humbrol*): Dilución 1:1.0, 14-18 PSI con solvente mineral inodoro o X-20 Enamel Thinner.
+      - **Imprimante Poliuretano / 2K Surfacer** (*Vallejo Surface Primer, Stynylrez*): Dilución mínima al 1:0.25 (10-20%), presión recomendada de 22-28 PSI con aguja >=0.3mm para preservar la matriz de resina PU sin provocar descascarillado.
+    - **Ajustes Climáticos Dinámicos:**
+      - Temperatura de taller superior a 27°C incrementa la proporción de retardante y diluyente para combatir la evaporación en vuelo y el pulverizado seco (*dry spray*).
+      - Humedad relativa superior a 70% alerta del riesgo de velado blanco (*blushing*) en lacas y prescribe solventes niveladores con agentes antihumedad.
+    - **Matriz de Diagnóstico y Resolución Rápida de Errores:**
+      - Piel de naranja (superficie rugosa) $\rightarrow$ elevar dilución y +2 PSI.
+      - Patas de araña / charcos (*spider webbing*) $\rightarrow$ reducir diluyente, bajar 3-4 PSI y alejar el aerógrafo.
+      - Pulverizado seco (*dry spray*) $\rightarrow$ acercar a la pieza y añadir retardante.
+      - Obstrucción en aguja (*tip-dry*) $\rightarrow$ limpiar protector de corona y añadir Flow Improver.
+      - Salpicaduras (*splattering*) $\rightarrow$ purgar trampa de agua del compresor y ajustar boquilla roscada.
+  - **Endpoints Especializados en API:**
+    - `GET /api/v1/workbench/airbrush/mediums`: Lista de químicas, técnicas y diámetros de aguja estándar.
+    - `POST /api/v1/workbench/airbrush/calculate`: Cálculo reactivo de gotas, relación, presión en PSI y Bar, y matriz de diagnóstico.
+  - **Interfaz de Usuario Web Shell (UXP-01):**
+    - Botones de acceso rápido `#btn-open-airbrush-calc` en la cabecera de Mi Taller y `#btn-open-airbrush-from-rack` en el estante de pinturas.
+    - Modal técnico `#modal-airbrush-calculator` con selector de medios químicos, botones de boquilla (0.15mm a 0.5mm), técnicas de pintado, control deslizante de gotas, visualizador de relación óptima, tarjeta de presión con manómetro PSI/Bar y botón de copiado de receta técnica al portapapeles.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/airbrush-calculator.test.mjs` (5 pruebas completas). Total de la plataforma: 143 tests unitarios pasando.
+    - Smoketest de integración validando endpoints, validaciones RFC 7807 y elementos de la interfaz.
+    - Despliegue en producción en Proxmox LXC 190.
 
 - **Pistas de Sonido y Soundscapes de Taller (Workshop Ambient Soundscapes & Generator - DT21):**
   - **Sintetizador Procedural Web Audio API (100% Offline, Zero-Bandwidth):**

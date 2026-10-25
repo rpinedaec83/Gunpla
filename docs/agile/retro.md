@@ -698,6 +698,32 @@ Lessons learned:
 - Differentiating between built showcase models (+50% for artisan labor and materials) and mint boxed stash (+15% for scarcity/inflation) accurately mirrors real-world collectibles insurance underwriting practices.
 Usage: Moderate -- self-estimated
 
+### DT22 -- Airbrush PSI & Thinner Ratio Calculator (Calculadora de Dilución y Presión de Aerógrafo) | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Designed shared data models and calculation engine in `packages/shared/src/index.ts`:
+  - `AirbrushMedium`, `AirbrushNeedleSize`, `AirbrushTechnique`, `AirbrushMixRequest`, `AirbrushMixResult`, `AirbrushTroubleshootingItem`.
+  - Implemented `calculateAirbrushMix`: Pure calculation function determining base dilution ratios, drop recipes, pressure envelopes (PSI and Bar), spraying distances, viscosity analogies, and diagnostic matrix.
+  - Added chemistry rules for Lacquer (1:1.5 standard, 1:2.5 fine detail shading, 10-18 PSI), Alcohol Acrylics (1:1.2, 16-20 PSI), Vinyl Water Acrylics (1:0.8, mandatory 1-2 drops Flow Improver + Retarder per 10 drops paint to eliminate tip-dry), Enamels (1:1.0), and Polyurethane Primers (1:0.25 minimal dilution, 22-28 PSI with >=0.3mm nozzle).
+  - Added dynamic climate adjustments: temperature >27°C automatically increments retarder to prevent dry spray; humidity >70% warns against blushing and mandates leveling thinner with anti-blushing agents.
+- Implemented backend API slice `apps/api/src/slices/airbrush/airbrush.slice.ts` and mounted in `apps/api/src/server.ts` at `/api/v1/workbench/airbrush`:
+  - `GET /api/v1/workbench/airbrush/mediums`: Returns supported paint mediums, techniques, and needle sizes.
+  - `POST /api/v1/workbench/airbrush/calculate`: Calculates exact mix and returns complete parameters with RFC 7807 400 Problem Details on invalid requests.
+- Updated OpenAPI 3.1 specifications in `docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`.
+- Integrated Web UI components in `packages/shared/src/ui-shell/`:
+  - Quick access buttons: `#btn-open-airbrush-calc` in Workbench header and `#btn-open-airbrush-from-rack` in `#wb-subtab-paints`.
+  - Interactive modal `#modal-airbrush-calculator` with medium selector, needle size pills (0.15mm to 0.5mm), technique select, cup paint drops slider, workshop climate inputs, real-time ratio/pressure card, and diagnostic troubleshooting accordion.
+  - Clipboard export: One-click copying of technical mix recipe with toast confirmation.
+- Authored isolated unit test suite in `tests/unit/airbrush-calculator.test.mjs` (5 test cases covering constant validation, lacquer recipes, acrylic water additives, needle & climate adjustments, and input validation). Total unit tests: 143 passing.
+- Extended end-to-end integration smoketest in `scripts/smoketest.mjs` asserting API responses, 400 Problem Details, and Web Shell UI elements.
+- Deployed to Proxmox LXC 190 (`192.168.1.190:8080`, `:3000`, `:3001`).
+Issues hit:
+- In `app-shell.ts`, multiline recipe string in clipboard function used unescaped `\n` which evaluated at TS compile time to literal newlines, causing `SyntaxError: Invalid or unexpected token` in client VM; resolved by escaping as `\\n`.
+Decisions made:
+- Embedding troubleshooting diagnostics (orange peel, tip-dry, spider webbing, splattering, dry spray) directly inside the calculation card gives modelers actionable instant guidance without having to browse external forums while painting at their booth.
+Lessons learned:
+- Flow improver and drying retarder are critical for water-based acrylics in scale modeling; calculating them proportionally to paint drops ensures smooth spraying and prevents clogged needles.
+Usage: Moderate -- self-estimated
+
 ### DT21 -- Workshop Soundscapes & Procedural Audio Generator (Pistas de Sonido y Soundscapes de Taller) | eMOE: 4 CU | aMOE: 4 CU
 What was done:
 - Designed shared data models and soundscape presets in `packages/shared/src/index.ts`:

@@ -6308,6 +6308,157 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     } catch (e) {}
   }
 
+  // --- DT22: Airbrush PSI & Thinner Ratio Calculator ---
+  let selectedAirbrushNeedle = 0.3;
+  let selectedAirbrushPaintDrops = 10;
+  let lastAirbrushMixResult = null;
+
+  function openAirbrushCalculatorModal() {
+    const m = document.getElementById('modal-airbrush-calculator');
+    if (!m) return;
+    m.style.display = 'flex';
+    m.classList.add('active');
+    runAirbrushCalculation();
+  }
+
+  function closeAirbrushCalculatorModal(e) {
+    if (!e || e.target.id === 'modal-airbrush-calculator' || (e.target.tagName === 'SPAN' && e.target.textContent === '×') || !e.target) {
+      const m = document.getElementById('modal-airbrush-calculator');
+      if (m) {
+        m.classList.remove('active');
+        m.style.display = 'none';
+      }
+    }
+  }
+
+  function setAirbrushNeedle(size) {
+    selectedAirbrushNeedle = Number(size);
+    const needleButtons = [
+      { id: 'btn-needle-015', size: 0.15 },
+      { id: 'btn-needle-02', size: 0.2 },
+      { id: 'btn-needle-03', size: 0.3 },
+      { id: 'btn-needle-04', size: 0.4 },
+      { id: 'btn-needle-05', size: 0.5 }
+    ];
+    needleButtons.forEach(btnObj => {
+      const btn = document.getElementById(btnObj.id);
+      if (btn) {
+        if (Math.abs(btnObj.size - selectedAirbrushNeedle) < 0.01) {
+          btn.classList.add('active');
+          btn.style.background = '#ea580c';
+          btn.style.color = '#fff';
+        } else {
+          btn.classList.remove('active');
+          btn.style.background = '';
+          btn.style.color = '';
+        }
+      }
+    });
+    runAirbrushCalculation();
+  }
+
+  function updateAirbrushPaintVolume(val) {
+    const drops = parseInt(val, 10) || 10;
+    selectedAirbrushPaintDrops = drops;
+    const label = document.getElementById('airbrush-paint-drops-val');
+    if (label) {
+      const ml = (drops * 0.05).toFixed(2);
+      label.textContent = drops + ' gotas (~' + ml + ' ml)';
+    }
+    runAirbrushCalculation();
+  }
+
+  async function runAirbrushCalculation() {
+    const mediumInput = document.querySelector('input[name="airbrush-medium"]:checked');
+    const medium = mediumInput ? mediumInput.value : 'lacquer';
+    const techSelect = document.getElementById('airbrush-technique-select');
+    const technique = techSelect ? techSelect.value : 'base-coat';
+    const tempInput = document.getElementById('airbrush-temp-input');
+    const humidityInput = document.getElementById('airbrush-humidity-input');
+    const ambientTempC = tempInput && tempInput.value ? parseFloat(tempInput.value) : undefined;
+    const ambientHumidityPct = humidityInput && humidityInput.value ? parseFloat(humidityInput.value) : undefined;
+
+    const payload = {
+      medium: medium,
+      needleSize: selectedAirbrushNeedle,
+      technique: technique,
+      paintDrops: selectedAirbrushPaintDrops,
+      ambientTempC: ambientTempC,
+      ambientHumidityPct: ambientHumidityPct
+    };
+
+    try {
+      const res = await fetch('/api/v1/workbench/airbrush/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Calculo fallido');
+      const data = await res.json();
+      lastAirbrushMixResult = data;
+      renderAirbrushCalculationUI(data);
+    } catch (err) {
+      console.warn('Fallback airbrush calculation error:', err);
+    }
+  }
+
+  function renderAirbrushCalculationUI(data) {
+    if (!data) return;
+    const ratioBadge = document.getElementById('airbrush-ratio-badge');
+    if (ratioBadge) ratioBadge.textContent = data.ratioString;
+
+    const pressBadge = document.getElementById('airbrush-pressure-badge');
+    if (pressBadge) pressBadge.textContent = data.recommendedPressurePsi.min + ' - ' + data.recommendedPressurePsi.max + ' PSI';
+
+    const barBadge = document.getElementById('airbrush-bar-badge');
+    if (barBadge) barBadge.textContent = '(' + data.recommendedPressureBar.min + ' - ' + data.recommendedPressureBar.max + ' Bar)';
+
+    const recipeDrops = document.getElementById('airbrush-recipe-drops');
+    if (recipeDrops) recipeDrops.textContent = data.recipeDescription;
+
+    const thinnerName = document.getElementById('airbrush-thinner-name');
+    if (thinnerName) thinnerName.textContent = 'Diluyente: ' + data.recommendedThinner;
+
+    const viscText = document.getElementById('airbrush-viscosity-text');
+    if (viscText) viscText.textContent = data.viscosityAnalogy;
+
+    const distText = document.getElementById('airbrush-distance-text');
+    if (distText) distText.textContent = data.sprayingDistanceCm.min + ' - ' + data.sprayingDistanceCm.max + ' cm';
+
+    const tipsContainer = document.getElementById('airbrush-tips-container');
+    if (tipsContainer && Array.isArray(data.tips)) {
+      tipsContainer.innerHTML = data.tips.map(t => '<div style="font-size: 0.75rem; color: #cbd5e1; display: flex; align-items: flex-start; gap: 0.4rem;"><span>•</span><span>' + t + '</span></div>').join('');
+    }
+
+    const tbList = document.getElementById('airbrush-troubleshooting-list');
+    if (tbList && Array.isArray(data.troubleshooting)) {
+      tbList.innerHTML = data.troubleshooting.map(item => '<div style="border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.35rem;"><strong style="color: #f87171;">' + item.issue + ':</strong> <span style="color: #cbd5e1;">' + item.cause + '</span> <span style="color: #4ade80;">➔ ' + item.solution + '</span></div>').join('');
+    }
+  }
+
+  function copyAirbrushRecipeToClipboard() {
+    if (!lastAirbrushMixResult) return;
+    const r = lastAirbrushMixResult;
+    const text = '--- Receta de Aerografo (Gunpla Workbench) ---\\n' +
+      'Quimica: ' + r.medium + '\\n' +
+      'Boquilla: ' + r.needleSize + ' mm | Tecnica: ' + r.technique + '\\n' +
+      'Relacion Optima: ' + r.ratioString + '\\n' +
+      'Mezcla: ' + r.recipeDescription + '\\n' +
+      'Presion: ' + r.recommendedPressurePsi.min + ' - ' + r.recommendedPressurePsi.max + ' PSI (' + r.recommendedPressureBar.min + ' - ' + r.recommendedPressureBar.max + ' Bar)\\n' +
+      'Diluyente: ' + r.recommendedThinner + '\\n' +
+      'Distancia: ' + r.sprayingDistanceCm.min + ' - ' + r.sprayingDistanceCm.max + ' cm';
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('📋 ¡Receta de dilucion copiada al portapapeles!');
+      }).catch(() => {
+        alert(text);
+      });
+    } else {
+      alert(text);
+    }
+  }
+
   // --- Bulk Import Tool Engine (CSV / TSV / Excel for Stash & Paint Rack) ---
   let currentBulkImportTab = 'stash';
 

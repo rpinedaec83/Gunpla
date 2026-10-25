@@ -2333,6 +2333,177 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Modal: DT22 Airbrush PSI & Thinner Ratio Calculator -->
+<div id="modal-airbrush-calculator" class="auth-modal-overlay" onclick="closeAirbrushCalculatorModal(event)">
+  <div class="auth-modal" style="max-width: 880px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; background: #0f172a; border: 1px solid rgba(249, 115, 22, 0.4); border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);" onclick="event.stopPropagation()">
+    <!-- Header -->
+    <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, rgba(249, 115, 22, 0.18) 0%, rgba(15,23,42,0.95) 100%); display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 0.65rem;">
+        <span style="font-size: 1.6rem;">🎨</span>
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Calculadora de Dilución & Presión de Aerógrafo</h3>
+          <p style="font-size: 0.78rem; color: #fb923c; margin: 0.15rem 0 0 0;">Relaciones exactas pintura:diluyente, aditivos y PSI/Bar según química y técnica</p>
+        </div>
+      </div>
+      <span style="font-size: 1.5rem; color: #94a3b8; cursor: pointer; line-height: 1;" onclick="closeAirbrushCalculatorModal()">&times;</span>
+    </div>
+
+    <!-- Body (Two Columns) -->
+    <div style="padding: 1.25rem 1.5rem; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem;">
+      <!-- Left Column: Input Form -->
+      <div style="display: flex; flex-direction: column; gap: 1.1rem;">
+        <!-- 1. Paint Medium -->
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #cbd5e1; margin-bottom: 0.45rem; text-transform: uppercase;">
+            1. Química de la Pintura
+          </label>
+          <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; cursor: pointer; font-size: 0.8rem; color: #f1f5f9;">
+              <input type="radio" name="airbrush-medium" value="lacquer" checked onchange="runAirbrushCalculation()" />
+              <span><strong>Laca Acrílica</strong> (Mr. Color, Gaia Notes, SMS, Tamiya LP)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; cursor: pointer; font-size: 0.8rem; color: #f1f5f9;">
+              <input type="radio" name="airbrush-medium" value="acrylic-alcohol" onchange="runAirbrushCalculation()" />
+              <span><strong>Acrílico Alcohol</strong> (Tamiya X/XF, Aqueous Hobby Color)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; cursor: pointer; font-size: 0.8rem; color: #f1f5f9;">
+              <input type="radio" name="airbrush-medium" value="acrylic-water" onchange="runAirbrushCalculation()" />
+              <span><strong>Acrílico Vinílico Agua</strong> (Vallejo, AK 3Gen, Ammo Mig)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; cursor: pointer; font-size: 0.8rem; color: #f1f5f9;">
+              <input type="radio" name="airbrush-medium" value="enamel" onchange="runAirbrushCalculation()" />
+              <span><strong>Esmalte / Enamel</strong> (Tamiya Enamel, Humbrol)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; cursor: pointer; font-size: 0.8rem; color: #f1f5f9;">
+              <input type="radio" name="airbrush-medium" value="polyurethane-primer" onchange="runAirbrushCalculation()" />
+              <span><strong>Imprimante PU / 2K Surfacer</strong> (Vallejo Primer, Stynylrez)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 2. Needle Size -->
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #cbd5e1; margin-bottom: 0.45rem; text-transform: uppercase;">
+            2. Diámetro de Boquilla / Aguja
+          </label>
+          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+            <button id="btn-needle-015" type="button" class="filter-pill" onclick="setAirbrushNeedle(0.15)" style="font-size: 0.78rem; padding: 0.35rem 0.7rem;">0.15 mm</button>
+            <button id="btn-needle-02" type="button" class="filter-pill" onclick="setAirbrushNeedle(0.2)" style="font-size: 0.78rem; padding: 0.35rem 0.7rem;">0.2 mm</button>
+            <button id="btn-needle-03" type="button" class="filter-pill active" onclick="setAirbrushNeedle(0.3)" style="font-size: 0.78rem; padding: 0.35rem 0.7rem; background: #ea580c; color: #fff;">0.3 mm (Estándar)</button>
+            <button id="btn-needle-04" type="button" class="filter-pill" onclick="setAirbrushNeedle(0.4)" style="font-size: 0.78rem; padding: 0.35rem 0.7rem;">0.4 mm</button>
+            <button id="btn-needle-05" type="button" class="filter-pill" onclick="setAirbrushNeedle(0.5)" style="font-size: 0.78rem; padding: 0.35rem 0.7rem;">0.5 mm</button>
+          </div>
+        </div>
+
+        <!-- 3. Application Technique -->
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 700; color: #cbd5e1; margin-bottom: 0.35rem; text-transform: uppercase;">
+            3. Técnica de Aplicación
+          </label>
+          <select id="airbrush-technique-select" onchange="runAirbrushCalculation()" style="width: 100%; padding: 0.5rem 0.75rem; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #fff; font-size: 0.82rem;">
+            <option value="base-coat" selected>Capa Base Uniforme & Opaca</option>
+            <option value="detail-shading">Post-sombreado Fino & Trazos de Detalle</option>
+            <option value="primer-surfacer">Imprimación & Surfacer de Nivelación</option>
+            <option value="gloss-clear">Barniz Brillante / Capa Húmeda Espejo</option>
+            <option value="candy-metallic">Efecto Candy & Metálicos Pulidos</option>
+          </select>
+        </div>
+
+        <!-- 4. Paint Volume -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <label style="font-size: 0.78rem; font-weight: 700; color: #cbd5e1; text-transform: uppercase;">
+              4. Cantidad en Copa
+            </label>
+            <span id="airbrush-paint-drops-val" style="font-size: 0.8rem; color: #fb923c; font-family: monospace; font-weight: 700;">10 gotas (~0.5 ml)</span>
+          </div>
+          <input id="airbrush-paint-drops-slider" type="range" min="2" max="30" value="10" oninput="updateAirbrushPaintVolume(this.value)" style="width: 100%; height: 5px; accent-color: #ea580c; cursor: pointer;" />
+        </div>
+
+        <!-- 5. Climate Conditions (Collapsible/Optional) -->
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 0.75rem;">
+          <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 600; margin-bottom: 0.4rem;">Condiciones de Taller (Opcional):</div>
+          <div style="display: flex; gap: 0.85rem;">
+            <div style="flex: 1;">
+              <span style="font-size: 0.7rem; color: #64748b;">Temp:</span>
+              <input id="airbrush-temp-input" type="number" value="22" min="10" max="42" onchange="runAirbrushCalculation()" style="width: 100%; padding: 0.3rem 0.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.78rem;" />
+            </div>
+            <div style="flex: 1;">
+              <span style="font-size: 0.7rem; color: #64748b;">Humedad %:</span>
+              <input id="airbrush-humidity-input" type="number" value="55" min="20" max="95" onchange="runAirbrushCalculation()" style="width: 100%; padding: 0.3rem 0.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.78rem;" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Results & Diagnostic Output -->
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <!-- Ratio & Pressure Hero Card -->
+        <div style="background: linear-gradient(135deg, rgba(234, 88, 12, 0.12) 0%, rgba(15, 23, 42, 0.85) 100%); border: 1.5px solid rgba(249, 115, 22, 0.4); border-radius: 10px; padding: 1.2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <div>
+              <div style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Relación Óptima Pintura : Diluyente</div>
+              <div id="airbrush-ratio-badge" style="font-size: 2rem; font-weight: 900; color: #fb923c; line-height: 1.1; margin-top: 0.2rem;">1 : 1.5</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Presión de Compresor</div>
+              <div id="airbrush-pressure-badge" style="font-size: 1.35rem; font-weight: 800; color: #f1f5f9; line-height: 1.1; margin-top: 0.2rem;">16 - 20 PSI</div>
+              <div id="airbrush-bar-badge" style="font-size: 0.72rem; color: #94a3b8; font-family: monospace;">(1.1 - 1.4 Bar)</div>
+            </div>
+          </div>
+
+          <!-- Recipe Drops -->
+          <div style="background: rgba(0,0,0,0.3); border-radius: 6px; padding: 0.75rem; margin-bottom: 0.65rem;">
+            <div style="font-size: 0.72rem; color: #fb923c; font-weight: 700; margin-bottom: 0.35rem; text-transform: uppercase;">Receta en la Copa del Aerógrafo:</div>
+            <div id="airbrush-recipe-drops" style="font-size: 0.84rem; color: #f8fafc; font-weight: 600; line-height: 1.4;">
+              10 gotas Pintura + 15 gotas Diluyente
+            </div>
+            <div id="airbrush-thinner-name" style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.25rem;">
+              Diluyente: Mr. Color Leveling Thinner
+            </div>
+          </div>
+
+          <!-- Viscosity Analogy -->
+          <div style="font-size: 0.75rem; color: #cbd5e1; line-height: 1.35; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.5rem;">
+            <strong>Consistencia Visual:</strong> <span id="airbrush-viscosity-text">Consistencia fluida como leche descremada; forma una película continua sin acumulación.</span>
+          </div>
+        </div>
+
+        <!-- Tips & Distance -->
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">Distancia Recomendada:</span>
+            <span id="airbrush-distance-text" style="font-size: 0.8rem; color: #38bdf8; font-weight: 700;">6 - 10 cm</span>
+          </div>
+          <div id="airbrush-tips-container" style="display: flex; flex-direction: column; gap: 0.35rem;">
+            <!-- Injected tips -->
+          </div>
+        </div>
+
+        <!-- Troubleshooting Accordion -->
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.85rem;">
+          <div style="font-size: 0.75rem; color: #facc15; font-weight: 700; margin-bottom: 0.45rem; text-transform: uppercase;">
+            ⚠️ Diagnóstico Rápido de Errores de Aplicación:
+          </div>
+          <div id="airbrush-troubleshooting-list" style="max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.75rem;">
+            <!-- Injected troubleshooting items -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Actions -->
+    <div style="padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.95); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+      <button id="btn-copy-airbrush-recipe" type="button" class="filter-pill" onclick="copyAirbrushRecipeToClipboard()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; border-color: rgba(249, 115, 22, 0.4); color: #fb923c; display: inline-flex; align-items: center; gap: 0.35rem;">
+        📋 Copiar Receta de Mezcla
+      </button>
+      <button type="button" class="btn-primary" onclick="closeAirbrushCalculatorModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">
+        Entendido / Listo
+      </button>
+    </div>
+  </div>
+</div>
+
 
 
 `;

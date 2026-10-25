@@ -8,7 +8,68 @@ Future work queue. Keep this separate from the active burn-down.
 - **Generador de Fichas Tecnicas & Manuales de Despiece (Parts Breakdown & Assembly Step Cards):** Exportador imprimible y digital de diagramas de ensamblaje con recetas de color por pieza para maquetas personalizadas.
 - **Control de Inventario de Herramientas & Vida Util de Cuchillas (Workbench Tool Inventory & Blade Wear Tracker):** Registro de alicates de precision monofilamento, aerografos, y contador de cortes para reemplazo de hojas de bisturi antes de causar marcas de tension.
 
+## Android Mobile Application Backlog (apps/mobile-android)
+
+Target: Native Android application built with Kotlin and Jetpack Compose, consuming the existing central REST API (OpenAPI 3.1) in apps/api. Supports offline-first workbench caching, hardware camera integration with ML Kit, push notifications via Firebase Cloud Messaging (FCM), and multi-tenant branding (GunplaJunkies and PlamoScale).
+
+### EPIC-AND-01: Arquitectura Base, Shell Multi-Tenant y Autenticacion
+- **AND-01: Scaffolding del Proyecto Android y Setup Gradle Monorepo:** Configuracion de apps/mobile-android con Gradle Kotlin DSL, Jetpack Compose BOM, Material 3, Navigation Compose, inyeccion de dependencias con Koin o Hilt, y script de verificacion en CI.
+- **AND-02: Motor de Temas Dinamicos Multi-Tenant:** Implementacion del sistema de diseno con cambio reactivo de tema segun tenant (GunplaJunkies Dark Cyber vs PlamoScale Slate Industrial), paleta dinamica Material You y tipografia escalable.
+- **AND-03: Autenticacion JWT SSO y Almacenamiento Seguro:** Cliente de autenticacion consumiendo /api/v1/auth/login y /register, persistencia segura de tokens JWT en EncryptedSharedPreferences, auto-refresh de sesion y soporte biometrico (huella / facial).
+- **AND-04: Base de Datos Local Room y Sincronizacion Offline:** Cache local Room (SQLite) para Stash, catalogo y pinturas, con cola de sincronizacion bidireccional en segundo plano usando Android WorkManager.
+
+### EPIC-AND-02: Gestion de Taller y Stash Personal
+- **AND-05: Modulo de Stash con Filtros y Busqueda Instantanea:** Vista de lista y cuadricula de maquetas personales filtradas por estado (unbuilt, in_progress, built, for_trade, wishlist), marcas y escalas, con edicion rapida offline.
+- **AND-06: Escaner Nativo de Codigo de Barras con Google ML Kit:** Integracion de camara con ML Kit Barcode Scanning para deteccion en tiempo real de codigos JAN, EAN, UPC y Code-128 en cajas de maquetas, con busqueda automatica en catalogo.
+- **AND-07: Resumen Pericial de Tasacion y Ficha de Seguro:** Pantalla de evaluacion de inventario con calculo reactivo de multiplicadores (1.5x en vitrina, 1.15x cajas selladas), graficos de distribucion y exportacion de informe.
+
+### EPIC-AND-03: Bitacora de Construccion y Captura con CameraX
+- **AND-08: Captura Rapida de Taller con CameraX (Quick-Log):** Visor de camara personalizado para mesa de trabajo con bloqueo de foco macro, control de exposicion, balance de blancos y previsualizacion de fotos de avance.
+- **AND-09: Gestor de Pasos de Avance y Reordenamiento Tactil:** Creacion de hitos de montaje, reordenamiento interactivo de pasos mediante drag-and-drop, etiquetado de pinturas y tecnicas aplicadas.
+- **AND-10: Pipeline de Compresion WebP y Carga Asincrona:** Procesamiento en background para redimensionar y comprimir fotos a formato WebP optimizado antes de enviarlas al storage S3 / R2 mediante WorkManager.
+
+### EPIC-AND-04: Herramientas Tecnicas y Modulo Acustico
+- **AND-11: Estante de Pinturas (Paint Rack) y Buscador de Equivalencias:** Inventario digital de frascos y aerosoles por quimica, niveles de stock, y recomendador de equivalencias entre marcas con resaltado de pinturas en stock.
+- **AND-12: Calculadora de Dilucion y Presion de Aerografo:** Asistente interactivo con selectores de diametro de boquilla (0.15mm a 0.5mm), quimica de pintura y tecnica, calculando ratios exactos de thinner, PSI / Bar y diagnosticos.
+- **AND-13: Reproductor de Soundscapes y Temporizador Pomodoro:** Servicio en primer plano (Foreground Service) con Android Media3 para reproduccion de ambientes acusticos procedimentales de taller, control de volumen por capa y temporizador Pomodoro de montaje.
+- **AND-14: Registro de Costos y Presupuesto por Proyecto:** Formulario de gastos asociados a cada maqueta (costo del kit, fotograbados, calcas, insumos) con conversion de divisas y desglose de inversion.
+
+### EPIC-AND-05: Asistente con Vision IA y Visualizador 3D / AR
+- **AND-15: Asistente Smart Builder con Camara y Vision IA:** Captura de fotos de sprues / grapas para conteo de piezas restantes y fotos macro de marcas de corte (nubs) para evaluacion automatica de calidad y guia de lijado.
+- **AND-16: Visor 3D y Realidad Aumentada (ARCore):** Renderizado de modelos 3D con orbit controls e insercion AR en mesa de trabajo a escala real 1:1 comparada con silueta humana.
+
+### EPIC-AND-06: Comunidad, Notificaciones Push y Tiendas
+- **AND-17: Feed de Comunidad y Galeria Lightbox:** Explorador de proyectos publicos, busqueda por etiquetas, visor de fotos a pantalla completa con zoom y gestos, likes y comentarios.
+- **AND-18: Notificaciones Push con Firebase Cloud Messaging (FCM):** Recepcion de alertas en tiempo real sobre comentarios, resultados de concursos, avisos de stock en tiendas y deep linking a pantallas especificas.
+- **AND-19: Proyectos Grupales y Participacion en Concursos:** Vista de proyectos colaborativos comunitarios, inscripcion en concursos activos, seguimiento de podio y credenciales digitales de ganador.
+- **AND-20: Directorio de Tiendas y Contacto Directo WhatsApp:** Mapa y listado de tiendas de modelismo asociadas con filtro por pais y boton de apertura directa de chat wa.me.
+
+### Plan de Desarrollo por Fases (ATLAS Lifecycle)
+
+- **Fase M1 -- Cimientos, Autenticacion y Shell Multi-Tenant:**
+  - Tareas: AND-01, AND-02, AND-03, AND-04.
+  - Objetivo: Aplicacion ejecutable en emulador y dispositivo fisico con login SSO, navegacion Material 3, cambio de tenant y cache Room operativo.
+- **Fase M2 -- Modulo de Stash y Escaner de Codigos de Barras:**
+  - Tareas: AND-05, AND-06, AND-07.
+  - Objetivo: Gestion completa de inventario personal, lectura instantanea de codigos de barras con ML Kit y tasacion de inventario.
+- **Fase M3 -- Bitacoras de Montaje, Camara y Pipeline de Medios:**
+  - Tareas: AND-08, AND-09, AND-10.
+  - Objetivo: Flujo rapido de registro de avances con camara en mesa de trabajo y sincronizacion resiliente en segundo plano.
+- **Fase M4 -- Herramientas de Taller, Pinturas y Modulo Acustico:**
+  - Tareas: AND-11, AND-12, AND-13, AND-14.
+  - Objetivo: Calculadora de aerografo, inventario de pinturas, reproductor de audio continuo en segundo plano y control de costos.
+- **Fase M5 -- Comunidad, Notificaciones Push y Tiendas:**
+  - Tareas: AND-17, AND-18, AND-19, AND-20.
+  - Objetivo: Interaccion social completa, recepcion de notificaciones FCM y directorio de comercios con enlace a WhatsApp.
+- **Fase M6 -- Vision IA, Realidad Aumentada y Publicacion:**
+  - Tareas: AND-15, AND-16, optimizacion de rendimiento (ProGuard / R8), tests de regresion y generacion de bundle AAB para Google Play.
+
+
 ## Completed Candidates & Parking Lot Items
+
+### AIRBRUSH-CALCULATOR -- Calculadora de Dilución y Presión de Aerógrafo (DT22) (COMPLETED)
+- Goal: Technical assistant and mixing calculator for scale model airbrushing. Computes exact paint-to-thinner ratios, drops, additives (flow improver, retarder), compressor pressure ranges in PSI and Bar, spray distances, and diagnostic troubleshooting (orange peel, tip-dry, spider webbing, dry spray) based on paint chemistry medium (lacquer, alcohol acrylic, water acrylic, enamel, polyurethane primer), needle size (0.15mm to 0.5mm), and application technique.
+- Delivered: Endpoints `GET /api/v1/workbench/airbrush/mediums` and `POST /api/v1/workbench/airbrush/calculate` (with RFC 7807 400 Problem Details on invalid input); shared data models in `@gunpla/shared` (`AirbrushMedium`, `AirbrushNeedleSize`, `AirbrushTechnique`, `AirbrushMixRequest`, `AirbrushMixResult`, `AirbrushTroubleshootingItem`); pure calculation logic `calculateAirbrushMix` covering 5 paint chemistries, 5 needle sizes, 5 application techniques, and dynamic ambient climate adjustments (>27°C hot weather retarder boost, >70% humidity anti-blushing guidance); Web UI modal `#modal-airbrush-calculator` with medium selector, needle size pills, technique selector, cup drops slider, climate inputs, real-time ratio/PSI hero card, and diagnostic troubleshooting accordion; quick-access buttons in Workbench header (`#btn-open-airbrush-calc`) and Paint Rack (`#btn-open-airbrush-from-rack`); 5 isolated unit tests (`tests/unit/airbrush-calculator.test.mjs`, total 143 passing); end-to-end smoketest; and verified live deployment on LXC 190.
 
 ### WORKSHOP-SOUNDSCAPES -- Pistas de Sonido y Soundscapes de Taller (DT21) (COMPLETED)
 - Goal: In-browser procedural soundscape generator and ambient audio player embedded in "Mi Taller" to enhance focus and relaxation during scale model building, masking, and airbrushing sessions. Uses Web Audio API procedural synthesis with zero external audio download dependencies, supporting offline PWA playback, curated modeling presets (Lluvia en Taller, Compresor & Aerografo, Hangar Sci-Fi Mecha, Lo-Fi Chillhop, Jardin Zen & Pincel), Pomodoro session timers (25m build / 5m cleanup), and customizable volume mixing.
