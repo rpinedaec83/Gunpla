@@ -27,16 +27,26 @@ Do not store credentials, keys, tokens, passwords, connection strings, or deploy
 - Project name: PlamoScale & GunplaJunkies SSO
 - Region: Global
 - Service account name: OAuth 2.0 Web Client (`GOOGLE_CLIENT_ID`)
+- Domain ownership verification: Completed in Google Search Console for `gunplajunkies.com` and `plamoscale.com`.
 - Deployment environment notes: Authorized JavaScript origins and redirect URIs configured for `https://plamoscale.com`, `https://gunplajunkies.com`, `https://api.plamoscale.com`, and `http://localhost:*`.
 
 ## Cloudflare
 
 - Account ID: TBD (x-codec Cloudflare account)
 - Account name: x-codec
-- Zone ID or zone name: `plamoscale.com` (Pending Nameserver migration to Cloudflare), `gunplajunkies.com` (Pending Nameserver migration to Cloudflare)
+- Zone ID or zone name:
+  - `plamoscale.com`: Delegated Nameservers `cruz.ns.cloudflare.com`, `dylan.ns.cloudflare.com` (Zone active in Cloudflare)
+  - `gunplajunkies.com`: Delegated Nameservers `cruz.ns.cloudflare.com`, `dylan.ns.cloudflare.com` (Zone active in Cloudflare)
+- Nameservers assigned:
+  1. `cruz.ns.cloudflare.com`
+  2. `dylan.ns.cloudflare.com`
+- Routing & Tunnel (`xcodec-lab-tunnel` / `87cb64ac-1164-4153-890f-b6fee81e0327`):
+  - `plamoscale.com` (apex) & `www.plamoscale.com` -> LXC 190 (`10.20.30.190:3000`)
+  - `gunplajunkies.com` (apex) & `www.gunplajunkies.com` -> LXC 190 (`10.20.30.190:3001`)
+  - `api.plamoscale.com` & `api.gunplajunkies.com` -> LXC 190 (`10.20.30.190:8080`)
 - Pages project: Optional edge static caching / DNS proxy
 - Workers service: Optional image resizing / CDN edge caching
-- Deployment environment notes: Both `plamoscale.com` and `gunplajunkies.com` domains will be migrated to Cloudflare DNS/Proxy (Full Strict SSL/TLS) and linked to Cloudflare R2 bucket (`plamoscale-media-prod` / `plamoscale-media-dev`) for zero-egress high-resolution image delivery.
+- Deployment environment notes: Both `plamoscale.com` and `gunplajunkies.com` apex and www domains are bound to Cloudflare DNS/Proxy with assigned nameservers `cruz.ns.cloudflare.com` and `dylan.ns.cloudflare.com`. Cloudflare Tunnel ingress rules route all traffic to homelab LXC 190 with Full Strict SSL. Resend DKIM/SPF domain verification is 100% completed and verified (2026-10-23). Both zones will link to Cloudflare R2 bucket (`plamoscale-media-prod` / `plamoscale-media-dev`) for zero-egress high-resolution image delivery.
 
 ## GitHub
 

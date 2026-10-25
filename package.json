@@ -1,0 +1,32 @@
+{
+  "name": "gunpla-plamoscale-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-tenant Scale Modeling & Gunpla Platform (plamoscale.com, gunplajunkies.com & white-label clients)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev": "npm --workspace=@gunpla/api run dev",
+    "start": "npm --workspace=@gunpla/api run start",
+    "db:seed": "npm --workspace=@gunpla/api run db:seed",
+    "smoketest": "node scripts/smoketest.mjs",
+    "test:unit": "node --test tests/unit/**/*.test.mjs",
+    "test": "npm run test:unit && npm run smoketest"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1156.0",
+    "@types/qrcode": "^1.5.6",
+    "qrcode": "^1.5.4"
+  }
+}

@@ -1,0 +1,764 @@
+openapi: 3.1.0
+info:
+  title: PlamoScale & GunplaJunkies Multi-Tenant API
+  version: 1.0.0
+  description: >
+    Central Multi-Tenant REST API powering plamoscale.com (General Scale Modeling),
+    gunplajunkies.com (Gunpla, Mecha & Sci-Fi), and future white-label hobby club and shop portals.
+    Supports Dual Authentication (Username/Password + Google OAuth 2.0 / OIDC SSO) and
+    multi-domain transactional emails via Resend.com.
+  contact:
+    name: Roberto Pineda (x-codec)
+    url: https://x-codec.net
+    email: rpineda@x-codec.net
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+  - url: https://api.plamoscale.com
+    description: Production API (PlamoScale primary)
+  - url: https://api.gunplajunkies.com
+    description: Production API (GunplaJunkies alias)
+tags:
+  - name: Health
+    description: System readiness and operational probes
+  - name: Tenants
+    description: Multi-tenant portal configuration and resolution
+  - name: Auth
+    description: Dual Authentication (Local Username/Password + Google SSO OAuth 2.0 / OIDC)
+  - name: Builders
+    description: Builder profiles and migrated legacy portfolios
+  - name: Notifications
+    description: Multi-domain email notifications and contact via Resend.com
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    TenantSlugHeader:
+      name: X-Tenant-Slug
+      in: header
+      required: false
+      description: Active tenant identifier (e.g. plamoscale, gunplajunkies)
+      schema:
+        type: string
+        default: plamoscale
+  schemas:
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        invalidParams:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              reason:
+                type: string
+    Tenant:
+      type: object
+      required:
+        - id
+        - slug
+        - name
+        - domain
+        - emailFrom
+        - allowedCategories
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        domain:
+          type: string
+        emailFrom:
+          type: string
+        tagline:
+          type: string
+        mission:
+          type: string
+        vision:
+          type: string
+        allowedCategories:
+          type: array
+          items:
+            type: string
+        themeConfig:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+    UserProfile:
+      type: object
+      required:
+        - id
+        - username
+        - displayName
+        - email
+        - roles
+        - authProviders
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            type: string
+        authProviders:
+          type: array
+          items:
+            type: string
+            enum: [local, google]
+        primaryTenantSlug:
+          type: string
+        socialLinks:
+          type: array
+          items:
+            type: string
+        photoCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    AuthResponse:
+      type: object
+      required:
+        - token
+        - authMethod
+        - tenant
+        - user
+      properties:
+        token:
+          type: string
+        authMethod:
+          type: string
+          enum: [local, google]
+        accountLinked:
+          type: boolean
+        tenant:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserProfile'
+paths:
+  /api/v1/health:
+    get:
+      tags: [Health]
+      summary: System health and seed state verification
+      responses:
+        '200':
+          description: Healthy API state
+  /api/v1/tenants:
+    get:
+      tags: [Tenants]
+      summary: List registered multi-tenant portals
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Paginated tenant list
+  /api/v1/tenants/current:
+    get:
+      tags: [Tenants]
+      summary: Resolve active tenant configuration from X-Tenant-Slug or Host
+      parameters:
+        - $ref: '#/components/parameters/TenantSlugHeader'
+      responses:
+        '200':
+          description: Active tenant metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tenant'
+        '404':
+          description: Unknown tenant
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/v1/auth/registrations:
+    post:
+      tags: [Auth]
+      summary: Register a new builder account with Username/Email and Password
+      parameters:
+        - $ref: '#/components/parameters/TenantSlugHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password]
+              properties:
+                username:
+                  type: string
+                displayName:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+      responses:
+        '201':
+          description: Builder registered and welcome email queued via Resend.com
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          description: Duplicate username or email
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/v1/auth/sessions:
+    post:
+      tags: [Auth]
+      summary: Sign in with Username or Email and Password
+      parameters:
+        - $ref: '#/components/parameters/TenantSlugHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, password]
+              properties:
+                identifier:
+                  type: string
+                  description: Username or email address
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authenticated session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/v1/auth/google-sessions:
+    post:
+      tags: [Auth]
+      summary: Sign in or register via Google SSO (OAuth 2.0 / OIDC) with automatic email account linking
+      parameters:
+        - $ref: '#/components/parameters/TenantSlugHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [idToken]
+              properties:
+                idToken:
+                  type: string
+                  description: Google OIDC ID Token
+      responses:
+        '200':
+          description: Authenticated via Google SSO
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid Google token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current authenticated builder profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/v1/builders:
+    get:
+      tags: [Builders]
+      summary: List builder profiles and migrated legacy portfolios
+      parameters:
+        - $ref: '#/components/parameters/TenantSlugHeader'
+      responses:
+        '200':
+          description: Paginated builder profiles
+  /api/v1/builders/{username}:
+    get:
+      tags: [Builders]
+      summary: Get builder portfolio and migrated build photos by username
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Builder profile with photos and social links
+        '404':
+          description: Builder not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/v1/notifications/contact-messages:
+    post:
+      tags: [Notifications]
+      summary: Send a tenant-branded contact or subscription email via Resend.com
+      parameters:
+        - $ref: '#/components/parameters/TenantSlugHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, message]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+                message:
+                  type: string
+      responses:
+        '201':
+          description: Email dispatched via Resend.com using active tenant domain
+  /api/v1/catalog/kits:
+    get:
+      tags: [Catalog]
+      summary: List scale model kits filtered by category, brand, scale, or keyword (scoped to tenant)
+      parameters:
+        - $ref: '#/components/parameters/TenantSlugHeader'
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: brand
+          in: query
+          schema:
+            type: string
+        - name: scale
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of kits
+    post:
+      tags: [Catalog]
+      summary: Create a kit manually in the catalog
+      parameters:
+        - $ref: '#/components/parameters/TenantSlugHeader'
+      responses:
+        '201':
+          description: Kit created
+        '200':
+          description: Existing kit returned
+  /api/v1/catalog/kits/{id}:
+    get:
+      tags: [Catalog]
+      summary: Get kit details by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Kit details
+        '404':
+          description: Kit not found
+  /api/v1/catalog/kits/import-scalemates:
+    post:
+      tags: [Catalog]
+      summary: Import kit from Scalemates URL with deduplication and 4s graceful fallback
+      parameters:
+        - $ref: '#/components/parameters/TenantSlugHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scalematesUrl]
+              properties:
+                scalematesUrl:
+                  type: string
+                categoryOverride:
+                  type: string
+      responses:
+        '201':
+          description: Kit imported
+        '200':
+          description: Kit already existed
+  /api/v1/catalog/paints:
+    get:
+      tags: [Catalog]
+      summary: List paints and supplies by brand, line, type, finish, or color search
+      parameters:
+        - name: brand
+          in: query
+          schema:
+            type: string
+        - name: line
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: finish
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paints list with hex color swatches
+    post:
+      tags: [Catalog]
+      summary: Add new paint reference
+      responses:
+        '201':
+          description: Paint created
+  /api/v1/catalog/brands:
+    get:
+      tags: [Catalog]
+      summary: List catalog brands with counts and supported categories
+      responses:
+        '200':
+          description: Brand summaries
+  /api/v1/workbench/summary:
+    get:
+      tags: [Workbench]
+      summary: Get personal stash and paint rack statistics for the authenticated builder
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Workbench summary metrics
+        '401':
+          description: Unauthorized
+  /api/v1/workbench/stash:
+    get:
+      tags: [Workbench]
+      summary: List kits in personal stash
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [unbuilt, in_progress, built, wishlist, for_trade]
+      responses:
+        '200':
+          description: Stash items
+    post:
+      tags: [Workbench]
+      summary: Add kit to personal stash
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kitId]
+              properties:
+                kitId:
+                  type: string
+                status:
+                  type: string
+                rating:
+                  type: integer
+                notes:
+                  type: string
+                pricePaid:
+                  type: number
+      responses:
+        '201':
+          description: Kit added to stash
+  /api/v1/workbench/stash/{id}:
+    patch:
+      tags: [Workbench]
+      summary: Update kit in stash
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item updated
+        '403':
+          description: Forbidden (not the owner)
+    delete:
+      tags: [Workbench]
+      summary: Remove kit from stash
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item removed
+  /api/v1/workbench/paints:
+    get:
+      tags: [Workbench]
+      summary: List paints in personal paint rack
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Paint rack items
+    post:
+      tags: [Workbench]
+      summary: Add paint to paint rack
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paintId]
+              properties:
+                paintId:
+                  type: string
+                quantity:
+                  type: integer
+                status:
+                  type: string
+      responses:
+        '201':
+          description: Paint added to rack
+  /api/v1/workbench/paints/{id}:
+    patch:
+      tags: [Workbench]
+      summary: Update paint rack item
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item updated
+    delete:
+      tags: [Workbench]
+      summary: Remove paint from rack
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item deleted
+  /api/v1/builds:
+    get:
+      tags: [Build Logs]
+      summary: List build projects feed scoped by tenant allowed categories
+      parameters:
+        - $ref: '#/components/parameters/TenantSlugHeader'
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: username
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of build projects
+    post:
+      tags: [Build Logs]
+      summary: Create a new step-by-step build project
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, category]
+      responses:
+        '201':
+          description: Build project created
+  /api/v1/builds/{slugOrId}:
+    get:
+      tags: [Build Logs]
+      summary: Get build project details
+      parameters:
+        - name: slugOrId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Build project details
+  /api/v1/builds/{id}/steps:
+    post:
+      tags: [Build Logs]
+      summary: Add step to build project with stage, photos and paint recipes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Step added
+  /api/v1/builds/{id}/like:
+    post:
+      tags: [Build Logs]
+      summary: Toggle like for build project
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Like toggled
+  /api/v1/builds/{id}/comments:
+    post:
+      tags: [Build Logs]
+      summary: Add comment to build project
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Comment added
+  /api/v1/media/upload:
+    post:
+      tags: [Media]
+      summary: Upload photo (up to 15MB)
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Photo uploaded
+  /api/v1/marketplace/listings/{id}/inquiries:
+    post:
+      tags: [Marketplace]
+      summary: Submit buyer inquiry or counter-offer for a listing via Resend email
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Inquiry sent to seller

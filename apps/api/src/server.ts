@@ -1,0 +1,231 @@
+import fs from 'fs';
+import path from 'path';
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
+import { seedPlatformDatabase, resolveLegacyPlamoscaleDir } from './seed/seed-legacy';
+import { getDb } from './core/db';
+import { resolveTenantMiddleware } from './core/tenant.middleware';
+import { sendProblem } from './core/problem-details';
+import { createRateLimiter } from './core/rate-limit.middleware';
+import { tenantsRouter } from './slices/tenants/tenants.slice';
+import { authRouter } from './slices/auth-sso/auth.slice';
+import { buildersRouter } from './slices/builders/builders.slice';
+import { notificationsRouter } from './slices/notifications-resend/resend.slice';
+import { catalogRouter } from './slices/catalog-scalemates/catalog.slice';
+import { workbenchRouter } from './slices/workbench-stash/workbench.slice';
+import { buildsRouter, mediaRouter } from './slices/build-logs/builds.slice';
+import { communityRouter } from './slices/community/community.slice';
+import { marketplaceRouter, commissionsRouter } from './slices/marketplace/marketplace.slice';
+import { paintsAiRouter } from './slices/paints-ai/paints-ai.slice';
+import { ogRouter } from './slices/social-og/og.slice';
+import { openApiSpec } from './openapi/openapi-spec';
+import { initPostgres, getPostgresStats, isPostgresConfigured } from './core/postgres';
+
+dotenv.config();
+
+export function createApp() {
+  // Ensure seed data (2 tenants + 4 founding builders + 92 photos) is initialized
+  seedPlatformDatabase(false);
+
+  const app = express();
+  const allowedOriginPattern = /^(https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?|https?:\/\/.*(plamoscale|gunplajunkies)\.com(:\d+)?)$/;
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOriginPattern.test(origin)) {
+          return callback(null, true);
+        }
+        const db = getDb();
+        const match = db.tenants.some((t) => origin.includes(t.domain) || origin.includes(t.slug));
+        if (match) {
+          return callback(null, true);
+        }
+        return callback(null, false);
+      },
+      credentials: true
+    })
+  );
+  app.use(express.json({ limit: '20mb' }));
+  app.use(express.urlencoded({ limit: '20mb', extended: true }));
+
+  // Serve preserved legacy images from plamoscale.com so all 92 photos work out of the box
+  const legacyDir = resolveLegacyPlamoscaleDir();
+  const imagesBaseDir = path.join(legacyDir, 'images');
+
+  // Case-insensitive fallback middleware for Linux (ext4) environments (.JPG vs .jpg)
+  app.use('/legacy-media/plamoscale/images', (req: Request, res: Response, next: NextFunction) => {
+    const reqPath = decodeURIComponent(req.path);
+    const fullPath = path.join(imagesBaseDir, reqPath);
+    if (fs.existsSync(fullPath)) {
+      return next();
+    }
+
+    // Try case-insensitive matching in the target directory
+    const dir = path.dirname(fullPath);
+    const base = path.basename(fullPath).toLowerCase();
+    if (fs.existsSync(dir)) {
+      try {
+        const files = fs.readdirSync(dir);
+        const match = files.find(f => f.toLowerCase() === base);
+        if (match) {
+          return res.sendFile(path.join(dir, match));
+        }
+      } catch {}
+    }
+    next();
+  });
+
+  app.use(
+    '/legacy-media/plamoscale/images',
+    express.static(imagesBaseDir)
+  );
+
+  // Serve uploaded media files
+  const uploadsDir = path.resolve(__dirname, '../data/uploads');
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  app.use('/uploads', express.static(uploadsDir));
+
+  // OpenAPI 3.1 JSON & Swagger UI (/doc)
+  app.get('/openapi.json', (_req: Request, res: Response) => {
+    res.status(200).json(openApiSpec);
+  });
+  app.use('/doc', swaggerUi.serve, swaggerUi.setup(openApiSpec));
+
+  // Health & Readiness Endpoint
+  app.get('/api/v1/health', (_req: Request, res: Response) => {
+    const db = getDb();
+    res.status(200).json({
+      status: 'ok',
+      service: 'gunpla-plamoscale-central-api',
+      version: '1.0.0',
+      tenantsCount: db.tenants.length,
+      tenants: db.tenants.map((t) => ({
+        slug: t.slug,
+        domain: t.domain,
+        emailFrom: t.emailFrom
+      })),
+      usersCount: db.users.length,
+      foundingBuildersCount: db.users.filter((u) => u.isFounder && u.username !== 'rpineda').length,
+      seededPhotosCount: db.mediaAssets.length,
+      kitsCount: db.kits ? db.kits.length : 0,
+      paintsCount: db.paints ? db.paints.length : 0,
+      stashItemsCount: db.stashItems ? db.stashItems.length : 0,
+      paintRackItemsCount: db.paintRackItems ? db.paintRackItems.length : 0,
+      buildsCount: db.builds ? db.builds.length : 0,
+      authModes: ['local-credentials', 'google-oauth-oidc-sso'],
+      emailProvider: 'resend.com',
+      lastSeededAt: db.lastSeededAt,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // Apply Multi-Tenant Context Resolution to all /api/v1/* tenant-scoped slices
+  app.use('/api/v1', resolveTenantMiddleware);
+
+  // Mount Vertical Slices with Rate Limiting Guards
+  const authLimiter = createRateLimiter({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    message: 'Demasiadas solicitudes de autenticacion desde esta IP. Por favor intente mas tarde.'
+  });
+  const uploadLimiter = createRateLimiter({
+    windowMs: 10 * 60 * 1000,
+    max: 100,
+    message: 'Limite de subida de fotos excedido. Espere unos minutos antes de subir mas fotos.'
+  });
+
+  app.use('/api/v1/tenants', tenantsRouter);
+  app.use('/api/v1/auth', authLimiter, authRouter);
+  app.use('/api/v1/builders', buildersRouter);
+  app.use('/api/v1/notifications', notificationsRouter);
+  app.use('/api/v1/catalog', catalogRouter);
+  app.use('/api/v1/workbench', workbenchRouter);
+  app.use('/api/v1/builds', buildsRouter);
+  app.use('/api/v1/media/upload', uploadLimiter);
+  app.use('/api/v1/media', mediaRouter);
+  app.use('/api/v1/marketplace', marketplaceRouter);
+  app.use('/api/v1/commissions', commissionsRouter);
+  app.use('/api/v1/paints/ai', paintsAiRouter);
+  app.use('/api/v1/og', ogRouter);
+  app.use('/api/v1', communityRouter);
+
+  // PostgreSQL Diagnostic & Status Endpoint
+  app.get('/api/v1/system/database', async (_req: Request, res: Response) => {
+    const isConfigured = isPostgresConfigured();
+    const stats = await getPostgresStats();
+    return res.json({
+      engine: 'PostgreSQL 16',
+      mode: isConfigured ? (stats.connected ? 'relational-postgres' : 'postgres-offline-fallback') : 'standalone-memory-json',
+      configured: isConfigured,
+      ...stats
+    });
+  });
+
+  // RFC 7807 Error Handler (handles body-parser entity.too.large, JSON syntax errors, etc.)
+  app.use((err: any, req: Request, res: Response, _next: any) => {
+    if (err.type === 'entity.too.large' || err.status === 413) {
+      return sendProblem(
+        req,
+        res,
+        413,
+        'Archivo Demasiado Grande',
+        'El tamaño de la petición excede el límite máximo permitido (15 MB).',
+        'payload-too-large'
+      );
+    }
+    if (err instanceof SyntaxError && 'body' in err) {
+      return sendProblem(
+        req,
+        res,
+        400,
+        'JSON Inválido',
+        'El cuerpo de la petición no tiene un formato JSON válido.',
+        'invalid-json'
+      );
+    }
+    return sendProblem(
+      req,
+      res,
+      500,
+      'Error Interno del Servidor',
+      err.message || 'Ocurrió un error inesperado.',
+      'server-error'
+    );
+  });
+
+  // Fallback 404 in RFC 7807 Problem Details format
+  app.use((req: Request, res: Response) => {
+    sendProblem(
+      req,
+      res,
+      404,
+      'Resource Not Found',
+      `Route '${req.method} ${req.originalUrl}' does not exist on this API.`,
+      'not-found'
+    );
+  });
+
+  return app;
+}
+
+if (require.main === module) {
+  const port = Number(process.env.PORT || 8080);
+  const app = createApp();
+  
+  if (isPostgresConfigured()) {
+    initPostgres(getDb()).then((connected) => {
+      if (connected) {
+        console.log('[Postgres] Connected and schema synchronized with gunpla-db.');
+      } else {
+        console.warn('[Postgres] Could not connect to PostgreSQL; using offline JSON fallback.');
+      }
+    });
+  }
+
+  app.listen(port, () => {
+    console.log(`Central Multi-Tenant API running on http://localhost:${port} (Swagger UI at http://localhost:${port}/doc)`);
+  });
+}
