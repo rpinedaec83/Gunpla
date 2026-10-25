@@ -4,9 +4,14 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
-- **Advanced Build Step Media Reordering & Multi-Photo Gallery:** Drag-and-drop or reorder controls for build steps and multiple progress photos per milestone.
+- **Community Group Builds & Collaborative Build Logs:** Multi-author group build projects where multiple builders can contribute progress logs and paint recipes to a shared team project.
+- **Advanced Kit Barcode & Box Scanner:** Camera-based barcode (JAN/EAN/UPC) scanning in Workbench for instant kit logging from kit boxes.
 
 ## Completed Candidates & Parking Lot Items
+
+### BUILD-STEPS-GALLERY -- Advanced Build Step Media Reordering & Multi-Photo Gallery (COMPLETED)
+- Goal: Multi-photo upload and gallery viewing per build step milestone, with intuitive step reordering and deletion controls for builders.
+- Delivered: Endpoints `PATCH /api/v1/builds/:id/steps/reorder`, `PATCH /api/v1/builds/:id/steps/:stepId`, and `DELETE /api/v1/builds/:id/steps/:stepId`; multi-photo upload preview and storage (`photoUrls: string[]`); step ordering controls (`⬆️`, `⬇️`) and removal (`🗑️`) in Workbench; multi-photo thumbnail grid in public timeline cards linking directly to high-res Lightbox modal; 4 isolated unit tests (`tests/unit/build-steps.test.mjs`, total 70 passing); end-to-end smoketest; and verified live deployment on LXC 190.
 
 ### NOTIFICATIONS-BELL -- Push Notifications & In-App Activity Bell (COMPLETED)
 - Goal: Real-time notification center (Activity Bell with unread counter, dropdown drawer, relative timestamps, direct routing to builds/contests/commissions/wishlist) and Web Push Notification Service Worker integration (`/sw.js`, push event listener, registration, and subscription endpoints).

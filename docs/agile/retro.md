@@ -465,3 +465,30 @@ Decisions made:
 Lessons learned:
 - Combining in-app activity bell with native Web Push in the service worker gives mobile PWA users a native-like notification experience even when the browser tab is closed.
 Usage: Moderate -- self-estimated
+
+### DT13 -- Advanced Build Step Media Reordering & Multi-Photo Gallery | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Designed and authored shared data models in `packages/shared/src/index.ts`: `ReorderBuildStepsRequest` and `UpdateBuildStepRequest`.
+- Updated OpenAPI 3.1 contract (`docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`) specifying `PATCH /api/v1/builds/{id}/steps/reorder`, `PATCH /api/v1/builds/{id}/steps/{stepId}`, and `DELETE /api/v1/builds/{id}/steps/{stepId}`.
+- Implemented backend build log management endpoints in `apps/api/src/slices/build-logs/builds.slice.ts`:
+  - `PATCH /:id/steps/reorder`: Reorders build steps based on provided `stepIds` array, recalculates sequential `orderIndex` (0, 1, 2...), preserves unmentioned steps, and enforces author ownership (403 Forbidden).
+  - `PATCH /:id/steps/:stepId`: Updates step title, description, stage, and multi-photo array (`photoUrls: string[]`) with validation and timestamp tracking.
+  - `DELETE /:id/steps/:stepId`: Deletes step from the build log and re-indexes remaining steps starting at 0 to guarantee continuity.
+- Updated frontend UI components:
+  - In `packages/shared/src/ui-shell/views.ts`: Rendered `.step-photo-gallery` thumbnails in the public builds timeline view with click-to-open lightbox support.
+  - In `packages/shared/src/ui-shell/modals.ts`: Added `multiple` attribute and `#step-photo-preview-grid` to `#modal-add-step` for intuitive multi-file selection.
+  - In `packages/shared/src/ui-shell/app-shell.ts`:
+    - Updated `handleAddStepSubmit` to upload multiple images in sequence and associate their URLs with the new step.
+    - Added `previewStepPhotos` thumbnail preview before form submission.
+    - Added step order controls (`⬆️`, `⬇️`) and step deletion button (`🗑️`) with confirmation modal in user's Workbench.
+    - Implemented `moveBuildStep(buildId, stepId, delta)` and `deleteBuildStep(buildId, stepId)` interacting with the new endpoints and updating Workbench view reactively.
+- Authored isolated unit test suite `tests/unit/build-steps.test.mjs` (4 test cases covering reordering, multi-photo array updates, step deletion with auto-reindexing, and author authorization checks). Total unit tests: 70 passed in 230ms.
+- Extended end-to-end regression smoketest in `scripts/smoketest.mjs` with step creation, reordering, multi-photo updating, and deletion verification.
+- Deployed and verified live on Proxmox LXC 190 (`192.168.1.190:8080`, `3000`, `3001`).
+Issues hit:
+- In `scripts/smoketest.mjs`, static Web Push token collision from previous runs was fixed by using dynamic tokens, ensuring consistent 200/201 checks.
+Decisions made:
+- Allowing deterministic reordering through an ordered array of IDs (`stepIds: string[]`) provides immediate drag-and-drop or button-driven reordering support without concurrency locking issues.
+Lessons learned:
+- Rendering multi-photo thumbnails with direct Lightbox integration significantly improves the presentation of in-progress custom Gunpla techniques like candy-coating and weathering.
+Usage: Moderate -- self-estimated

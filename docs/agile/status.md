@@ -4,12 +4,29 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards & In-App Activity Bell Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + 4 Technical Debt resolutions verified via `npm test` (66 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt12-push-notifications-activity-bell` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell & Multi-Photo Gallery Reorder Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos de Armado + 4 Technical Debt resolutions verified via `npm test` (70 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt13-build-step-gallery-reorder` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Galeria Multi-Foto & Reordenamiento de Pasos de Armado (Multi-Photo Gallery & Step Reorder):**
+  - **Carga y Visualizacion Multi-Foto en Pasos de Bitacora:**
+    - Campo `photoUrls: string[]` plenamente soportado en cada hito del proceso (`BuildStep`).
+    - En `#modal-add-step`, seleccion de multiples imagenes simultaneas (`multiple`) con previsualizacion en miniatura en vivo (`#step-photo-preview-grid`).
+    - Subida paralela / en lote hacia el pipeline de optimizacion WebP y guardado persistente en el registro del paso.
+    - Renderizado de cuadricula de fotos en miniatura en la vista publica de bitacoras (`.step-photo-gallery`) y en el panel personal de Workbench, con apertura directa de fotos en alta resolucion en el Lightbox interactivo.
+  - **Reordenamiento Lineal de Pasos con Auto-Indexacion (`PATCH /api/v1/builds/:id/steps/reorder`):**
+    - Controles interactivos de orden (`⬆️`, `⬇️`) en cada paso de armado dentro del Workbench personal del autor.
+    - Endpoint con validacion estricta de propiedad (403 Forbidden para usuarios no autores) que reorganiza los pasos segun el array de IDs enviado y reasigna los indices secuenciales `orderIndex` (0, 1, 2...).
+  - **Edicion y Eliminacion de Pasos de Bitacora (`PATCH / DELETE /api/v1/builds/:id/steps/:stepId`):**
+    - `PATCH`: Actualiza de forma granular titulo, descripcion, etapa (`stage`) y coleccion de fotos asociadas.
+    - `DELETE`: Boton `🗑️` en Workbench con confirmacion de seguridad que elimina el paso y recomputa automaticamente los indices restantes garantizando consistencia.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/build-steps.test.mjs` (4 casos de prueba aislados cubriendo reordenamiento, galeria multi-foto, eliminacion con reindexacion y comprobacion de permisos de autor). Total unit tests: 70 passed en 230ms.
+    - Extensión de `scripts/smoketest.mjs` verificando creacion de multiples pasos, reordenamiento, actualizacion de fotos y eliminacion con comprobacion de indices.
+    - Verificacion en vivo en el cluster Proxmox LXC 190 (`http://192.168.1.190:8080`).
 
 - **Notificaciones Web Push y Campana de Actividad en la App (Push Notifications & In-App Activity Bell):**
   - **Campana de Notificaciones Interactiva en Topbar (`#activity-bell-btn`):**

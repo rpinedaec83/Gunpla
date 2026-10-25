@@ -792,6 +792,45 @@ export const openApiSpec = {
         }
       }
     },
+    '/api/v1/builds/{id}/steps/reorder': {
+      patch: {
+        tags: ['Build Logs'],
+        summary: 'Reorder steps in a build project',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': { description: 'Steps reordered' }
+        }
+      }
+    },
+    '/api/v1/builds/{id}/steps/{stepId}': {
+      patch: {
+        tags: ['Build Logs'],
+        summary: 'Update a build step milestone',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'stepId', in: 'path', required: true, schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': { description: 'Step updated' }
+        }
+      },
+      delete: {
+        tags: ['Build Logs'],
+        summary: 'Delete a build step milestone',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'stepId', in: 'path', required: true, schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': { description: 'Step deleted' }
+        }
+      }
+    },
     '/api/v1/notifications': {
       get: {
         tags: ['Notifications & Activity Bell'],

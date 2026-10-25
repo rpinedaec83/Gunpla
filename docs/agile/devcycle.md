@@ -9,7 +9,7 @@ Goal: Transition persistence to PostgreSQL 16 (`gunpla-db`), ensuring ACID relat
 
 ## Active Tasks
 
-(No active dev tasks pending in this devcycle. DT12 -- Push Notifications & In-App Activity Bell is complete and active in production.)
+(No active tasks currently pending in the active burn-down. All planned tasks completed and verified.)
 
 ## Reset
 

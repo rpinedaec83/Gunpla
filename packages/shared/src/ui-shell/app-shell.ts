@@ -3208,6 +3208,10 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     const m = document.getElementById('modal-add-step');
     const input = document.getElementById('step-build-id');
     if (input) input.value = buildId;
+    const fileInput = document.getElementById('step-photo-file');
+    if (fileInput) fileInput.value = '';
+    const previewGrid = document.getElementById('step-photo-preview-grid');
+    if (previewGrid) previewGrid.innerHTML = '';
     if (m) m.classList.add('active');
   }
   function closeAddStepModal(e) {
@@ -3215,6 +3219,24 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
       const m = document.getElementById('modal-add-step');
       if (m) m.classList.remove('active');
     }
+  }
+
+  function previewStepPhotos(input) {
+    const grid = document.getElementById('step-photo-preview-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    if (!input.files || input.files.length === 0) return;
+    Array.from(input.files).forEach(file => {
+      const url = URL.createObjectURL(file);
+      const thumb = document.createElement('img');
+      thumb.src = url;
+      thumb.style.width = '55px';
+      thumb.style.height = '55px';
+      thumb.style.objectFit = 'cover';
+      thumb.style.borderRadius = '4px';
+      thumb.style.border = '1px solid var(--border-color)';
+      grid.appendChild(thumb);
+    });
   }
 
   function openAddPaintModal() {
@@ -4234,12 +4256,19 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
             const cover = b.coverImageUrl || (steps.length > 0 && steps[0].photoUrls && steps[0].photoUrls[0]) || '/legacy-media/plamoscale/images/aperich/thumbs/01.jpg';
             const stepsHtml = steps.length > 0
               ? steps.map((s, idx) => 
-                  '<div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem; padding: 0.6rem; background: rgba(255,255,255,0.02); border-radius: 6px;">' +
+                  '<div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem; padding: 0.6rem; background: rgba(255,255,255,0.02); border-radius: 6px; align-items: flex-start;">' +
                     '<div style="width: 24px; height: 24px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0;">' + (idx + 1) + '</div>' +
                     '<div style="flex: 1;">' +
-                      '<div style="font-size: 0.82rem; font-weight: 600; color: #fff;">' + s.title + ' <span style="font-size: 0.7rem; color: var(--accent);">(' + s.stage + ')</span></div>' +
+                      '<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">' +
+                        '<div style="font-size: 0.82rem; font-weight: 600; color: #fff;">' + s.title + ' <span style="font-size: 0.7rem; color: var(--accent);">(' + s.stage + ')</span></div>' +
+                        '<div style="display: flex; gap: 0.25rem;">' +
+                          (idx > 0 ? '<button type="button" class="filter-pill" style="padding: 0.15rem 0.45rem; font-size: 0.7rem;" title="Subir paso" onclick="moveBuildStep(&quot;' + b.id + '&quot;, &quot;' + s.id + '&quot;, -1)">⬆️</button>' : '') +
+                          (idx < steps.length - 1 ? '<button type="button" class="filter-pill" style="padding: 0.15rem 0.45rem; font-size: 0.7rem;" title="Bajar paso" onclick="moveBuildStep(&quot;' + b.id + '&quot;, &quot;' + s.id + '&quot;, 1)">⬇️</button>' : '') +
+                          '<button type="button" class="filter-pill" style="padding: 0.15rem 0.45rem; font-size: 0.7rem; color: #ef4444; border-color: rgba(239,68,68,0.3);" title="Eliminar paso" onclick="deleteBuildStep(&quot;' + b.id + '&quot;, &quot;' + s.id + '&quot;)">🗑️</button>' +
+                        '</div>' +
+                      '</div>' +
                       (s.description ? '<p style="font-size: 0.78rem; color: #94a3b8; margin-top: 0.2rem;">' + s.description + '</p>' : '') +
-                      (s.photoUrls && s.photoUrls.length > 0 ? '<div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">' + s.photoUrls.map(u => '<img src="' + u + '" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer;" onclick="openLightbox(&quot;' + u + '&quot;, &quot;' + s.title.replace(/"/g, '') + '&quot;, &quot;@' + b.username + '&quot;)">').join('') + '</div>' : '') +
+                      (s.photoUrls && s.photoUrls.length > 0 ? '<div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">' + s.photoUrls.map(u => '<img src="' + u + '" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 1px solid var(--border-color);" onclick="openLightbox(&quot;' + u + '&quot;, &quot;' + s.title.replace(/"/g, '') + '&quot;, &quot;@' + b.username + '&quot;)">').join('') + '</div>' : '') +
                     '</div>' +
                   '</div>'
                 ).join('')
@@ -4469,22 +4498,24 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
 
     try {
       const photoUrls = [];
-      if (fileInput && fileInput.files && fileInput.files[0]) {
-        const file = fileInput.files[0];
-        const base64 = await fileToBase64(file);
-        const uploadRes = await fetch(apiBase + '/api/v1/media/upload', {
-          method: 'POST',
-          headers: authHeaders,
-          body: JSON.stringify({
-            dataBase64: base64,
-            fileName: file.name,
-            title: title,
-            category: 'gunpla-mecha'
-          })
-        });
-        if (uploadRes.ok) {
-          const upData = await uploadRes.json();
-          photoUrls.push(upData.fullUrl);
+      if (fileInput && fileInput.files && fileInput.files.length > 0) {
+        for (let i = 0; i < fileInput.files.length; i++) {
+          const file = fileInput.files[i];
+          const base64 = await fileToBase64(file);
+          const uploadRes = await fetch(apiBase + '/api/v1/media/upload', {
+            method: 'POST',
+            headers: authHeaders,
+            body: JSON.stringify({
+              dataBase64: base64,
+              fileName: file.name,
+              title: title + (fileInput.files.length > 1 ? ' (' + (i + 1) + ')' : ''),
+              category: 'gunpla-mecha'
+            })
+          });
+          if (uploadRes.ok) {
+            const upData = await uploadRes.json();
+            photoUrls.push(upData.fullUrl);
+          }
         }
       }
 
@@ -4498,13 +4529,78 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
         throw new Error(err.detail || 'Error al agregar paso a la bitácora');
       }
       closeAddStepModal();
-      loadWorkbenchData();
+      await loadWorkbenchData();
       alert('¡Paso de armado agregado con éxito!');
     } catch (err) {
       alert('Error: ' + err.message);
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Guardar Paso de Armado';
+    }
+  }
+
+  async function moveBuildStep(buildId, stepId, delta) {
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    const authHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + currentToken,
+      'X-Tenant-Slug': '${config.tenantSlug}'
+    };
+
+    try {
+      let build = (window.__WB_BUILDS || []).find(b => b.id === buildId);
+      if (!build) {
+        const res = await fetch(apiBase + '/api/v1/builds/' + buildId);
+        if (res.ok) build = await res.json();
+      }
+      if (!build || !build.steps) return;
+
+      const steps = [...build.steps].sort((a, b) => a.orderIndex - b.orderIndex);
+      const currIdx = steps.findIndex(s => s.id === stepId);
+      if (currIdx === -1) return;
+      const targetIdx = currIdx + delta;
+      if (targetIdx < 0 || targetIdx >= steps.length) return;
+
+      const [moved] = steps.splice(currIdx, 1);
+      steps.splice(targetIdx, 0, moved);
+
+      const stepIds = steps.map(s => s.id);
+      const reorderRes = await fetch(apiBase + '/api/v1/builds/' + buildId + '/steps/reorder', {
+        method: 'PATCH',
+        headers: authHeaders,
+        body: JSON.stringify({ stepIds })
+      });
+      if (!reorderRes.ok) {
+        const err = await reorderRes.json();
+        throw new Error(err.detail || 'Error al reordenar pasos');
+      }
+      await loadWorkbenchData();
+    } catch (err) {
+      alert('Error al reordenar pasos: ' + err.message);
+    }
+  }
+
+  async function deleteBuildStep(buildId, stepId) {
+    if (!confirm('¿Seguro que deseas eliminar este paso de la bitácora?')) return;
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    const authHeaders = {
+      'Authorization': 'Bearer ' + currentToken,
+      'X-Tenant-Slug': '${config.tenantSlug}'
+    };
+
+    try {
+      const res = await fetch(apiBase + '/api/v1/builds/' + buildId + '/steps/' + stepId, {
+        method: 'DELETE',
+        headers: authHeaders
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Error al eliminar paso');
+      }
+      await loadWorkbenchData();
+      alert('¡Paso eliminado con éxito!');
+    } catch (err) {
+      alert('Error: ' + err.message);
     }
   }
 

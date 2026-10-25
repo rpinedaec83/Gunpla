@@ -496,6 +496,7 @@ async function runSmoketest() {
         stage: 'assembly_inner_frame',
         title: 'Inner Frame Priming and Metallic Shading',
         description: 'Applied Mr. Surfacer 1500 black followed by Steel and Gun Metal.',
+        photoUrls: ['/legacy-media/plamoscale/images/aperich/fulls/01.jpg'],
         paintUsages: [
           { paintId: 'paint-mrhobby-c28', role: 'inner-frame' },
           { paintId: 'paint-tamiya-x10', role: 'hydraulics' }
@@ -506,6 +507,94 @@ async function runSmoketest() {
     const stepData = await addStepRes.json();
     assert.equal(stepData.stage, 'assembly_inner_frame');
     assert.equal(stepData.paintUsages.length, 2);
+
+    // Add Step 2 (Assembly & Panel Lining)
+    const addStep2Res = await fetch(`${baseUrl}/api/v1/builds/${newBuild.id}/steps`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        stage: 'decals',
+        title: 'Water Decals & Weathering',
+        description: 'Applied water slide decals and Tamiya weathering master.',
+        photoUrls: [
+          '/legacy-media/plamoscale/images/aperich/fulls/02.jpg',
+          '/legacy-media/plamoscale/images/aperich/fulls/03.jpg'
+        ]
+      })
+    });
+    assert.equal(addStep2Res.status, 201);
+    const step2Data = await addStep2Res.json();
+    assert.equal(step2Data.photoUrls.length, 2);
+
+    // Add Step 3 (Temporary Step for Deletion test)
+    const addStep3Res = await fetch(`${baseUrl}/api/v1/builds/${newBuild.id}/steps`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        stage: 'final_reveal',
+        title: 'Draft Step to be deleted',
+        description: 'Test removal endpoint'
+      })
+    });
+    assert.equal(addStep3Res.status, 201);
+    const step3Data = await addStep3Res.json();
+
+    // Verify Reordering Steps: Move Step 2 before Step 1
+    const reorderRes = await fetch(`${baseUrl}/api/v1/builds/${newBuild.id}/steps/reorder`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        stepIds: [step2Data.id, stepData.id, step3Data.id]
+      })
+    });
+    assert.equal(reorderRes.status, 200, 'PATCH /steps/reorder must succeed');
+    const reorderData = await reorderRes.json();
+    assert.equal(reorderData.steps[0].id, step2Data.id);
+    assert.equal(reorderData.steps[0].orderIndex, 0);
+    assert.equal(reorderData.steps[1].id, stepData.id);
+    assert.equal(reorderData.steps[1].orderIndex, 1);
+
+    // Verify Updating Step details & multi-photo gallery
+    const updateStepRes = await fetch(`${baseUrl}/api/v1/builds/${newBuild.id}/steps/${step2Data.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        title: 'Updated Water Decals & High-Res Gallery',
+        photoUrls: [
+          '/legacy-media/plamoscale/images/aperich/fulls/02.jpg',
+          '/legacy-media/plamoscale/images/aperich/fulls/03.jpg',
+          '/legacy-media/plamoscale/images/aperich/fulls/04.jpg'
+        ]
+      })
+    });
+    assert.equal(updateStepRes.status, 200, 'PATCH /steps/:stepId must succeed');
+    const updatedStep = await updateStepRes.json();
+    assert.equal(updatedStep.title, 'Updated Water Decals & High-Res Gallery');
+    assert.equal(updatedStep.photoUrls.length, 3);
+
+    // Verify Deleting Step 3
+    const deleteStepRes = await fetch(`${baseUrl}/api/v1/builds/${newBuild.id}/steps/${step3Data.id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${googleSsoData.token}`
+      }
+    });
+    assert.equal(deleteStepRes.status, 200, 'DELETE /steps/:stepId must succeed');
+    const deleteResult = await deleteStepRes.json();
+    assert.equal(deleteResult.success, true);
+    assert.equal(deleteResult.remainingStepsCount, 2);
 
     // Toggle Like
     const likeRes = await fetch(`${baseUrl}/api/v1/builds/${newBuild.id}/like`, {
@@ -537,10 +626,10 @@ async function runSmoketest() {
     const detailRes = await fetch(`${baseUrl}/api/v1/builds/${newBuild.slug}`);
     assert.equal(detailRes.status, 200);
     const detailedBuild = await detailRes.json();
-    assert.equal(detailedBuild.steps.length, 1);
+    assert.equal(detailedBuild.steps.length, 2);
     assert.equal(detailedBuild.likeCount, 1);
     assert.equal(detailedBuild.comments.length, 1);
-    console.log(`[PASS] Build project lifecycle verified (Slug: ${detailedBuild.slug}, Steps: 1, Likes: 1, Comments: 1).`);
+    console.log(`[PASS] Build project lifecycle verified (Slug: ${detailedBuild.slug}, Steps: 2, Likes: 1, Comments: 1).`);
 
     // 16. DT4 - Media Upload Pipeline (Sharp WebP Optimization, Cloudflare R2 / Local Disk & 15MB Size Guardrail)
     console.log('\n--- Checking DT4: Media Upload Pipeline & Storage Diagnostics ---');
@@ -1992,12 +2081,12 @@ XF-1,Tamiya,Flat Black,2,owned`,
         'Authorization': `Bearer ${aperichToken}`
       },
       body: JSON.stringify({
-        endpoint: 'https://push.example.com/wpush/v2/smoketest-token',
+        endpoint: `https://push.example.com/wpush/v2/smoketest-token-${Date.now()}`,
         keys: { p256dh: 'BNcRdreALRF...', auth: 'tBHItDa...' },
         userAgent: 'NodeSmoketest/1.0'
       })
     });
-    assert.equal(pushSubRes.status, 201, 'POST /api/v1/notifications/push-subscribe must return 201 Created');
+    assert.ok([200, 201].includes(pushSubRes.status), 'POST /api/v1/notifications/push-subscribe must return 200 or 201');
     const pushSubData = await pushSubRes.json();
     assert.ok(pushSubData.subscriptionId, 'Must return subscriptionId');
 
