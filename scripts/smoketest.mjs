@@ -2348,7 +2348,80 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT16 Interactive 3D / AR Viewer & Diorama Studio verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER CHECKS PASSED ===');
+    // -------------------------------------------------------------------------
+    // DT17: Build Cost Accounting & Consumables Estimator
+    // -------------------------------------------------------------------------
+    console.log('\n--- Verifying DT17 Build Cost & Consumables Estimator ---');
+
+    // 1. Fetch initial costs for seed build (RG Hi-Nu)
+    const costGetRes = await fetch(`${baseUrl}/api/v1/builds/build-aperich-hinu/costs`);
+    assert.equal(costGetRes.status, 200, 'GET /builds/:id/costs must return 200');
+    const costGetData = await costGetRes.json();
+    assert.equal(costGetData.buildId, 'build-aperich-hinu');
+    assert.ok(costGetData.summary.totalCost > 50, 'Total cost should exceed $50');
+    assert.ok(costGetData.summary.breakdownByCategory.kit > 0, 'Kit category cost present');
+    assert.ok(costGetData.summary.suggestedCommissionPrice > costGetData.summary.totalCost);
+
+    // 2. Add new expense item as aperich (Author)
+    const addExpenseRes = await fetch(`${baseUrl}/api/v1/builds/build-aperich-hinu/costs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${aperichToken}`
+      },
+      body: JSON.stringify({
+        category: 'aftermarket',
+        name: 'Photo-Etch Metal Thrusters Upgrade',
+        amount: 14.50,
+        currency: 'USD',
+        notes: 'Detallado de toberas posteriores'
+      })
+    });
+    assert.equal(addExpenseRes.status, 201, 'POST /builds/:id/costs must return 201 Created');
+    const addExpenseData = await addExpenseRes.json();
+    assert.ok(addExpenseData.expense.id.startsWith('exp-'));
+    assert.equal(addExpenseData.expense.name, 'Photo-Etch Metal Thrusters Upgrade');
+    assert.equal(addExpenseData.expense.amount, 14.50);
+    const addedExpenseId = addExpenseData.expense.id;
+
+    // 3. Reject unauthorized non-owner addition (403 Forbidden)
+    const unauthAddRes = await fetch(`${baseUrl}/api/v1/builds/build-aperich-hinu/costs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${quattroData.token}`
+      },
+      body: JSON.stringify({
+        category: 'other',
+        name: 'Unauthorized Expense',
+        amount: 99.0
+      })
+    });
+    assert.equal(unauthAddRes.status, 403, 'Non-owner must be rejected with 403 Forbidden');
+    const unauthErr = await unauthAddRes.json();
+    assert.equal(unauthErr.status, 403);
+
+    // 4. Delete expense item
+    const deleteExpRes = await fetch(`${baseUrl}/api/v1/builds/build-aperich-hinu/costs/${addedExpenseId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${aperichToken}`
+      }
+    });
+    assert.equal(deleteExpRes.status, 200, 'DELETE /builds/:id/costs/:expenseId must return 200');
+    const deleteExpData = await deleteExpRes.json();
+    assert.equal(deleteExpData.removedExpenseId, addedExpenseId);
+
+    // 5. Verify UI elements on Web Frontend
+    assert.ok(plamoWebShellHtml.includes('id="modal-build-costs"'), 'PlamoScale must render modal-build-costs');
+    assert.ok(plamoWebShellHtml.includes('id="btn-open-build-costs"'), 'PlamoScale must render header costs button');
+    assert.ok(plamoWebShellHtml.includes('form-add-build-expense'), 'PlamoScale must render add expense form');
+    assert.ok(plamoWebShellHtml.includes('cost-kpi-total'), 'PlamoScale must render total cost KPI');
+    assert.ok(plamoWebShellHtml.includes('cost-kpi-commission'), 'PlamoScale must render commission estimate KPI');
+
+    console.log('[PASS] DT17 Build Cost & Consumables Estimator verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

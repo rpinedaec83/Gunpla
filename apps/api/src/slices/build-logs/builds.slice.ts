@@ -18,7 +18,14 @@ import {
   GenerateSpecCardResponse,
   WhatsAppInquiryType,
   WhatsAppInquiryRequest,
-  WhatsAppInquiryResponse
+  WhatsAppInquiryResponse,
+  BuildExpenseItem,
+  BuildExpenseCategory,
+  ExpenseCurrency,
+  BuildCostSummary,
+  AddExpenseRequest,
+  BuildCostResponse,
+  calculateBuildCostSummary
 } from '@gunpla/shared';
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
@@ -960,4 +967,188 @@ buildsRouter.post('/:id/comments', requireAuth, async (req: Request, res: Respon
   }
 
   return res.status(201).json(newComment);
+});
+
+// ---------------------------------------------------------------------------
+// Project Cost Accounting & Consumables Estimator (DT17)
+// ---------------------------------------------------------------------------
+
+buildsRouter.get('/:idOrSlug/costs', (req: Request, res: Response) => {
+  const { idOrSlug } = req.params;
+  const db = getDb();
+  const build = db.builds.find(b => b.id === idOrSlug || b.slug === idOrSlug);
+
+  if (!build) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Bitacora No Encontrada',
+      `No se encontro el proyecto con id o slug '${idOrSlug}'.`
+    );
+  }
+
+  const hourlyRate = parseFloat(req.query.hourlyRate as string) || 15;
+  const currency = (req.query.currency as ExpenseCurrency) || 'USD';
+  const summary = calculateBuildCostSummary(build.id, build.expenses || [], hourlyRate, currency);
+
+  return res.json({
+    buildId: build.id,
+    buildTitle: build.title,
+    currency: summary.currency,
+    summary
+  });
+});
+
+buildsRouter.post('/:id/costs', requireAuth, (req: Request, res: Response) => {
+  const { id } = req.params;
+  const user = req.user!;
+  const db = getDb();
+  const build = db.builds.find(b => b.id === id);
+
+  if (!build) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Bitacora No Encontrada',
+      `No se encontro el proyecto con id '${id}'.`
+    );
+  }
+
+  // Ownership verification
+  if (build.userId !== user.id && !user.roles.includes('admin')) {
+    return sendProblem(
+      req,
+      res,
+      403,
+      'Acceso No Autorizado',
+      'Solo el autor del proyecto o un administrador puede gestionar sus costos y gastos.'
+    );
+  }
+
+  const { category, name, amount, currency, paintId, paintBottleFraction, laborHours, notes } = req.body;
+
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return sendProblem(
+      req,
+      res,
+      400,
+      'Nombre de Gasto Requerido',
+      'Debe especificar un nombre o descripcion para el gasto.',
+      'validation-error'
+    );
+  }
+
+  const numAmount = parseFloat(amount);
+  if (isNaN(numAmount) || numAmount < 0) {
+    return sendProblem(
+      req,
+      res,
+      400,
+      'Monto Invalido',
+      'El monto del gasto debe ser un numero mayor o igual a 0.',
+      'validation-error'
+    );
+  }
+
+  const validCategories: BuildExpenseCategory[] = [
+    'kit',
+    'paint',
+    'consumable',
+    'aftermarket',
+    'decal',
+    'labor',
+    'other'
+  ];
+  const finalCategory = (category && validCategories.includes(category)) ? category : 'other';
+  const finalCurrency: ExpenseCurrency = (currency === 'PEN' || currency === 'EUR') ? currency : 'USD';
+
+  const newExpense: BuildExpenseItem = {
+    id: `exp-${randomUUID().slice(0, 8)}`,
+    buildId: build.id,
+    category: finalCategory,
+    name: name.trim(),
+    amount: Math.round(numAmount * 100) / 100,
+    currency: finalCurrency,
+    paintId: paintId ? String(paintId).trim() : undefined,
+    paintBottleFraction: paintBottleFraction ? parseFloat(paintBottleFraction) : undefined,
+    laborHours: laborHours ? parseFloat(laborHours) : undefined,
+    notes: notes ? String(notes).trim() : undefined,
+    createdAt: new Date().toISOString()
+  };
+
+  if (!build.expenses) {
+    build.expenses = [];
+  }
+  build.expenses.push(newExpense);
+  build.updatedAt = new Date().toISOString();
+  saveDb(db);
+
+  const summary = calculateBuildCostSummary(build.id, build.expenses);
+
+  return res.status(201).json({
+    expense: newExpense,
+    summary
+  });
+});
+
+buildsRouter.delete('/:id/costs/:expenseId', requireAuth, (req: Request, res: Response) => {
+  const { id, expenseId } = req.params;
+  const user = req.user!;
+  const db = getDb();
+  const build = db.builds.find(b => b.id === id);
+
+  if (!build) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Bitacora No Encontrada',
+      `No se encontro el proyecto con id '${id}'.`
+    );
+  }
+
+  // Ownership verification
+  if (build.userId !== user.id && !user.roles.includes('admin')) {
+    return sendProblem(
+      req,
+      res,
+      403,
+      'Acceso No Autorizado',
+      'Solo el autor del proyecto o un administrador puede eliminar gastos.'
+    );
+  }
+
+  if (!build.expenses || build.expenses.length === 0) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Gasto No Encontrado',
+      `No se encontro ningun gasto registrado para el proyecto '${id}'.`
+    );
+  }
+
+  const expIndex = build.expenses.findIndex(e => e.id === expenseId);
+  if (expIndex === -1) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Gasto No Encontrado',
+      `No se encontro el gasto con id '${expenseId}'.`
+    );
+  }
+
+  build.expenses.splice(expIndex, 1);
+  build.updatedAt = new Date().toISOString();
+  saveDb(db);
+
+  const summary = calculateBuildCostSummary(build.id, build.expenses);
+
+  return res.json({
+    removedExpenseId: expenseId,
+    summary
+  });
 });

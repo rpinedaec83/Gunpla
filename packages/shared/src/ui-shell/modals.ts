@@ -1703,6 +1703,117 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Modal: Project Cost Accounting & Consumables Estimator (DT17) -->
+<div id="modal-build-costs" class="custom-modal" onclick="closeBuildCostsModal(event)">
+  <div class="custom-modal-content" onclick="event.stopPropagation()" style="max-width: 780px; width: 95%; max-height: 90vh; overflow-y: auto; background: #0f172a; border: 1px solid rgba(234, 179, 8, 0.4); border-radius: 12px; padding: 1.5rem; box-shadow: 0 10px 40px rgba(0,0,0,0.7);">
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.4rem;">💰</span>
+          <h3 style="font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0;">Control de Costos & Presupuesto</h3>
+          <span id="costs-currency-badge" style="background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.35); font-size: 0.72rem; padding: 2px 8px; border-radius: 9999px; font-weight: 700;">USD</span>
+        </div>
+        <p id="costs-build-title" style="font-size: 0.85rem; color: #38bdf8; margin: 0.25rem 0 0; font-weight: 600;">Cargando bitácora...</p>
+      </div>
+      <button type="button" class="filter-pill" onclick="closeBuildCostsModal()" style="font-size: 0.85rem; padding: 0.3rem 0.6rem;">✕</button>
+    </div>
+
+    <!-- Financial KPI Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; text-align: center;">
+        <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Inversión Total</div>
+        <div id="cost-kpi-total" style="font-size: 1.35rem; font-weight: 800; color: #facc15; margin-top: 0.2rem;">$0.00</div>
+      </div>
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; text-align: center;">
+        <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Materiales & Insumos</div>
+        <div id="cost-kpi-materials" style="font-size: 1.35rem; font-weight: 800; color: #38bdf8; margin-top: 0.2rem;">$0.00</div>
+      </div>
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; text-align: center;">
+        <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Horas de Taller</div>
+        <div id="cost-kpi-labor" style="font-size: 1.35rem; font-weight: 800; color: #c084fc; margin-top: 0.2rem;">0 hrs</div>
+      </div>
+      <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 8px; padding: 0.75rem; text-align: center;">
+        <div style="font-size: 0.72rem; color: #4ade80; text-transform: uppercase; font-weight: 700;">Cotización Encargo Sugerida</div>
+        <div id="cost-kpi-commission" style="font-size: 1.35rem; font-weight: 800; color: #22c55e; margin-top: 0.2rem;">$0.00</div>
+      </div>
+    </div>
+
+    <!-- Category Breakdown Pills -->
+    <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; margin-bottom: 1.25rem;">
+      <div style="font-size: 0.75rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.5rem;">Desglose por Categoría:</div>
+      <div id="cost-categories-pills" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        <!-- Dynamically rendered -->
+      </div>
+    </div>
+
+    <!-- Expenses Table -->
+    <div style="margin-bottom: 1.25rem;">
+      <h4 style="font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+        <span>📋 Lista de Gastos Registrados</span>
+        <span id="cost-expense-count-badge" style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">0 items</span>
+      </h4>
+      <div id="cost-expenses-table-container" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; max-height: 220px; overflow-y: auto;">
+        <!-- Dynamically rendered table -->
+      </div>
+    </div>
+
+    <!-- Add Expense Form -->
+    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem;">
+      <h4 style="font-size: 0.9rem; font-weight: 700; color: #facc15; margin-bottom: 0.75rem;">➕ Agregar Nuevo Gasto / Consumible</h4>
+      <form id="form-add-build-expense" onsubmit="submitBuildExpense(event)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem;">
+        <input type="hidden" id="expense-build-id" value="">
+        <div>
+          <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.25rem;">Categoría *</label>
+          <select id="expense-category-select" required onchange="handleExpenseCategoryChange()" style="width: 100%; background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 0.45rem; border-radius: 6px; font-size: 0.82rem;">
+            <option value="kit">📦 Maqueta Base (Kit)</option>
+            <option value="paint">🎨 Pintura / Imprimación / Barniz</option>
+            <option value="consumable">🧪 Consumible (Thinner, Masilla, Lijas)</option>
+            <option value="aftermarket">⚙️ Aftermarket / Photo-Etch / Resina</option>
+            <option value="decal">🏷️ Calcas al Agua / Stencils</option>
+            <option value="labor">⏱️ Mano de Obra / Horas de Taller</option>
+            <option value="other">📦 Otro Insumo / Base Diorama</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.25rem;">Concepto / Descripción *</label>
+          <input type="text" id="expense-name-input" required placeholder="Ej: Tamiya XF-1 Flat Black o Photo-Etch" style="width: 100%; background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 0.45rem; border-radius: 6px; font-size: 0.82rem;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.25rem;">Monto *</label>
+          <div style="display: flex; gap: 0.35rem;">
+            <input type="number" id="expense-amount-input" step="0.01" min="0" required placeholder="0.00" style="flex: 1; background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 0.45rem; border-radius: 6px; font-size: 0.82rem;">
+            <select id="expense-currency-select" style="background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 0.45rem; border-radius: 6px; font-size: 0.82rem;">
+              <option value="USD">USD ($)</option>
+              <option value="PEN">PEN (S/)</option>
+              <option value="EUR">EUR (€)</option>
+            </select>
+          </div>
+        </div>
+        <div id="expense-paint-fraction-group" style="display: none;">
+          <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.25rem;">Fracción de Frasco Consumida</label>
+          <select id="expense-paint-fraction-select" style="width: 100%; background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 0.45rem; border-radius: 6px; font-size: 0.82rem;">
+            <option value="1.0">1.0 (Frasco Completo)</option>
+            <option value="0.5">1/2 Frasco (~50%)</option>
+            <option value="0.33">1/3 Frasco (~33%)</option>
+            <option value="0.25">1/4 Frasco (~25%)</option>
+            <option value="0.1">Gotas / Toque (~10%)</option>
+          </select>
+        </div>
+        <div id="expense-labor-hours-group" style="display: none;">
+          <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.25rem;">Horas Dedicadas</label>
+          <input type="number" id="expense-labor-hours-input" step="0.5" min="0" placeholder="Ej: 5.0" style="width: 100%; background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 0.45rem; border-radius: 6px; font-size: 0.82rem;">
+        </div>
+        <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.25rem;">
+          <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #eab308, #ca8a04); border: none; font-size: 0.82rem; padding: 0.5rem 1rem; font-weight: 700; color: #000;">
+            ➕ Registrar Gasto
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 
 `;
 }

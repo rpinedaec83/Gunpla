@@ -583,6 +583,7 @@ export interface BuildProjectRecord {
   viewCount: number;
   steps: BuildStep[];
   comments: BuildComment[];
+  expenses?: BuildExpenseItem[];
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -632,6 +633,114 @@ export interface ReorderBuildStepsRequest {
 
 export interface CreateBuildCommentRequest {
   comment: string;
+}
+
+export type BuildExpenseCategory =
+  | 'kit'
+  | 'paint'
+  | 'consumable'
+  | 'aftermarket'
+  | 'decal'
+  | 'labor'
+  | 'other';
+
+export type ExpenseCurrency = 'USD' | 'PEN' | 'EUR';
+
+export interface BuildExpenseItem {
+  id: string;
+  buildId: string;
+  category: BuildExpenseCategory;
+  name: string;
+  amount: number;
+  currency: ExpenseCurrency;
+  paintId?: string;
+  paintBottleFraction?: number;
+  laborHours?: number;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface BuildCostSummary {
+  buildId: string;
+  currency: ExpenseCurrency;
+  totalCost: number;
+  breakdownByCategory: Record<BuildExpenseCategory, number>;
+  expenses: BuildExpenseItem[];
+  totalLaborHours: number;
+  suggestedCommissionPrice: number;
+  laborHourlyRate: number;
+}
+
+export interface AddExpenseRequest {
+  category: BuildExpenseCategory;
+  name: string;
+  amount: number;
+  currency?: ExpenseCurrency;
+  paintId?: string;
+  paintBottleFraction?: number;
+  laborHours?: number;
+  notes?: string;
+}
+
+export interface BuildCostResponse {
+  buildId: string;
+  buildTitle: string;
+  currency: ExpenseCurrency;
+  summary: BuildCostSummary;
+}
+
+export function calculateBuildCostSummary(
+  buildId: string,
+  expenses: BuildExpenseItem[] = [],
+  laborHourlyRate: number = 15,
+  defaultCurrency: ExpenseCurrency = 'USD'
+): BuildCostSummary {
+  const breakdown: Record<BuildExpenseCategory, number> = {
+    kit: 0,
+    paint: 0,
+    consumable: 0,
+    aftermarket: 0,
+    decal: 0,
+    labor: 0,
+    other: 0
+  };
+
+  let totalCost = 0;
+  let totalLaborHours = 0;
+  let currency = defaultCurrency;
+
+  for (const exp of expenses) {
+    const amt = typeof exp.amount === 'number' && !isNaN(exp.amount) ? exp.amount : 0;
+    const cat = exp.category || 'other';
+    if (breakdown[cat] !== undefined) {
+      breakdown[cat] = Math.round((breakdown[cat] + amt) * 100) / 100;
+    } else {
+      breakdown.other = Math.round((breakdown.other + amt) * 100) / 100;
+    }
+    totalCost = Math.round((totalCost + amt) * 100) / 100;
+    if (exp.currency) {
+      currency = exp.currency;
+    }
+    if (exp.laborHours && typeof exp.laborHours === 'number') {
+      totalLaborHours = Math.round((totalLaborHours + exp.laborHours) * 10) / 10;
+    }
+  }
+
+  const materialsCost =
+    breakdown.kit + breakdown.paint + breakdown.consumable + breakdown.aftermarket + breakdown.decal + breakdown.other;
+  const laborCost = breakdown.labor > 0 ? breakdown.labor : totalLaborHours * laborHourlyRate;
+  const suggestedCommissionPrice = Math.round(((materialsCost * 1.25) + laborCost) * 100) / 100;
+
+  return {
+    buildId,
+    currency,
+    totalCost,
+    breakdownByCategory: breakdown,
+    expenses,
+    totalLaborHours,
+    suggestedCommissionPrice,
+    laborHourlyRate
+  };
 }
 
 export interface UploadMediaResponse {

@@ -4,12 +4,38 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner & Interactive 3D / AR Viewer Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + 4 Technical Debt resolutions verified via `npm test` (97 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt16-interactive-3d-ar-viewer` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer & Build Cost Estimator Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + 4 Technical Debt resolutions verified via `npm test` (103 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt17-build-cost-estimator` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Control de Costos, Consumibles y Presupuesto de Proyectos en "Mi Taller" (Build Cost & Consumables Estimator):**
+  - **Lógica de Estimación Financiera y Agregación Contable:**
+    - Modelo de datos en `@gunpla/shared` (`BuildExpenseItem`, `BuildExpenseCategory`, `BuildCostSummary`, `AddExpenseRequest`, `ExpenseCurrency`) con cálculo granular de categorías contables:
+      - `kit`: Costo de adquisición de la maqueta o caja base.
+      - `paint`: Fracciones proporcionales de frascos de pintura, primers y barnices (ej. 1/3, 1/2 frasco consumido).
+      - `consumable`: Thinners de aerografía, pegamentos, masillas y lijas.
+      - `aftermarket`: Piezas en resina, cañones torneados en metal, sets de fotograbado (Photo-Etch).
+      - `decal`: Calcas al agua personalizadas y stencils.
+      - `labor`: Horas efectivas de trabajo en el taller aerográfico.
+      - `other`: Bases de exposición, vitrinas y elementos de diorama.
+    - Función pura `calculateBuildCostSummary` que agrega subtotales, horas de taller y cotización de encargo sugerida (*Suggested Commission Price*) aplicando fórmula ponderada: `(costoMateriales * 1.25) + (horasTaller * tarifaHoraria)`.
+  - **Endpoints Especializados de Costos:**
+    - `GET /api/v1/builds/:idOrSlug/costs`: Retorna el resumen contable, desglose por categoría, lista de gastos y cotización sugerida con soporte multimoneda (`USD`, `PEN`, `EUR`).
+    - `POST /api/v1/builds/:id/costs`: Registro seguro de nuevo gasto con validación estricta de propiedad (403 Forbidden para usuarios no autores).
+    - `DELETE /api/v1/builds/:id/costs/:expenseId`: Eliminación de un gasto con recalculación automática del balance del proyecto.
+  - **Interfaz de Usuario Web Shell (PlamoScale & GunplaJunkies):**
+    - Modal interactivo `#modal-build-costs` con panel de KPIs financieros en tiempo real (Inversión Total, Costo de Materiales, Horas de Taller, Cotización de Encargo Sugerida).
+    - Píldoras visuales de desglose por categoría con colores e iconos distintivos.
+    - Tabla deslizable con listado de gastos, cálculo de fracciones de frasco y horas de mano de obra con botón de eliminación inmediata (`🗑️`).
+    - Formulario reactivo `#form-add-build-expense` con selector de categoría, montos, moneda y campos contextuales (fracción de pintura / horas de taller).
+    - Acceso rápido `💰 Costos` en cada tarjeta de bitácora en Mi Taller y botón `💰 Costos & Presupuesto` en la cabecera de acciones rápidas.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/build-costs.test.mjs` (9 pruebas aisladas cubriendo agregación, desglose por categoría, cálculo de mano de obra, cotizaciones y consistencia de datos). Total unit tests: 103 passed.
+    - Smoketest automatizado en `scripts/smoketest.mjs` verificando consultas de costos, adición de gastos, rechazo 403 no autorizado, eliminación y elementos HTML en portales.
+    - Despliegue en vivo en el clúster Proxmox LXC 190 (`http://192.168.1.190:8080`, `http://192.168.1.190:3000`, `http://192.168.1.190:3001`).
 
 - **Visor 3D / AR Interactivo de Maquetas y Diorama Studio (Interactive 3D / AR Viewer):**
   - **Resolución de Dimensiones Físicas y Silueta Humana a Escala 1:1:**

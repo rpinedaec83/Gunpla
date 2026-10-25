@@ -4628,6 +4628,248 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     alert('📱 Realidad Aumentada (AR):\\n\\nPara proyectar ' + kitName + ' a escala ' + scale + ' sobre tu mesa de corte o taller real, abre esta página desde tu smartphone (Safari iOS con QuickLook o Chrome Android con WebXR/SceneViewer).');
   }
 
+  // ---------------------------------------------------------------------------
+  // Project Cost Accounting & Consumables Estimator (DT17)
+  // ---------------------------------------------------------------------------
+  let currentCostsBuildId = null;
+
+  async function openBuildCostsModal(buildIdOrSlug) {
+    const modal = document.getElementById('modal-build-costs');
+    if (!modal) return;
+    modal.classList.add('active');
+
+    let targetId = buildIdOrSlug;
+    if (!targetId) {
+      const hiddenInput = document.getElementById('expense-build-id');
+      targetId = (hiddenInput && hiddenInput.value) || 'build-aperich-hinu';
+    }
+    currentCostsBuildId = targetId;
+    const hiddenInput = document.getElementById('expense-build-id');
+    if (hiddenInput) hiddenInput.value = targetId;
+
+    await loadBuildCostsData(targetId);
+  }
+
+  function closeBuildCostsModal(e) {
+    if (!e || e.target.id === 'modal-build-costs' || (e.target.classList && e.target.classList.contains('filter-pill'))) {
+      const modal = document.getElementById('modal-build-costs');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  function handleExpenseCategoryChange() {
+    const select = document.getElementById('expense-category-select');
+    if (!select) return;
+    const cat = select.value;
+    const paintGroup = document.getElementById('expense-paint-fraction-group');
+    const laborGroup = document.getElementById('expense-labor-hours-group');
+
+    if (paintGroup) {
+      paintGroup.style.display = (cat === 'paint' || cat === 'consumable') ? 'block' : 'none';
+    }
+    if (laborGroup) {
+      laborGroup.style.display = (cat === 'labor') ? 'block' : 'none';
+    }
+  }
+
+  async function loadBuildCostsData(buildId) {
+    try {
+      const res = await fetch('/api/v1/builds/' + encodeURIComponent(buildId) + '/costs');
+      if (!res.ok) {
+        throw new Error('No se pudieron obtener los costos');
+      }
+      const data = await res.json();
+      renderBuildCostsUI(data);
+    } catch (err) {
+      console.error('Error fetching build costs:', err);
+    }
+  }
+
+  function renderBuildCostsUI(data) {
+    const summary = data.summary || {};
+    const currency = summary.currency || 'USD';
+    const currSym = currency === 'PEN' ? 'S/ ' : (currency === 'EUR' ? '€ ' : '$ ');
+
+    const titleEl = document.getElementById('costs-build-title');
+    if (titleEl) {
+      titleEl.textContent = data.buildTitle || ('Bitácora ' + (data.buildId || ''));
+    }
+    const currBadge = document.getElementById('costs-currency-badge');
+    if (currBadge) {
+      currBadge.textContent = currency;
+    }
+
+    const totalEl = document.getElementById('cost-kpi-total');
+    if (totalEl) {
+      totalEl.textContent = currSym + (Number(summary.totalCost) || 0).toFixed(2);
+    }
+
+    const breakdown = summary.breakdownByCategory || {};
+    const materialsCost = (Number(breakdown.kit) || 0) + (Number(breakdown.paint) || 0) + (Number(breakdown.consumable) || 0) + (Number(breakdown.aftermarket) || 0) + (Number(breakdown.decal) || 0) + (Number(breakdown.other) || 0);
+    const materialsEl = document.getElementById('cost-kpi-materials');
+    if (materialsEl) {
+      materialsEl.textContent = currSym + materialsCost.toFixed(2);
+    }
+
+    const laborEl = document.getElementById('cost-kpi-labor');
+    if (laborEl) {
+      laborEl.textContent = (Number(summary.totalLaborHours) || 0) + ' hrs';
+    }
+
+    const commEl = document.getElementById('cost-kpi-commission');
+    if (commEl) {
+      commEl.textContent = currSym + (Number(summary.suggestedCommissionPrice) || 0).toFixed(2);
+    }
+
+    const pillsContainer = document.getElementById('cost-categories-pills');
+    if (pillsContainer) {
+      const catConfig = [
+        { key: 'kit', icon: '📦', label: 'Kit Base', val: Number(breakdown.kit) || 0, color: '#38bdf8' },
+        { key: 'paint', icon: '🎨', label: 'Pinturas', val: Number(breakdown.paint) || 0, color: '#c084fc' },
+        { key: 'consumable', icon: '🧪', label: 'Consumibles', val: Number(breakdown.consumable) || 0, color: '#f472b6' },
+        { key: 'aftermarket', icon: '⚙️', label: 'Aftermarket', val: Number(breakdown.aftermarket) || 0, color: '#fb923c' },
+        { key: 'decal', icon: '🏷️', label: 'Calcas', val: Number(breakdown.decal) || 0, color: '#a3e635' },
+        { key: 'labor', icon: '⏱️', label: 'Mano de Obra', val: Number(breakdown.labor) || 0, color: '#4ade80' },
+        { key: 'other', icon: '📦', label: 'Otros', val: Number(breakdown.other) || 0, color: '#94a3b8' }
+      ];
+
+      pillsContainer.innerHTML = catConfig.map(function(c) {
+        return '<div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.35rem 0.65rem; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.35rem;">' +
+          '<span>' + c.icon + '</span>' +
+          '<span style="color: #cbd5e1;">' + c.label + ':</span>' +
+          '<strong style="color: ' + c.color + ';">' + currSym + c.val.toFixed(2) + '</strong>' +
+        '</div>';
+      }).join('');
+    }
+
+    const countBadge = document.getElementById('cost-expense-count-badge');
+    const tableContainer = document.getElementById('cost-expenses-table-container');
+    const expenses = summary.expenses || [];
+
+    if (countBadge) {
+      countBadge.textContent = expenses.length + ' items';
+    }
+
+    if (tableContainer) {
+      if (expenses.length === 0) {
+        tableContainer.innerHTML = '<div style="padding: 1.5rem; text-align: center; color: #64748b; font-size: 0.82rem;">No hay gastos registrados todavía en esta bitácora.</div>';
+      } else {
+        const catIcons = {
+          kit: '📦',
+          paint: '🎨',
+          consumable: '🧪',
+          aftermarket: '⚙️',
+          decal: '🏷️',
+          labor: '⏱️',
+          other: '📦'
+        };
+
+        const rows = expenses.map(function(exp) {
+          const icon = catIcons[exp.category] || '📦';
+          const fractionText = exp.paintBottleFraction ? (' <span style="color: #c084fc; font-size: 0.72rem;">(' + exp.paintBottleFraction + ' frasco)</span>') : '';
+          const laborText = exp.laborHours ? (' <span style="color: #4ade80; font-size: 0.72rem;">(' + exp.laborHours + ' hrs)</span>') : '';
+
+          return '<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">' +
+            '<td style="padding: 0.5rem 0.75rem; font-size: 0.8rem; color: #fff;">' +
+              '<span>' + icon + '</span> ' + escapeHtml(exp.name) + fractionText + laborText +
+            '</td>' +
+            '<td style="padding: 0.5rem 0.75rem; font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;">' + escapeHtml(exp.category) + '</td>' +
+            '<td style="padding: 0.5rem 0.75rem; font-size: 0.82rem; font-weight: 700; color: #facc15; text-align: right;">' +
+              currSym + Number(exp.amount).toFixed(2) +
+            '</td>' +
+            '<td style="padding: 0.5rem 0.75rem; text-align: center;">' +
+              '<button type="button" class="filter-pill" style="font-size: 0.7rem; padding: 0.15rem 0.4rem; color: #ef4444; border-color: rgba(239,68,68,0.3);" title="Eliminar gasto" onclick="removeBuildExpense(&quot;' + (exp.buildId || currentCostsBuildId) + '&quot;, &quot;' + exp.id + '&quot;)">🗑️</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+
+        tableContainer.innerHTML = '<table style="width: 100%; border-collapse: collapse; text-align: left;">' +
+          '<thead>' +
+            '<tr style="background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border-color); font-size: 0.72rem; color: #94a3b8; text-transform: uppercase;">' +
+              '<th style="padding: 0.5rem 0.75rem;">Concepto</th>' +
+              '<th style="padding: 0.5rem 0.75rem;">Categoría</th>' +
+              '<th style="padding: 0.5rem 0.75rem; text-align: right;">Monto</th>' +
+              '<th style="padding: 0.5rem 0.75rem; text-align: center; width: 45px;">Acción</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table>';
+      }
+    }
+  }
+
+  async function submitBuildExpense(event) {
+    if (event) event.preventDefault();
+    const buildIdInput = document.getElementById('expense-build-id');
+    const categoryInput = document.getElementById('expense-category-select');
+    const nameInput = document.getElementById('expense-name-input');
+    const amountInput = document.getElementById('expense-amount-input');
+    const currencyInput = document.getElementById('expense-currency-select');
+    const fractionInput = document.getElementById('expense-paint-fraction-select');
+    const laborInput = document.getElementById('expense-labor-hours-input');
+
+    const buildId = buildIdInput ? buildIdInput.value : currentCostsBuildId;
+    if (!buildId) {
+      alert('Error: No se ha identificado la bitácora de armado.');
+      return;
+    }
+
+    const payload = {
+      category: categoryInput ? categoryInput.value : 'other',
+      name: nameInput ? nameInput.value.trim() : '',
+      amount: amountInput ? parseFloat(amountInput.value) : 0,
+      currency: currencyInput ? currencyInput.value : 'USD',
+      paintBottleFraction: (categoryInput && (categoryInput.value === 'paint' || categoryInput.value === 'consumable')) && fractionInput ? parseFloat(fractionInput.value) : undefined,
+      laborHours: (categoryInput && categoryInput.value === 'labor') && laborInput && laborInput.value ? parseFloat(laborInput.value) : undefined
+    };
+
+    try {
+      const res = await fetch('/api/v1/builds/' + encodeURIComponent(buildId) + '/costs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(function() { return {}; });
+        alert(errJson.detail || 'Error al registrar el gasto.');
+        return;
+      }
+
+      if (nameInput) nameInput.value = '';
+      if (amountInput) amountInput.value = '';
+      if (laborInput) laborInput.value = '';
+
+      await loadBuildCostsData(buildId);
+    } catch (err) {
+      console.error('Error submitting expense:', err);
+      alert('Error de conexión al guardar el gasto.');
+    }
+  }
+
+  async function removeBuildExpense(buildId, expenseId) {
+    if (!confirm('¿Deseas eliminar este registro de gasto?')) {
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/v1/builds/' + encodeURIComponent(buildId) + '/costs/' + encodeURIComponent(expenseId), {
+        method: 'DELETE'
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(function() { return {}; });
+        alert(errJson.detail || 'Error al eliminar el gasto.');
+        return;
+      }
+
+      await loadBuildCostsData(buildId);
+    } catch (err) {
+      console.error('Error deleting expense:', err);
+      alert('Error de conexión al eliminar el gasto.');
+    }
+  }
+
   // Modal open/close handlers
   function openAddStashModal() {
     const m = document.getElementById('modal-add-stash');
@@ -5746,6 +5988,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
                   '</div>' +
                 '</div>' +
                 '<div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">' +
+                  '<button class="filter-pill" style="font-size: 0.78rem; padding: 0.45rem 0.8rem; background: rgba(234,179,8,0.15); color: #facc15; border-color: rgba(234,179,8,0.3);" onclick="openBuildCostsModal(&quot;' + b.id + '&quot;)">💰 Costos</button>' +
                   '<button class="filter-pill" style="font-size: 0.78rem; padding: 0.45rem 0.8rem; background: rgba(56,189,248,0.15); color: #38bdf8; border-color: rgba(56,189,248,0.3);" onclick="openSpecCardModal(&quot;' + b.id + '&quot;)">🏷️ Ficha de Mesa & QR</button>' +
                   '<button class="btn-primary" style="font-size: 0.78rem; padding: 0.45rem 0.8rem;" onclick="openAddStepModal(&quot;' + b.id + '&quot;)">+ Agregar Paso</button>' +
                 '</div>' +

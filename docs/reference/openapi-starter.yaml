@@ -886,6 +886,75 @@ paths:
       responses:
         '201':
           description: Comment added
+  /api/v1/builds/{id}/costs:
+    get:
+      tags: [Build Logs]
+      summary: Get project cost accounting, expenses and commission summary
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: hourlyRate
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: currency
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cost summary retrieved
+        '404':
+          description: Build not found
+    post:
+      tags: [Build Logs]
+      summary: Add expense item to build project
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Expense item added
+        '400':
+          description: Validation error
+        '403':
+          description: Forbidden
+        '404':
+          description: Build not found
+  /api/v1/builds/{id}/costs/{expenseId}:
+    delete:
+      tags: [Build Logs]
+      summary: Remove expense item from build project
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: expenseId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Expense removed
+        '403':
+          description: Forbidden
+        '404':
+          description: Expense not found
   /api/v1/media/upload:
     post:
       tags: [Media]

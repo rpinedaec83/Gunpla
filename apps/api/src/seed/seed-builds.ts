@@ -78,6 +78,47 @@ export const INITIAL_BUILDS: BuildProjectRecord[] = [
         createdAt: new Date().toISOString()
       }
     ],
+    expenses: [
+      {
+        id: 'exp-hinu-1',
+        buildId: 'build-aperich-hinu',
+        category: 'kit',
+        name: 'RG 1/144 Hi-Nu Gundam (Caja Base)',
+        amount: 55.0,
+        currency: 'USD',
+        createdAt: '2026-10-25T10:00:00.000Z'
+      },
+      {
+        id: 'exp-hinu-2',
+        buildId: 'build-aperich-hinu',
+        category: 'paint',
+        name: 'Mr. Color C1 White & C110 Character Blue (1/3 frasco)',
+        amount: 8.5,
+        currency: 'USD',
+        paintId: 'pnt-mc-c1',
+        paintBottleFraction: 0.33,
+        createdAt: '2026-10-25T10:05:00.000Z'
+      },
+      {
+        id: 'exp-hinu-3',
+        buildId: 'build-aperich-hinu',
+        category: 'aftermarket',
+        name: 'Delpi Decal Water-slide Hi-Nu Holo',
+        amount: 7.5,
+        currency: 'USD',
+        createdAt: '2026-10-25T10:10:00.000Z'
+      },
+      {
+        id: 'exp-hinu-4',
+        buildId: 'build-aperich-hinu',
+        category: 'labor',
+        name: 'Mano de Obra (Aerografia, Masillado y Sellado)',
+        amount: 150.0,
+        currency: 'USD',
+        laborHours: 10,
+        createdAt: '2026-10-25T10:15:00.000Z'
+      }
+    ],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },

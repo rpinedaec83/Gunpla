@@ -579,3 +579,34 @@ Decisions made:
 Lessons learned:
 - Providing an instant 1:1 human figure silhouette standing beside the model gives scale modelers immediate intuitive comprehension of physical scale across vastly different genres (e.g. 1/144 giant robots vs 1/35 military armor vs 1/450 battleships).
 Usage: Moderate -- self-estimated
+
+### DT17 -- Build Cost Accounting & Consumables Estimator | eMOE: 5 CU | aMOE: 5 CU
+What was done:
+- Designed project cost data models and accounting logic in `packages/shared/src/index.ts`:
+  - `BuildExpenseCategory` (`kit`, `paint`, `consumable`, `aftermarket`, `decal`, `labor`, `other`), `ExpenseCurrency` (`USD`, `PEN`, `EUR`), `BuildExpenseItem`, `BuildCostSummary`, `AddExpenseRequest`, `BuildCostResponse`.
+  - Added `expenses?: BuildExpenseItem[]` property on `BuildProjectRecord`.
+  - Authored pure calculation helper `calculateBuildCostSummary` that computes category subtotals, labor hours, and commission pricing using a weighted formula: `(costoMateriales * 1.25) + (horasTaller * tarifaHoraria)`.
+- Updated seed builds in `apps/api/src/seed/seed-builds.ts` with authentic expenses for RG Hi-Nu (kit acquisition, Mr. Color paints, Delpi Decal, and airbrushing labor hours).
+- Authored contract-first OpenAPI 3.1 specification (`docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`):
+  - `GET /api/v1/builds/{id}/costs`: Retrieve detailed expenses and summary.
+  - `POST /api/v1/builds/{id}/costs`: Add an expense item with ownership validation.
+  - `DELETE /api/v1/builds/{id}/costs/{expenseId}`: Remove an expense item with recomputation.
+- Implemented backend slice endpoints in `apps/api/src/slices/build-logs/builds.slice.ts`:
+  - `GET /:idOrSlug/costs` with hourlyRate and currency query parameters.
+  - `POST /:id/costs` with requireAuth, strict user ownership check (`403 Forbidden`), and RFC 7807 input validation.
+  - `DELETE /:id/costs/:expenseId` with ownership check and automatic summary recalculation.
+- Implemented frontend UI components in `packages/shared/src/ui-shell/`:
+  - In `modals.ts`: Authored `#modal-build-costs` featuring financial KPI cards (Total Invertido, Materiales, Horas de Taller, Cotización de Encargo Sugerida), category breakdown pills, scrollable expense list table with delete action (`🗑️`), and reactive expense registration form with contextual fields (paint bottle fractions and labor hours).
+  - In `views.ts`: Added `💰 Costos & Presupuesto` quick action in Workbench header.
+  - In `app-shell.ts`: Added `💰 Costos` button on each build card in `wb-builds-list`, modal open/close handlers, category toggle logic, dynamic data fetch and renderers (`loadBuildCostsData`, `renderBuildCostsUI`), expense submission, and deletion handlers.
+- Authored isolated unit test suite `tests/unit/build-costs.test.mjs` (9 test cases covering empty expenses, category aggregation, commission markup calculation, hourly rates, seed database consistency, and item modification). Total unit test suite: 103 passed in 390ms.
+- Extended end-to-end regression smoketest in `scripts/smoketest.mjs` validating cost retrieval, expense addition, 403 unauthorized rejection, expense deletion, and presence of modal elements.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190:8080`, `:3000`, `:3001`).
+Issues hit:
+- In `builds.slice.ts`, `user.role` was checked instead of array property `user.roles.includes('admin')`; resolved cleanly to match `TenantUser` interface.
+- In `scripts/smoketest.mjs`, unauthorized signin previously attempted a raw endpoint call without valid credentials; resolved by reusing existing `quattroData.token` for 403 assertion.
+Decisions made:
+- Embedding `expenses` directly on `BuildProjectRecord` allows the cost log to naturally travel with the project in both memory and PostgreSQL persistence without requiring extra relational joins on simple build queries.
+Lessons learned:
+- Providing an instant suggested commission formula (`materials * 1.25 + laborHours * rate`) gives scale modelers and commission builders immediate clarity when quoting custom build jobs without spreadsheets.
+Usage: Moderate -- self-estimated
