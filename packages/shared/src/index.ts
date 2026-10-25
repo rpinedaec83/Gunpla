@@ -76,6 +76,7 @@ export interface UserRecord {
   birthYear?: number;
   isAdult?: boolean;
   ageBracket?: 'under_14' | 'minor_14_17' | 'adult_18_plus';
+  contestBadges?: ContestAwardBadge[];
   createdAt: string;
 }
 
@@ -93,6 +94,7 @@ export interface PublicBuilderProfile {
   isAdult?: boolean;
   photoCount: number;
   photos: MediaAsset[];
+  contestBadges?: ContestAwardBadge[];
   createdAt: string;
 }
 
@@ -552,6 +554,58 @@ export interface ContestRecord {
   prizes: string[];
   participantsCount: number;
   entries?: ContestEntryRecord[];
+}
+
+export type ContestAwardType = 'gold' | 'silver' | 'bronze' | 'community_choice' | 'judge_mention';
+
+export interface ContestAwardBadge {
+  id: string;
+  contestId: string;
+  contestTitle: string;
+  tenantSlug: 'plamoscale' | 'gunplajunkies' | 'all';
+  entryId: string;
+  entryTitle: string;
+  awardType: ContestAwardType;
+  awardTitle: string;
+  medalIcon: string;
+  rank: number;
+  judgeAverageScore?: number;
+  voteCount: number;
+  awardedAt: string;
+  certificateUrl?: string;
+}
+
+export interface HallOfFameItem {
+  id: string;
+  contestId: string;
+  contestTitle: string;
+  contestStatus: 'upcoming' | 'active' | 'judging' | 'completed';
+  tenantSlug: 'plamoscale' | 'gunplajunkies' | 'all';
+  category: ScaleCategory;
+  entryId: string;
+  entryTitle: string;
+  coverImageUrl?: string;
+  buildId: string;
+  userId: string;
+  username: string;
+  userDisplayName: string;
+  awardType: ContestAwardType;
+  awardTitle: string;
+  medalIcon: string;
+  rank: number;
+  judgeAverageScore?: number;
+  voteCount: number;
+  awardedAt: string;
+  certificateUrl?: string;
+}
+
+export interface ContestPodiumResult {
+  contestId: string;
+  contestTitle: string;
+  contestStatus: 'upcoming' | 'active' | 'judging' | 'completed';
+  tenantSlug: 'plamoscale' | 'gunplajunkies' | 'all';
+  podium: HallOfFameItem[];
+  peoplesChoice?: HallOfFameItem;
 }
 
 export interface ShopStockItem {

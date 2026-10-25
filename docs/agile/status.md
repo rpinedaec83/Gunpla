@@ -4,12 +4,28 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts & AI Paint Equivalences Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + 4 Technical Debt resolutions (Dynamic DB Sync, Security Hardening, Frontend Modularization, Native Unit Test Suite) verified via `npm test` (31 unit tests + full integration suite) and live LXC 190 deployment.
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences & Contest Hall of Fame Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + 4 Technical Debt resolutions verified via `npm test` (38 unit tests + full integration suite) and live LXC 190 deployment.
 - Current branch or release line: `feature/dt9-google-oauth-sso` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Insignias de Votación Comunitaria y Salón de la Fama de Concursos (Contest Badges & Hall of Fame):**
+  - **Cálculo de Podio y Voto Popular Determinista (`calculateContestAwards`):**
+    - Evaluación compuesta ponderada (70% promedio de jurado IPMS/Gunpla + 30% votos de la comunidad) para determinar Medallas de Oro (🥇, 1er Lugar), Plata (🥈, 2do Lugar) y Bronce (🥉, 3er Lugar).
+    - Asignación automática de la distinción de Voto Popular (🏆 *People's Choice*) a la obra con mayor cantidad de votos comunitarios.
+    - Generación de insignias oficiales (`ContestAwardBadge`) con icono, título de galardón, posición, conteo de votos, puntaje de jurado y enlace verificable al diploma criptográfico con código QR.
+  - **Endpoints Especializados de Concursos:**
+    - `GET /api/v1/contests/hall-of-fame`: Listado público cross-contest de ganadores y condecoraciones del Salón de la Fama con soporte para filtrado multitenant (`?tenantSlug=...`).
+    - `GET /api/v1/contests/:id/podium`: Clasificación del podio oficial (top 3) y mención de voto popular para un certamen específico.
+    - Enriquecimiento automático de perfiles públicos de modelistas (`GET /api/v1/builders` y `GET /api/v1/builders/:username`) con `contestBadges: ContestAwardBadge[]`.
+  - **Integración UI Completa en el Frontend:**
+    - Sección destacada **🏛️ Salón de la Fama y Podio de Concursos** en `#view-contests` antes de los concursos activos/próximos, con tarjetas de obras laureadas, builder avatar, desglose de votos, puntajes y botón directo para visualizar el diploma oficial emitido (`viewCertificate`).
+    - Cintas de reconocimientos y medallas (`.builder-award-badge`) en las tarjetas de perfil de modelistas en `#view-builders`.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/contest-hall-of-fame.test.mjs` (6 casos de prueba aislados). Total unit tests: 38 passed in 115ms.
+    - Extensión de `scripts/smoketest.mjs` con cobertura end-to-end de consulta, ranking, badges y renderizado en UI de PlamoScale y GunplaJunkies.
 
 - **Asistente de Equivalencias en Rack de Pinturas & Mezclador IA (Paint Rack Equivalences):**
   - **Motor Determinista de 4 Familias Químicas (`findPaintEquivalences`):**

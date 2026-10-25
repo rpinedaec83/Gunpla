@@ -1688,7 +1688,60 @@ async function runSmoketest() {
 
     console.log('[PASS] AI Paint Rack Equivalences Assistant & UI Modal verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES CHECKS PASSED ===');
+    // --- Verifying Contest Community Voting Badges & Public Hall of Fame ---
+    console.log('\n--- Verifying Contest Community Badges & Public Hall of Fame ---');
+
+    // 1. Cross-contest Hall of Fame endpoint
+    const hofRes = await fetch(`${baseUrl}/api/v1/contests/hall-of-fame`);
+    assert.equal(hofRes.status, 200, 'GET /api/v1/contests/hall-of-fame must return 200 OK');
+    const hofData = await hofRes.json();
+    assert.ok(Array.isArray(hofData.items), 'Must return items array');
+    assert.ok(hofData.items.length > 0, 'Hall of Fame must have at least one awarded item');
+    const goldItem = hofData.items.find(i => i.awardType === 'gold');
+    assert.ok(goldItem, 'Hall of Fame must contain a gold medalist');
+    assert.equal(goldItem.rank, 1, 'Gold medalist must be rank 1');
+    assert.equal(goldItem.medalIcon, '🥇', 'Gold medalist icon must be 🥇');
+    assert.ok(goldItem.certificateUrl.includes('/certificate'), 'Must include certificate URL');
+
+    // 2. Specific Contest Podium endpoint
+    const podiumRes = await fetch(`${baseUrl}/api/v1/contests/contest-gunpla-cup-2026/podium`);
+    assert.equal(podiumRes.status, 200, 'GET /api/v1/contests/:id/podium must return 200 OK');
+    const podiumData = await podiumRes.json();
+    assert.equal(podiumData.contestId, 'contest-gunpla-cup-2026');
+    assert.ok(Array.isArray(podiumData.podium));
+    assert.ok(podiumData.podium.length > 0);
+    assert.equal(podiumData.podium[0].awardType, 'gold');
+    assert.ok(podiumData.peoplesChoice, 'Must resolve people choice for contest');
+
+    // 3. Builder profile enrichment with contestBadges
+    const aperichProfileRes = await fetch(`${baseUrl}/api/v1/builders/aperich`, {
+      headers: { 'X-Tenant-Slug': 'gunplajunkies' }
+    });
+    assert.equal(aperichProfileRes.status, 200, 'GET /api/v1/builders/aperich must return 200 OK');
+    const aperichProfile = await aperichProfileRes.json();
+    assert.ok(Array.isArray(aperichProfile.contestBadges), 'Builder profile must have contestBadges array');
+    assert.ok(aperichProfile.contestBadges.length > 0, 'aperich must have awarded contest badges');
+    const aperichGoldBadge = aperichProfile.contestBadges.find(b => b.awardType === 'gold');
+    assert.ok(aperichGoldBadge, 'aperich must have gold badge');
+    assert.equal(aperichGoldBadge.medalIcon, '🥇');
+
+    // 4. Verify web frontend UI renders Hall of Fame and builder badges
+    const plamoWebCheck = await fetch(`${plamoUrl}/`);
+    assert.equal(plamoWebCheck.status, 200);
+    const plamoHofHtml = await plamoWebCheck.text();
+    assert.ok(plamoHofHtml.includes('id="view-contests-hall-of-fame"'), 'PlamoScale must render #view-contests-hall-of-fame');
+    assert.ok(plamoHofHtml.includes('Salón de la Fama y Podio de Concursos'), 'PlamoScale must include Hall of Fame title');
+    assert.ok(plamoHofHtml.includes('builder-award-badge'), 'PlamoScale must render builder award badge');
+
+    const gunplaWebCheck = await fetch(`${gunplaUrl}/`);
+    assert.equal(gunplaWebCheck.status, 200);
+    const gunplaHofHtml = await gunplaWebCheck.text();
+    assert.ok(gunplaHofHtml.includes('id="view-contests-hall-of-fame"'), 'GunplaJunkies must render #view-contests-hall-of-fame');
+    assert.ok(gunplaHofHtml.includes('builder-award-badge'), 'GunplaJunkies must render builder award badge');
+
+    console.log('[PASS] Contest Community Badges & Public Hall of Fame verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

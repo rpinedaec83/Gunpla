@@ -536,6 +536,24 @@ export function renderViews(
                 <div style="font-size: 0.8rem; color: var(--accent);">@${f.username}</div>
               </div>
             </div>
+            ${
+              f.contestBadges && f.contestBadges.length > 0
+                ? `
+              <div class="builder-awards-row" style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem;">
+                ${f.contestBadges
+                  .map(
+                    (b) => `
+                  <span class="builder-award-badge" title="${escapeHtml(b.contestTitle)}: ${escapeHtml(b.awardTitle)}" style="background: rgba(234, 179, 8, 0.12); border: 1px solid rgba(234, 179, 8, 0.35); color: #fef08a; font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                    <span>${b.medalIcon}</span>
+                    <strong>${escapeHtml(b.awardTitle.split(' - ')[0])}</strong>
+                  </span>
+                `
+                  )
+                  .join('')}
+              </div>
+            `
+                : ''
+            }
             <p style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 1rem;">
               ${f.bio || 'Modelista fundador de PlamoScale & GunplaJunkies.'}
             </p>
@@ -565,6 +583,72 @@ export function renderViews(
 
     <!-- 7. CONTESTS TAB -->
     <section id="view-contests" class="view-section">
+      <!-- Hall of Fame & Badges Showcase -->
+      <div id="view-contests-hall-of-fame" style="background: linear-gradient(135deg, rgba(234, 179, 8, 0.08) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1px solid rgba(234, 179, 8, 0.35); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 25px rgba(0,0,0,0.4);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 1.4rem;">🏛️</span>
+              <h2 style="font-size: 1.35rem; font-weight: 700; color: #fef08a; margin: 0;">Salón de la Fama y Podio de Concursos</h2>
+            </div>
+            <p style="font-size: 0.85rem; color: #cbd5e1; margin: 0.3rem 0 0 0;">
+              Obras laureadas, medallas oficiales y diplomas con verificación criptográfica QR de la comunidad.
+            </p>
+          </div>
+          <span style="background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.3); color: #fef08a; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 20px;">
+            ⭐ Reconocimiento Oficial
+          </span>
+        </div>
+
+        ${(() => {
+          const hofItems = data.hallOfFame && data.hallOfFame.length > 0 ? data.hallOfFame : [];
+          if (hofItems.length === 0) {
+            return `
+              <div style="text-align: center; padding: 1.5rem; color: #94a3b8; font-size: 0.85rem;">
+                Las insignias y podios se registrarán automáticamente al culminar las votaciones y evaluaciones de jurado.
+              </div>
+            `;
+          }
+
+          return `
+            <div class="hall-of-fame-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+              ${hofItems
+                .map(
+                  (item) => `
+                <div class="hof-card" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(234, 179, 8, 0.25); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;">
+                  <div style="position: relative; width: 100%; height: 160px;">
+                    <img src="${item.coverImageUrl || '/legacy-media/plamoscale/images/aperich/fulls/1.JPG'}" alt="${escapeHtml(item.entryTitle)}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+                    <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); border: 1px solid rgba(234, 179, 8, 0.5); color: #fef08a; font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; display: flex; align-items: center; gap: 4px;">
+                      <span>${item.medalIcon}</span>
+                      <span>${escapeHtml(item.awardTitle)}</span>
+                    </div>
+                  </div>
+                  <div style="padding: 1rem; display: flex; flex-direction: column; flex: 1;">
+                    <div style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem; line-height: 1.3;">${escapeHtml(item.entryTitle)}</div>
+                    <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.5rem;">
+                      Por <strong style="color: #e2e8f0;">@${item.username}</strong> (${escapeHtml(item.userDisplayName)})
+                    </div>
+                    <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.75rem;">
+                      Concurso: <strong style="color: #94a3b8;">${escapeHtml(item.contestTitle)}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08);">
+                      <span style="font-size: 0.8rem; color: #fbbf24; font-weight: 600;">
+                        ⭐ ${item.voteCount} votos ${item.judgeAverageScore ? '• ⚖️ ' + item.judgeAverageScore + '/40' : ''}
+                      </span>
+                      <button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.25rem 0.65rem; color: #fbbf24; border-color: rgba(251, 191, 36, 0.4);" onclick="viewCertificate('${item.contestId}', '${item.entryId}')">
+                        📜 Ver Diploma
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              `
+                )
+                .join('')}
+            </div>
+          `;
+        })()}
+      </div>
+
       <div style="display: flex; flex-direction: column; gap: 2rem;">
         ${data.contests
           .map(

@@ -4,10 +4,14 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
-- **Contest Community Voting Badges & Public Hall of Fame:** Public showcase and permanent trophy showcase for contest winners across community tenants.
-- **Direct WhatsApp Community Feed & Build Inquiries:** Direct contact channels between builders and collectors on showcased models.
+- **Direct WhatsApp Community Feed & Build Inquiries:** Direct contact channels between builders and collectors on showcased models and work-in-progress logs.
+- **Bulk Import / CSV Stash & Paint Rack Migration Tool:** Allow modelers to migrate their existing inventories from spreadsheets or external platforms directly into Mi Taller.
 
 ## Completed Candidates & Parking Lot Items
+
+### CONTEST-HALL-OF-FAME -- Contest Community Voting Badges & Public Hall of Fame (COMPLETED)
+- Goal: Public showcase and permanent trophy showcase for contest winners across community tenants with digital winner badges.
+- Delivered: Endpoints `GET /api/v1/contests/hall-of-fame` (with multitenant scoping) and `GET /api/v1/contests/:id/podium`; deterministic composite evaluation (70% judge average + 30% community votes); automatic Gold, Silver, Bronze, and People's Choice badge generation (`ContestAwardBadge`); builder profile badge enrichment on `GET /api/v1/builders`; UI Hall of Fame showcase (`#view-contests-hall-of-fame`) in `#view-contests`; builder card award ribbons (`.builder-award-badge`); digital diploma viewing links (`viewCertificate`); 6 isolated unit tests (`tests/unit/contest-hall-of-fame.test.mjs`); and verified live deployment on LXC 190.
 
 ### PAINT-EQUIVALENCES -- AI Paint Rack Equivalences Assistant & Mixer (COMPLETED)
 - Goal: Intelligent cross-brand paint matching assistant across 4 chemical families (Mr. Color Lacquer, Tamiya Acrylic, Vallejo Polyurethane, Montana Colors Spray) highlighting paints already owned in the builder's rack.

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PaginatedResult, PublicBuilderProfile } from '@gunpla/shared';
 import { getDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
+import { getBuilderContestBadges } from '../community/community.slice';
 
 export const buildersRouter = Router();
 
@@ -33,6 +34,7 @@ buildersRouter.get('/', (req: Request, res: Response) => {
       isFounder: user.isFounder,
       photoCount: photos.length,
       photos,
+      contestBadges: getBuilderContestBadges(user.username),
       createdAt: user.createdAt
     };
   });
@@ -84,6 +86,7 @@ buildersRouter.get('/:username', (req: Request, res: Response) => {
     isFounder: user.isFounder,
     photoCount: photos.length,
     photos,
+    contestBadges: getBuilderContestBadges(user.username),
     createdAt: user.createdAt
   };
 

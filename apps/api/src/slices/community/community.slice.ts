@@ -11,7 +11,11 @@ import {
   CreateContestEntryRequest,
   VoteContestEntryResponse,
   JudgeScoreRecord,
-  ContestCertificateRecord
+  ContestCertificateRecord,
+  ContestAwardType,
+  ContestAwardBadge,
+  HallOfFameItem,
+  ContestPodiumResult
 } from '@gunpla/shared';
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
@@ -392,6 +396,274 @@ communityRouter.get('/contests', (req: Request, res: Response) => {
     items,
     totalCount: items.length
   });
+});
+
+export function calculateContestAwards(
+  contest: ContestRecord,
+  entries: ContestEntryRecord[]
+): {
+  podium: HallOfFameItem[];
+  peoplesChoice?: HallOfFameItem;
+  badges: ContestAwardBadge[];
+} {
+  const approvedEntries = entries.filter((e) => e.status === 'approved');
+  if (approvedEntries.length === 0) {
+    return { podium: [], badges: [] };
+  }
+
+  // Sort approved entries by composite score (judgeScoreAverage 70% + voteCount 30%)
+  const sorted = [...approvedEntries].sort((a, b) => {
+    const scoreA = (a.judgeScoreAverage || 0) * 0.7 + a.voteCount * 0.3;
+    const scoreB = (b.judgeScoreAverage || 0) * 0.7 + b.voteCount * 0.3;
+    if (scoreB !== scoreA) return scoreB - scoreA;
+    if (b.voteCount !== a.voteCount) return b.voteCount - a.voteCount;
+    return (a.createdAt || '').localeCompare(b.createdAt || '');
+  });
+
+  const podiumRanks: Array<{ type: ContestAwardType; title: string; icon: string }> = [
+    { type: 'gold', title: '1er Lugar - Medalla de Oro', icon: '🥇' },
+    { type: 'silver', title: '2do Lugar - Medalla de Plata', icon: '🥈' },
+    { type: 'bronze', title: '3er Lugar - Medalla de Bronce', icon: '🥉' }
+  ];
+
+  const podium: HallOfFameItem[] = [];
+  const badges: ContestAwardBadge[] = [];
+
+  sorted.slice(0, 3).forEach((entry, idx) => {
+    const rankInfo = podiumRanks[idx];
+    const rank = idx + 1;
+    const certificateUrl = `/api/v1/contests/${contest.id}/entries/${entry.id}/certificate?format=html`;
+    const item: HallOfFameItem = {
+      id: `hof-${contest.id}-${entry.id}-${rankInfo.type}`,
+      contestId: contest.id,
+      contestTitle: contest.title,
+      contestStatus: contest.status,
+      tenantSlug: contest.tenantSlug,
+      category: entry.category,
+      entryId: entry.id,
+      entryTitle: entry.title,
+      coverImageUrl: entry.coverImageUrl,
+      buildId: entry.buildId,
+      userId: entry.userId,
+      username: entry.username,
+      userDisplayName: entry.userDisplayName || entry.username,
+      awardType: rankInfo.type,
+      awardTitle: rankInfo.title,
+      medalIcon: rankInfo.icon,
+      rank,
+      judgeAverageScore: entry.judgeScoreAverage,
+      voteCount: entry.voteCount,
+      awardedAt: contest.endDate || new Date().toISOString(),
+      certificateUrl
+    };
+    podium.push(item);
+
+    badges.push({
+      id: `badge-${contest.id}-${entry.id}-${rankInfo.type}`,
+      contestId: contest.id,
+      contestTitle: contest.title,
+      tenantSlug: contest.tenantSlug,
+      entryId: entry.id,
+      entryTitle: entry.title,
+      awardType: rankInfo.type,
+      awardTitle: rankInfo.title,
+      medalIcon: rankInfo.icon,
+      rank,
+      judgeAverageScore: entry.judgeScoreAverage,
+      voteCount: entry.voteCount,
+      awardedAt: contest.endDate || new Date().toISOString(),
+      certificateUrl
+    });
+  });
+
+  // Calculate People's Choice (entry with highest votes > 0)
+  const maxVotedEntry = [...approvedEntries].sort((a, b) => b.voteCount - a.voteCount)[0];
+  let peoplesChoice: HallOfFameItem | undefined;
+
+  if (maxVotedEntry && maxVotedEntry.voteCount > 0) {
+    const certificateUrl = `/api/v1/contests/${contest.id}/entries/${maxVotedEntry.id}/certificate?format=html`;
+    const rank = sorted.findIndex((e) => e.id === maxVotedEntry.id) + 1;
+    peoplesChoice = {
+      id: `hof-${contest.id}-${maxVotedEntry.id}-community_choice`,
+      contestId: contest.id,
+      contestTitle: contest.title,
+      contestStatus: contest.status,
+      tenantSlug: contest.tenantSlug,
+      category: maxVotedEntry.category,
+      entryId: maxVotedEntry.id,
+      entryTitle: maxVotedEntry.title,
+      coverImageUrl: maxVotedEntry.coverImageUrl,
+      buildId: maxVotedEntry.buildId,
+      userId: maxVotedEntry.userId,
+      username: maxVotedEntry.username,
+      userDisplayName: maxVotedEntry.userDisplayName || maxVotedEntry.username,
+      awardType: 'community_choice',
+      awardTitle: "Voto Popular / People's Choice",
+      medalIcon: '🏆',
+      rank,
+      judgeAverageScore: maxVotedEntry.judgeScoreAverage,
+      voteCount: maxVotedEntry.voteCount,
+      awardedAt: contest.endDate || new Date().toISOString(),
+      certificateUrl
+    };
+
+    const alreadyHasChoiceBadge = badges.some(
+      (b) => b.entryId === maxVotedEntry.id && b.awardType === 'community_choice'
+    );
+    if (!alreadyHasChoiceBadge) {
+      badges.push({
+        id: `badge-${contest.id}-${maxVotedEntry.id}-community_choice`,
+        contestId: contest.id,
+        contestTitle: contest.title,
+        tenantSlug: contest.tenantSlug,
+        entryId: maxVotedEntry.id,
+        entryTitle: maxVotedEntry.title,
+        awardType: 'community_choice',
+        awardTitle: "Voto Popular / People's Choice",
+        medalIcon: '🏆',
+        rank,
+        judgeAverageScore: maxVotedEntry.judgeScoreAverage,
+        voteCount: maxVotedEntry.voteCount,
+        awardedAt: contest.endDate || new Date().toISOString(),
+        certificateUrl
+      });
+    }
+  }
+
+  return { podium, peoplesChoice, badges };
+}
+
+export function getContestAwards(contestIdOrSlug: string): ContestPodiumResult | null {
+  const contest = getContestsFromDb().find(
+    (c) => c.id === contestIdOrSlug || c.slug === contestIdOrSlug
+  );
+  if (!contest) return null;
+
+  const db = getDb();
+  const allEntries =
+    db.contestEntries && db.contestEntries.length > 0
+      ? db.contestEntries
+      : INITIAL_CONTEST_ENTRIES;
+
+  const entries = allEntries.filter(
+    (e) => e.contestId === contest.id || e.contestId === contest.slug
+  );
+  const { podium, peoplesChoice } = calculateContestAwards(contest, entries);
+
+  return {
+    contestId: contest.id,
+    contestTitle: contest.title,
+    contestStatus: contest.status,
+    tenantSlug: contest.tenantSlug,
+    podium,
+    peoplesChoice
+  };
+}
+
+export function getAllContestBadges(): ContestAwardBadge[] {
+  const db = getDb();
+  const contests = getContestsFromDb();
+  const allEntries =
+    db.contestEntries && db.contestEntries.length > 0
+      ? db.contestEntries
+      : INITIAL_CONTEST_ENTRIES;
+
+  const allBadges: ContestAwardBadge[] = [];
+  for (const contest of contests) {
+    const entries = allEntries.filter(
+      (e) => e.contestId === contest.id || e.contestId === contest.slug
+    );
+    const { badges } = calculateContestAwards(contest, entries);
+    allBadges.push(...badges);
+  }
+  return allBadges;
+}
+
+export function getBuilderContestBadges(username: string): ContestAwardBadge[] {
+  const uname = (username || '').toLowerCase();
+  const db = getDb();
+  const allEntries =
+    db.contestEntries && db.contestEntries.length > 0
+      ? db.contestEntries
+      : INITIAL_CONTEST_ENTRIES;
+
+  const userEntries = allEntries.filter(
+    (e) => (e.username || '').toLowerCase() === uname
+  );
+  if (userEntries.length === 0) return [];
+
+  const allBadges = getAllContestBadges();
+  return allBadges.filter((b) => userEntries.some((e) => e.id === b.entryId));
+}
+
+export function getHallOfFame(tenantSlug?: string): HallOfFameItem[] {
+  const db = getDb();
+  const contests = getContestsFromDb();
+  const allEntries =
+    db.contestEntries && db.contestEntries.length > 0
+      ? db.contestEntries
+      : INITIAL_CONTEST_ENTRIES;
+
+  const items: HallOfFameItem[] = [];
+  for (const contest of contests) {
+    const entries = allEntries.filter(
+      (e) => e.contestId === contest.id || e.contestId === contest.slug
+    );
+    const { podium, peoplesChoice } = calculateContestAwards(contest, entries);
+    items.push(...podium);
+    if (
+      peoplesChoice &&
+      !podium.some(
+        (p) => p.entryId === peoplesChoice.entryId && p.awardType === peoplesChoice.awardType
+      )
+    ) {
+      items.push(peoplesChoice);
+    }
+  }
+
+  let filtered = items;
+  if (tenantSlug && tenantSlug !== 'all') {
+    filtered = filtered.filter(
+      (item) => item.tenantSlug === 'all' || item.tenantSlug === tenantSlug
+    );
+  }
+
+  return filtered.sort((a, b) => {
+    if (a.rank !== b.rank) return a.rank - b.rank;
+    return b.voteCount - a.voteCount;
+  });
+}
+
+/**
+ * GET /api/v1/contests/hall-of-fame
+ * Cross-contest public Hall of Fame winners and awarded badges
+ */
+communityRouter.get('/contests/hall-of-fame', (req: Request, res: Response) => {
+  const queryTenant = req.query.tenantSlug as string | undefined;
+  const tenantSlug = queryTenant || (req.tenant ? req.tenant.slug : undefined);
+  const items = getHallOfFame(tenantSlug);
+  return res.json({
+    items,
+    totalCount: items.length
+  });
+});
+
+/**
+ * GET /api/v1/contests/:id/podium
+ * Specific contest podium ranking and people's choice
+ */
+communityRouter.get('/contests/:id/podium', (req: Request, res: Response) => {
+  const result = getContestAwards(req.params.id);
+  if (!result) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Concurso No Encontrado',
+      `No se encontró ningún concurso con identificador '${req.params.id}'.`
+    );
+  }
+  return res.json(result);
 });
 
 /**

@@ -10,7 +10,8 @@ import {
   ContestRecord,
   ShopRecord,
   MarketplaceListingRecord,
-  CommissionBuilderRecord
+  CommissionBuilderRecord,
+  HallOfFameItem
 } from '../index';
 
 export interface AppShellConfig {
@@ -40,6 +41,7 @@ export interface AppShellData {
   shops: ShopRecord[];
   listings?: MarketplaceListingRecord[];
   commissionBuilders?: CommissionBuilderRecord[];
+  hallOfFame?: HallOfFameItem[];
 }
 
 function escapeHtml(str: string): string {

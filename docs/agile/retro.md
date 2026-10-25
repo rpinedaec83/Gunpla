@@ -322,3 +322,33 @@ Decisions made:
 Lessons learned:
 - Providing quick-select chips populated with the builder's actual inventory eliminates manual code typing and boosts adoption of equivalent formulas.
 Usage: Moderate -- self-estimated
+
+### CONTEST-HALL-OF-FAME -- Contest Community Voting Badges & Public Hall of Fame | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Designed and authored shared data models in `packages/shared/src/index.ts`: `ContestAwardType`, `ContestAwardBadge`, `HallOfFameItem`, and `ContestPodiumResult`.
+- Added `contestBadges?: ContestAwardBadge[]` to `UserRecord` and `PublicBuilderProfile`.
+- Added `hallOfFame?: HallOfFameItem[]` to `AppShellData`.
+- Implemented core business logic in `apps/api/src/slices/community/community.slice.ts`:
+  - `calculateContestAwards`: Calculates podium ranking (Gold 🥇, Silver 🥈, Bronze 🥉) using deterministic composite scoring (70% judge average + 30% community votes) and awards People's Choice (🏆) to the entry with highest votes.
+  - `getContestAwards`: Resolves specific contest podium and people's choice.
+  - `getHallOfFame`: Aggregates cross-contest podium winners with optional tenant filtering.
+  - `getBuilderContestBadges`: Maps all won badges to builder usernames.
+- Added API endpoints:
+  - `GET /api/v1/contests/hall-of-fame`: Cross-contest Hall of Fame listing.
+  - `GET /api/v1/contests/:id/podium`: Specific contest podium breakdown.
+- Enriched builder profiles (`GET /api/v1/builders` and `GET /api/v1/builders/:username`) in `builders.slice.ts` with `contestBadges`.
+- Documented new endpoints in OpenAPI 3.1 specification (`apps/api/src/openapi/openapi-spec.ts`).
+- Updated web servers (`plamoscale-web` and `gunplajunkies-web`) to fetch `hallOfFame` during SSR initial render.
+- Implemented UI components in `packages/shared/src/ui-shell/views.ts`:
+  - Section `#view-contests-hall-of-fame` prominently displayed at top of `#view-contests` with cards, cover photos, awards, votes, scores, and digital diploma links (`viewCertificate`).
+  - Award ribbons (`.builder-award-badge`) rendered on builder cards in `#view-builders`.
+- Authored isolated unit test suite `tests/unit/contest-hall-of-fame.test.mjs` (6 test cases). Total unit test suite: 38 passed in 115ms.
+- Extended end-to-end regression smoketest in `scripts/smoketest.mjs` with full API and HTML assertions.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190`) with live curl assertions on API and both web applications.
+Issues hit:
+- In Express sequential routing, placed `/contests/hall-of-fame` before `/contests/:slugOrId` to prevent Express from treating `hall-of-fame` as a contest slug parameter.
+Decisions made:
+- Combined 70% judge rubric evaluation with 30% community votes for podium ranking, ensuring balanced representation of technical modeling mastery and popular acclaim, while also creating a distinct "People's Choice" badge for the single most voted model.
+Lessons learned:
+- Attaching contest badges directly to the builder's public profile gives community members permanent prestige and motivation to enter future group builds and contests.
+Usage: Moderate -- self-estimated

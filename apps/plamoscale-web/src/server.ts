@@ -52,7 +52,7 @@ async function fetchTenantData(): Promise<AppShellData> {
     const headers = { 'X-Tenant-Slug': 'plamoscale' };
     const api = getApiUrl();
 
-    const [buildersRes, buildsRes, kitsRes, paintsRes, contestsRes, shopsRes, listingsRes, commissionsRes] = await Promise.allSettled([
+    const [buildersRes, buildsRes, kitsRes, paintsRes, contestsRes, shopsRes, listingsRes, commissionsRes, hofRes] = await Promise.allSettled([
       fetch(`${api}/api/v1/builders`, { headers }).then(r => r.json()),
       fetch(`${api}/api/v1/builds`, { headers }).then(r => r.json()),
       fetch(`${api}/api/v1/catalog/kits`, { headers }).then(r => r.json()),
@@ -60,7 +60,8 @@ async function fetchTenantData(): Promise<AppShellData> {
       fetch(`${api}/api/v1/contests`, { headers }).then(r => r.json()),
       fetch(`${api}/api/v1/shops`, { headers }).then(r => r.json()),
       fetch(`${api}/api/v1/marketplace/listings`, { headers }).then(r => r.json()),
-      fetch(`${api}/api/v1/commissions/builders`, { headers }).then(r => r.json())
+      fetch(`${api}/api/v1/commissions/builders`, { headers }).then(r => r.json()),
+      fetch(`${api}/api/v1/contests/hall-of-fame`, { headers }).then(r => r.json())
     ]);
 
     const buildersData: any = buildersRes.status === 'fulfilled' ? buildersRes.value : { items: [] };
@@ -71,6 +72,7 @@ async function fetchTenantData(): Promise<AppShellData> {
     const shopsData: any = shopsRes.status === 'fulfilled' ? shopsRes.value : { items: [] };
     const listingsData: any = listingsRes.status === 'fulfilled' ? listingsRes.value : { items: [] };
     const commissionsData: any = commissionsRes.status === 'fulfilled' ? commissionsRes.value : { items: [] };
+    const hofData: any = hofRes.status === 'fulfilled' ? hofRes.value : { items: [] };
 
     // Flatten mediaAssets from all builders for the showcase gallery
     const builders: UserRecord[] = buildersData.items || [];
@@ -90,7 +92,8 @@ async function fetchTenantData(): Promise<AppShellData> {
       contests: contestsData.items || [],
       shops: shopsData.items || [],
       listings: listingsData.items || [],
-      commissionBuilders: commissionsData.items || []
+      commissionBuilders: commissionsData.items || [],
+      hallOfFame: hofData.items || []
     };
   } catch (err) {
     console.error('[PlamoScale] Error fetching live API data:', err);

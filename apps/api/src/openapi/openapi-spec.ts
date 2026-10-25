@@ -422,6 +422,25 @@ export const openApiSpec = {
         responses: { '200': { description: 'Contests list' } }
       }
     },
+    '/api/v1/contests/hall-of-fame': {
+      get: {
+        tags: ['Community'],
+        summary: 'Cross-contest public Hall of Fame winners and awarded badges',
+        parameters: [{ name: 'tenantSlug', in: 'query', required: false, schema: { type: 'string' } }],
+        responses: { '200': { description: 'Hall of fame winners and badges' } }
+      }
+    },
+    '/api/v1/contests/{id}/podium': {
+      get: {
+        tags: ['Community'],
+        summary: 'Get contest podium ranking and awards (gold, silver, bronze, community choice)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Contest podium result' },
+          '404': { description: 'Contest not found' }
+        }
+      }
+    },
     '/api/v1/contests/{slugOrId}': {
       get: {
         tags: ['Community'],
