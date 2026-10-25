@@ -1436,7 +1436,61 @@ async function runSmoketest() {
 
     console.log('[PASS] Custom Commissions & Painting Orders Workflow (B2) verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS CHECKS PASSED ===');
+    // 30. PWA & Offline Workshop Mode
+    console.log('\n--- Checking Progressive Web App (PWA) & Offline Mode ---');
+
+    // 1. Web App Manifests
+    const plamoManifestRes = await fetch(`${plamoUrl}/manifest.json`);
+    assert.equal(plamoManifestRes.status, 200);
+    assert.ok(plamoManifestRes.headers.get('content-type').includes('manifest+json'));
+    const plamoManifest = await plamoManifestRes.json();
+    assert.equal(plamoManifest.short_name, 'PlamoScale');
+    assert.equal(plamoManifest.display, 'standalone');
+    assert.ok(plamoManifest.icons.length >= 2);
+
+    const gunplaManifestRes = await fetch(`${gunplaUrl}/manifest.json`);
+    assert.equal(gunplaManifestRes.status, 200);
+    const gunplaManifest = await gunplaManifestRes.json();
+    assert.equal(gunplaManifest.short_name, 'GunplaJunkies');
+    assert.equal(gunplaManifest.display, 'standalone');
+
+    // 2. Service Workers
+    const plamoSwRes = await fetch(`${plamoUrl}/sw.js`);
+    assert.equal(plamoSwRes.status, 200);
+    assert.ok(plamoSwRes.headers.get('content-type').includes('javascript'));
+    assert.equal(plamoSwRes.headers.get('service-worker-allowed'), '/');
+    const plamoSwScript = await plamoSwRes.text();
+    assert.ok(plamoSwScript.includes('gunpla-pwa-plamoscale'));
+    assert.ok(plamoSwScript.includes('/api/v1/workbench'));
+    assert.ok(plamoSwScript.includes('caches.match'));
+
+    const gunplaSwRes = await fetch(`${gunplaUrl}/sw.js`);
+    assert.equal(gunplaSwRes.status, 200);
+    const gunplaSwScript = await gunplaSwRes.text();
+    assert.ok(gunplaSwScript.includes('gunpla-pwa-gunplajunkies'));
+
+    // 3. Dynamic App Icons
+    const plamoSvgRes = await fetch(`${plamoUrl}/icons/icon.svg`);
+    assert.equal(plamoSvgRes.status, 200);
+    assert.ok(plamoSvgRes.headers.get('content-type').includes('svg'));
+
+    const plamoPngRes = await fetch(`${plamoUrl}/icons/icon-192.png`);
+    assert.equal(plamoPngRes.status, 200);
+    assert.ok(plamoPngRes.headers.get('content-type').includes('image/png'));
+    const pngBuffer = await plamoPngRes.arrayBuffer();
+    assert.ok(pngBuffer.byteLength > 100, 'Rendered PNG icon must not be empty');
+
+    // 4. Frontend PWA HTML & Offline status badge
+    assert.ok(plamoCommHtml.includes('rel="manifest" href="/manifest.json"'));
+    assert.ok(plamoCommHtml.includes('id="pwa-offline-badge"'));
+    assert.ok(plamoCommHtml.includes('id="pwa-install-btn"'));
+    assert.ok(plamoCommHtml.includes("navigator.serviceWorker.register('/sw.js')"));
+    assert.ok(plamoCommHtml.includes('updateOnlineStatus'));
+    assert.ok(plamoCommHtml.includes('promptPwaInstall'));
+
+    console.log('[PASS] Progressive Web App (PWA) & Offline Workshop Mode verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

@@ -4,11 +4,15 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 — DVT Pilot & Community Expansion)
 
-- **PWA & Offline Mode for Workshop & Conventions:** Web App Manifest, Service Worker, and local cache for offline Stash and Paint Rack lookups in hobby shops and convention floors.
 - **Trusted Shops Stock Alerts Linked to Stash Wishlist:** Connect user wishlist to verified partner hobby shops (`Trusted Shops`) to notify of inventory arrivals and deals.
 - **Automated Resend Email Notification Triggers:** Automated email delivery for judge scores, build comments, and marketplace/commission inquiries.
+- **AI Paint Rack Equivalences Assistant:** Intelligent cross-brand paint matching assistant based on colors already owned in the builder's rack.
 
 ## Completed Candidates & Parking Lot Items
+
+### PWA -- Progressive Web App & Offline Workshop Mode (COMPLETED)
+- Goal: Installable mobile and desktop application with offline caching capabilities, allowing modelers to inspect their Stash, Build Logs, and Paint Rack inside hobby shops or convention basements with zero network connectivity.
+- Delivered: Dynamic multi-tenant Web App Manifests (`/manifest.json`), Service Worker (`/sw.js`) with Network-First caching for Workbench data and Stale-While-Revalidate for app shell, dynamic vector SVG/PNG app icons (`/icons/*` via `sharp`), offline status indicator (`#pwa-offline-badge`), and native installation prompt CTA (`#pwa-install-btn`).
 
 ### B2 -- Slice 7: Custom Painting Commissions & Interactive Ordering Workflow (COMPLETED)
 - Goal: End-to-end custom painting and building commission request flow linking clients with verified builders, including finish tier specification (Clean Build, Custom Paint, Weathering, Masterpiece), kit supply selection, budget tracking, quotation negotiation, and a dedicated management panel in "Mi Taller".

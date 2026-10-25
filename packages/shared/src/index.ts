@@ -708,3 +708,4 @@ export interface PaginatedResult<T> {
 
 export * from './ui-shell/app-shell';
 export * from './ui-shell/legal-pages';
+export * from './ui-shell/pwa';

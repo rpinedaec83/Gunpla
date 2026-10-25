@@ -13,7 +13,10 @@ import {
   ContestRecord,
   ShopRecord,
   renderPrivacyPolicy,
-  renderTermsOfService
+  renderTermsOfService,
+  generateManifest,
+  generateServiceWorker,
+  generateAppIconSvg
 } from '@gunpla/shared';
 
 dotenv.config();
@@ -172,6 +175,58 @@ app.get('/privacy', (_req: Request, res: Response) => {
 app.get('/terms', (_req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(renderTermsOfService('PlamoScale', 'plamoscale.com', 'legal@plamoscale.com'));
+});
+
+// ---------------------------------------------------------------------------
+// PWA & Offline Support: Manifest, Service Worker, and App Icons
+// ---------------------------------------------------------------------------
+app.get('/manifest.json', (_req: Request, res: Response) => {
+  const currentConfig: AppShellConfig = { ...config, apiUrl: getApiUrl() };
+  res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+  res.json(generateManifest(currentConfig));
+});
+
+app.get('/sw.js', (_req: Request, res: Response) => {
+  const currentConfig: AppShellConfig = { ...config, apiUrl: getApiUrl() };
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.send(generateServiceWorker(currentConfig));
+});
+
+app.get('/icons/:name', async (req: Request, res: Response) => {
+  const currentConfig: AppShellConfig = { ...config, apiUrl: getApiUrl() };
+  const { name } = req.params;
+  const svg = generateAppIconSvg(currentConfig, 512);
+
+  if (name.endsWith('.svg')) {
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(svg);
+  }
+
+  const size = name.includes('512') ? 512 : 192;
+
+  let sharp: any = null;
+  try {
+    sharp = require('sharp');
+  } catch {}
+
+  if (sharp) {
+    try {
+      const pngBuffer = await sharp(Buffer.from(svg))
+        .resize(size, size)
+        .png()
+        .toBuffer();
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.send(pngBuffer);
+    } catch {}
+  }
+
+  // Fallback: send SVG
+  res.setHeader('Content-Type', 'image/svg+xml');
+  return res.send(svg);
 });
 
 // App Shell Main Entry Point

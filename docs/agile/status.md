@@ -4,12 +4,27 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9 & B1-B3 Verified)**
-- Overall state: Green -- DT1 through DT9 + B1 (Rúbricas & Diplomas) + B2 (Comisiones Interactivas) + B3 (White-Label) verified via `npm run smoketest`.
+- Stage: **PVT (In Progress -- DT8, DT9, B1-B3 & PWA Verified)**
+- Overall state: Green -- DT1 through DT9 + B1 (Rúbricas & Diplomas) + B2 (Comisiones Interactivas) + B3 (White-Label) + PWA (Modo Offline) verified via `npm run smoketest`.
 - Current branch or release line: `feature/dt9-google-oauth-sso` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-24
 
 ## Live Capabilities
+
+- **Progressive Web App (PWA) & Modo Offline para el Taller (`/manifest.json`, `/sw.js`, `/icons/*`):**
+  - **Aplicación Web Instalable (PWA):**
+    - Soporte nativo para instalación en pantalla de inicio en Android, iOS y Desktop.
+    - Manifiestos dinámicos adaptados a cada portal (`/manifest.json`) con colores de marca, splash screen, orientación y categorías.
+    - Metadatos PWA completos en `<head>`: `mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, iconos táctiles y `theme-color`.
+    - Botón interactivo de instalación en el topbar (`#pwa-install-btn`) conectado al evento `beforeinstallprompt`.
+  - **Service Worker & Motor de Caché Inteligente (`/sw.js`):**
+    - Estrategia **Network-First con Caché Local** para los endpoints del taller y catálogo (`/api/v1/workbench/stash`, `/api/v1/workbench/paints`, `/api/v1/catalog/*`, `/api/v1/commissions/requests`).
+    - Permite a los modelistas consultar su **Stash de maquetas** y su **Rack de pinturas** sin conexión a internet en tiendas de modelismo, sótanos o convenciones.
+    - Estrategia **Stale-While-Revalidate** para el cascarón de la aplicación (HTML, CSS, iconos y fuentes), garantizando apertura instantánea.
+  - **Indicador de Conectividad en Tiempo Real:**
+    - Badge dinámico en el topbar (`#pwa-offline-badge`) que se activa automáticamente al perder conexión: `📴 Modo Offline (Taller en local)`.
+  - **Generación Vectorial de Iconos con Sharp (`/icons/:name`):**
+    - Generación dinámica de iconos SVG vectoriales y conversión automática a PNG de alta resolución (192x192 y 512x512) mediante `sharp` respetando la paleta cromática de cada tenant.
 
 - **Flujo Interactivo de Comisiones y Encargos de Pintura (`B2` / `/api/v1/commissions/*`):**
   - **Solicitud de Encargo en UI Web (`POST /api/v1/commissions/requests`, `#modal-commission-request`):**

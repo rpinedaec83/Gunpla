@@ -89,6 +89,14 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${config.tenantName} — ${config.tenantTagline}</title>
   <meta name="description" content="Comunidad y plataforma de modelismo a escala. Bitácoras de armado, catálogo de kits, muestrario de pinturas y banco de trabajo personal.">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="${config.tenantName}">
+  <meta name="theme-color" content="${config.theme.primaryColor || '#1e293b'}">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1013,6 +1021,18 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     </div>
 
     <div class="topbar-actions">
+      <!-- PWA Offline Status Badge -->
+      <div id="pwa-offline-badge" style="display: none; background: rgba(234, 88, 12, 0.2); border: 1px solid #ea580c; color: #fb923c; font-size: 0.78rem; font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 6px; align-items: center; gap: 0.35rem;">
+        <span>📴</span>
+        <span>Modo Offline</span>
+      </div>
+
+      <!-- PWA Install Prompt Button -->
+      <button id="pwa-install-btn" class="filter-pill" style="display: none; border-color: rgba(34, 197, 94, 0.4); color: #4ade80; font-size: 0.8rem; padding: 0.38rem 0.75rem; align-items: center; gap: 0.35rem;" onclick="promptPwaInstall()">
+        <span>📲</span>
+        <span>Instalar App</span>
+      </button>
+
       <!-- Portal Switcher -->
       <a href="${config.otherTenantUrl}" class="portal-switcher">
         <span>Ir a <strong>${config.otherTenantName}</strong> ➔</span>
@@ -3019,6 +3039,57 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
 
 <script>
   window.__COMM_BUILDERS = ${JSON.stringify(data.commissionBuilders || [])};
+
+  // -------------------------------------------------------------------------
+  // PWA & Service Worker Registration / Offline Cache Engine
+  // -------------------------------------------------------------------------
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((reg) => {
+          console.log('[PWA] Service Worker activo en scope:', reg.scope);
+        })
+        .catch((err) => {
+          console.warn('[PWA] Error registrando Service Worker:', err);
+        });
+    });
+  }
+
+  // Real-time Online / Offline status monitoring
+  function updateOnlineStatus() {
+    const badge = document.getElementById('pwa-offline-badge');
+    if (!badge) return;
+    if (!navigator.onLine) {
+      badge.style.display = 'inline-flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  window.addEventListener('DOMContentLoaded', updateOnlineStatus);
+
+  // PWA Install Prompt handling
+  let deferredPwaPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPwaPrompt = e;
+    const btn = document.getElementById('pwa-install-btn');
+    if (btn) btn.style.display = 'inline-flex';
+  });
+
+  function promptPwaInstall() {
+    if (!deferredPwaPrompt) return;
+    deferredPwaPrompt.prompt();
+    deferredPwaPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult && choiceResult.outcome === 'accepted') {
+        console.log('[PWA] Aplicación instalada por el usuario');
+      }
+      deferredPwaPrompt = null;
+      const btn = document.getElementById('pwa-install-btn');
+      if (btn) btn.style.display = 'none';
+    });
+  }
 
   function escapeHtml(str) {
     if (!str) return '';
