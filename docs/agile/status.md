@@ -6,7 +6,7 @@ Current live state of the project.
 
 - Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool & Social OpenGraph Cards Verified)**
 - Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + 4 Technical Debt resolutions verified via `npm test` (62 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt9-google-oauth-sso` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Current branch or release line: `main` (merged and pushed with all PVT features up through Social OpenGraph Cards)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
