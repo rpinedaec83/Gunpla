@@ -2135,6 +2135,146 @@ export function generateInsuranceReportHtml(
 </html>`;
 }
 
+// ===========================================================================
+// DT21: Workshop Soundscapes & Procedural Ambient Generator
+// ===========================================================================
+
+export type SoundscapePresetId =
+  | 'lluvia-taller'
+  | 'compresor-aerografo'
+  | 'hangar-mecha'
+  | 'lo-fi-beats'
+  | 'jardin-zen';
+
+export type SoundscapeCategory = 'nature' | 'workshop' | 'scifi' | 'music';
+
+export interface SoundscapeLayer {
+  id: string;
+  name: string;
+  type: 'noise' | 'drone' | 'tone' | 'texture';
+  defaultVolume: number;
+  description: string;
+}
+
+export interface SoundscapePreset {
+  id: SoundscapePresetId;
+  name: string;
+  tag: string;
+  description: string;
+  icon: string;
+  category: SoundscapeCategory;
+  color: string;
+  layers: SoundscapeLayer[];
+  tempoBpm?: number;
+}
+
+export type SoundscapeTimerMode = 'none' | 'pomodoro-25' | 'deep-work-45' | 'session-60';
+
+export interface SoundscapeSessionState {
+  activePresetId: SoundscapePresetId;
+  isPlaying: boolean;
+  masterVolume: number;
+  timerMode: SoundscapeTimerMode;
+  secondsRemaining: number;
+  totalSessionSeconds: number;
+  layerVolumes: Record<string, number>;
+}
+
+export const WORKSHOP_SOUNDSCAPE_PRESETS: SoundscapePreset[] = [
+  {
+    id: 'lluvia-taller',
+    name: 'Lluvia en el Taller',
+    tag: 'Calma & Aislamiento',
+    description: 'Chubasco suave sobre tejado y ventanas, ideal para corte de compuertas y lijado meticuloso.',
+    icon: '🌧️',
+    category: 'nature',
+    color: '#38bdf8',
+    layers: [
+      { id: 'rain-heavy', name: 'Lluvia de fondo', type: 'noise', defaultVolume: 0.65, description: 'Ruido browniano de baja frecuencia' },
+      { id: 'rain-patter', name: 'Gotas en vidrio', type: 'noise', defaultVolume: 0.40, description: 'Chispas de ruido rosa de alta frecuencia' },
+      { id: 'distant-thunder', name: 'Truenos lejanos', type: 'drone', defaultVolume: 0.25, description: 'Resonador sub-grave a 60Hz' }
+    ]
+  },
+  {
+    id: 'compresor-aerografo',
+    name: 'Estudio de Aerografía',
+    tag: 'Foco de Pintura',
+    description: 'Zumbido constante de compresor de diafragma y siseo de flujo de aire en cabina de extracción.',
+    icon: '💨',
+    category: 'workshop',
+    color: '#a855f7',
+    layers: [
+      { id: 'compressor-hum', name: 'Motor de compresor', type: 'drone', defaultVolume: 0.45, description: 'Armónicos sutiles a 60Hz y 120Hz' },
+      { id: 'airflow-hiss', name: 'Flujo de aire continuo', type: 'noise', defaultVolume: 0.50, description: 'Banda filtrada a 1.2kHz' },
+      { id: 'booth-fan', name: 'Extractor de cabina', type: 'noise', defaultVolume: 0.35, description: 'Viento continuo de ventilador' }
+    ]
+  },
+  {
+    id: 'hangar-mecha',
+    name: 'Hangar Sci-Fi Mecha',
+    tag: 'Inmersión Total',
+    description: 'Ambiente industrial futurista: resonancia de bahía de ensamblaje, sistemas hidráulicos y ecos lejanos.',
+    icon: '🤖',
+    category: 'scifi',
+    color: '#10b981',
+    layers: [
+      { id: 'hangar-drone', name: 'Resonancia de bahía', type: 'drone', defaultVolume: 0.60, description: 'Drone armónico a 55Hz' },
+      { id: 'hydraulics', name: 'Presurización hidráulica', type: 'noise', defaultVolume: 0.35, description: 'Barrido oscilante paso-banda' },
+      { id: 'reactor-pulse', name: 'Pulso de reactor', type: 'tone', defaultVolume: 0.20, description: 'Modulación de pulso lenta' }
+    ]
+  },
+  {
+    id: 'lo-fi-beats',
+    name: 'Lo-Fi Chillhop Taller',
+    tag: 'Ritmo Relajante',
+    description: 'Acordes cálidos sintéticos en Rhodes, crujido sutil de vinilo y pulsación suave para ensamblar.',
+    icon: '🎧',
+    category: 'music',
+    color: '#f59e0b',
+    tempoBpm: 72,
+    layers: [
+      { id: 'vinyl-crackle', name: 'Crujido de vinilo', type: 'texture', defaultVolume: 0.35, description: 'Micro-impulsos analógicos' },
+      { id: 'rhodes-chords', name: 'Acordes cálidos', type: 'tone', defaultVolume: 0.55, description: 'Tríadas menores sintetizadas' },
+      { id: 'tape-flutter', name: 'Calor de cinta', type: 'drone', defaultVolume: 0.30, description: 'LFO de tono vibrato sutil' }
+    ]
+  },
+  {
+    id: 'jardin-zen',
+    name: 'Jardín Zen & Pincel',
+    tag: 'Concentración Pura',
+    description: 'Susurro de bambú, agua corriente y resonancias de cuenco tibetano para pincel seco y panel-lining.',
+    icon: '🎋',
+    category: 'nature',
+    color: '#14b8a6',
+    layers: [
+      { id: 'bamboo-wind', name: 'Brisa en bambú', type: 'noise', defaultVolume: 0.50, description: 'Filtro paso-banda dinámico' },
+      { id: 'water-stream', name: 'Arroyo continuo', type: 'noise', defaultVolume: 0.45, description: 'Gotas y gorgoteo acuático' },
+      { id: 'singing-bowl', name: 'Cuenco tibetano', type: 'tone', defaultVolume: 0.30, description: 'Onda senoidal pura resonante' }
+    ]
+  }
+];
+
+export function getAllSoundscapePresets(): SoundscapePreset[] {
+  return WORKSHOP_SOUNDSCAPE_PRESETS;
+}
+
+export function getSoundscapePreset(id: string): SoundscapePreset | undefined {
+  return WORKSHOP_SOUNDSCAPE_PRESETS.find(p => p.id === id);
+}
+
+export function calculateTimerSeconds(mode: SoundscapeTimerMode): number {
+  switch (mode) {
+    case 'pomodoro-25':
+      return 25 * 60;
+    case 'deep-work-45':
+      return 45 * 60;
+    case 'session-60':
+      return 60 * 60;
+    case 'none':
+    default:
+      return 0;
+  }
+}
 
 export * from './ui-shell/app-shell';
 export * from './ui-shell/views';

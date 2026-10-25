@@ -5730,6 +5730,584 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     }
   }
 
+  // --- DT21: Workshop Soundscapes & Procedural Audio Generator ---
+  let soundscapeAudioCtx = null;
+  let currentSoundscapePresetId = 'lluvia-taller';
+  let isSoundscapePlaying = false;
+  let soundscapeMasterVolume = 0.70;
+  let soundscapeTimerMode = 'pomodoro-25';
+  let soundscapeSecondsRemaining = 25 * 60;
+  let soundscapeTimerInterval = null;
+  let soundscapeMasterGain = null;
+  let activeSoundscapeNodes = [];
+  let soundscapeLayerVolumes = {};
+
+  const SOUNDSCAPE_PRESETS_DATA = [
+    {
+      id: 'lluvia-taller',
+      name: 'Lluvia en el Taller',
+      tag: 'Calma & Aislamiento',
+      icon: '🌧️',
+      color: '#38bdf8',
+      layers: [
+        { id: 'rain-heavy', name: 'Lluvia de fondo', defaultVolume: 0.65, desc: 'Ruido browniano de baja frecuencia' },
+        { id: 'rain-patter', name: 'Gotas en vidrio', defaultVolume: 0.40, desc: 'Chispas de ruido rosa filtrado' },
+        { id: 'distant-thunder', name: 'Truenos lejanos', defaultVolume: 0.25, desc: 'Resonador sub-grave a 60Hz' }
+      ]
+    },
+    {
+      id: 'compresor-aerografo',
+      name: 'Estudio de Aerografia',
+      tag: 'Foco de Pintura',
+      icon: '💨',
+      color: '#a855f7',
+      layers: [
+        { id: 'compressor-hum', name: 'Motor de compresor', defaultVolume: 0.45, desc: 'Armonicos sutiles a 60Hz y 120Hz' },
+        { id: 'airflow-hiss', name: 'Flujo de aire continuo', defaultVolume: 0.50, desc: 'Banda filtrada a 1.2kHz' },
+        { id: 'booth-fan', name: 'Extractor de cabina', defaultVolume: 0.35, desc: 'Viento continuo de ventilador' }
+      ]
+    },
+    {
+      id: 'hangar-mecha',
+      name: 'Hangar Sci-Fi Mecha',
+      tag: 'Inmersion Sci-Fi',
+      icon: '🤖',
+      color: '#10b981',
+      layers: [
+        { id: 'hangar-drone', name: 'Resonancia de bahia', defaultVolume: 0.60, desc: 'Drone armonico a 55Hz' },
+        { id: 'hydraulics', name: 'Presurizacion hidraulica', defaultVolume: 0.35, desc: 'Barrido oscilante paso-banda' },
+        { id: 'reactor-pulse', name: 'Pulso de reactor', defaultVolume: 0.20, desc: 'Modulacion de pulso lenta' }
+      ]
+    },
+    {
+      id: 'lo-fi-beats',
+      name: 'Lo-Fi Chillhop Taller',
+      tag: 'Ritmo Relajante',
+      icon: '🎧',
+      color: '#f59e0b',
+      layers: [
+        { id: 'vinyl-crackle', name: 'Crujido de vinilo', defaultVolume: 0.35, desc: 'Micro-impulsos analogicos' },
+        { id: 'rhodes-chords', name: 'Acordes calidos', defaultVolume: 0.55, desc: 'Triadas menores sintetizadas' },
+        { id: 'tape-flutter', name: 'Calor de cinta', defaultVolume: 0.30, desc: 'LFO de tono vibrato sutil' }
+      ]
+    },
+    {
+      id: 'jardin-zen',
+      name: 'Jardin Zen & Pincel',
+      tag: 'Concentracion Pura',
+      icon: '🎋',
+      color: '#14b8a6',
+      layers: [
+        { id: 'bamboo-wind', name: 'Brisa en bambu', defaultVolume: 0.50, desc: 'Filtro paso-banda dinamico' },
+        { id: 'water-stream', name: 'Arroyo continuo', defaultVolume: 0.45, desc: 'Gorgoteo acuatico' },
+        { id: 'singing-bowl', name: 'Cuenco tibetano', defaultVolume: 0.30, desc: 'Onda senoidal pura a 432Hz' }
+      ]
+    }
+  ];
+
+  function openSoundscapesModal() {
+    const m = document.getElementById('modal-soundscapes');
+    if (!m) return;
+    renderSoundscapeLayersMixer();
+    m.classList.add('active');
+  }
+
+  function closeSoundscapesModal(e) {
+    if (!e || e.target.id === 'modal-soundscapes' || e.target.classList.contains('auth-close') || !e.target) {
+      const m = document.getElementById('modal-soundscapes');
+      if (m) m.classList.remove('active');
+    }
+  }
+
+  function selectSoundscapePreset(presetId) {
+    currentSoundscapePresetId = presetId;
+
+    const cards = document.querySelectorAll('.ws-preset-card');
+    cards.forEach(c => {
+      c.classList.remove('active');
+      c.style.borderColor = 'rgba(255,255,255,0.08)';
+    });
+
+    const activePreset = SOUNDSCAPE_PRESETS_DATA.find(p => p.id === presetId);
+    if (activePreset) {
+      const targetCard = Array.from(cards).find(c => (c.getAttribute('onclick') || '').includes(presetId));
+      if (targetCard) {
+        targetCard.classList.add('active');
+        targetCard.style.borderColor = activePreset.color;
+      }
+      const tagEl = document.getElementById('ws-mixer-preset-tag');
+      if (tagEl) {
+        tagEl.textContent = activePreset.name;
+        tagEl.style.color = activePreset.color;
+      }
+      const dockTitle = document.getElementById('ws-dock-title');
+      if (dockTitle) dockTitle.textContent = activePreset.name;
+    }
+
+    renderSoundscapeLayersMixer();
+
+    if (isSoundscapePlaying) {
+      stopProceduralSoundscape();
+      startProceduralSoundscape();
+    }
+  }
+
+  function renderSoundscapeLayersMixer() {
+    const preset = SOUNDSCAPE_PRESETS_DATA.find(p => p.id === currentSoundscapePresetId);
+    if (!preset) return;
+
+    const container = document.getElementById('ws-layers-mixer-container');
+    if (!container) return;
+
+    container.innerHTML = preset.layers.map(layer => {
+      const currentVol = soundscapeLayerVolumes[layer.id] !== undefined
+        ? soundscapeLayerVolumes[layer.id]
+        : layer.defaultVolume;
+      const pct = Math.round(currentVol * 100);
+
+      return '<div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">' +
+        '<div style="min-width: 170px;">' +
+          '<div style="font-size: 0.8rem; font-weight: 600; color: #f1f5f9;">' + layer.name + '</div>' +
+          '<div style="font-size: 0.68rem; color: #64748b;">' + layer.desc + '</div>' +
+        '</div>' +
+        '<div style="display: flex; align-items: center; gap: 0.75rem; flex: 1; max-width: 260px;">' +
+          '<input type="range" min="0" max="100" value="' + pct + '" ' +
+            'data-layer-id="' + layer.id + '" oninput="setSoundscapeLayerVolume(this.dataset.layerId, this.value)" ' +
+            'style="flex: 1; height: 5px; accent-color: ' + preset.color + '; cursor: pointer;" />' +
+          '<span id="ws-layer-val-' + layer.id + '" style="font-size: 0.75rem; color: #94a3b8; font-family: monospace; min-width: 32px; text-align: right;">' +
+            pct + '%' +
+          '</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function setSoundscapeLayerVolume(layerId, val) {
+    const num = Number(val) / 100;
+    soundscapeLayerVolumes[layerId] = num;
+    const label = document.getElementById('ws-layer-val-' + layerId);
+    if (label) label.textContent = Math.round(num * 100) + '%';
+
+    const nodeObj = activeSoundscapeNodes.find(n => n.id === layerId);
+    if (nodeObj && nodeObj.gainNode && soundscapeAudioCtx) {
+      nodeObj.gainNode.gain.setTargetAtTime(num, soundscapeAudioCtx.currentTime, 0.05);
+    }
+  }
+
+  function setSoundscapeMasterVolume(val) {
+    soundscapeMasterVolume = Number(val) / 100;
+
+    const valEl = document.getElementById('ws-modal-volume-val');
+    if (valEl) valEl.textContent = Math.round(soundscapeMasterVolume * 100) + '%';
+
+    const dockSlider = document.getElementById('ws-dock-volume');
+    if (dockSlider) dockSlider.value = val;
+
+    const modalSlider = document.getElementById('ws-modal-master-volume');
+    if (modalSlider) modalSlider.value = val;
+
+    if (soundscapeMasterGain && soundscapeAudioCtx) {
+      soundscapeMasterGain.gain.setTargetAtTime(soundscapeMasterVolume, soundscapeAudioCtx.currentTime, 0.05);
+    }
+  }
+
+  function setSoundscapeTimerMode(mode) {
+    soundscapeTimerMode = mode;
+    const modes = ['none', 'pomodoro-25', 'deep-work-45', 'session-60'];
+    modes.forEach(m => {
+      const btn = document.getElementById('ws-timer-mode-' + m);
+      if (btn) {
+        if (m === mode) {
+          btn.classList.add('active');
+          btn.style.background = '#0d9488';
+          btn.style.color = '#fff';
+        } else {
+          btn.classList.remove('active');
+          btn.style.background = 'transparent';
+          btn.style.color = '#cbd5e1';
+        }
+      }
+    });
+
+    resetSoundscapeTimer();
+  }
+
+  function resetSoundscapeTimer() {
+    if (soundscapeTimerMode === 'pomodoro-25') soundscapeSecondsRemaining = 25 * 60;
+    else if (soundscapeTimerMode === 'deep-work-45') soundscapeSecondsRemaining = 45 * 60;
+    else if (soundscapeTimerMode === 'session-60') soundscapeSecondsRemaining = 60 * 60;
+    else soundscapeSecondsRemaining = 0;
+
+    updateSoundscapeTimerDisplay();
+  }
+
+  function updateSoundscapeTimerDisplay() {
+    let str = '--:--';
+    if (soundscapeTimerMode !== 'none') {
+      const mins = Math.floor(soundscapeSecondsRemaining / 60);
+      const secs = soundscapeSecondsRemaining % 60;
+      str = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+    }
+
+    const digits = document.getElementById('ws-modal-timer-digits');
+    if (digits) digits.textContent = str;
+
+    const dockTimer = document.getElementById('ws-dock-timer');
+    if (dockTimer) dockTimer.textContent = str;
+  }
+
+  function toggleSoundscapePlay() {
+    if (isSoundscapePlaying) {
+      stopProceduralSoundscape();
+    } else {
+      startProceduralSoundscape();
+    }
+  }
+
+  function startProceduralSoundscape() {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) {
+        alert('Web Audio API no soportado en este navegador');
+        return;
+      }
+      if (!soundscapeAudioCtx) {
+        soundscapeAudioCtx = new AudioContextClass();
+      }
+      if (soundscapeAudioCtx.state === 'suspended') {
+        soundscapeAudioCtx.resume();
+      }
+
+      soundscapeMasterGain = soundscapeAudioCtx.createGain();
+      soundscapeMasterGain.gain.setValueAtTime(soundscapeMasterVolume, soundscapeAudioCtx.currentTime);
+      soundscapeMasterGain.connect(soundscapeAudioCtx.destination);
+
+      activeSoundscapeNodes = [];
+      const preset = SOUNDSCAPE_PRESETS_DATA.find(p => p.id === currentSoundscapePresetId);
+      if (!preset) return;
+
+      buildSynthesizedPreset(preset);
+
+      isSoundscapePlaying = true;
+      updateSoundscapeUIPlayingState(true);
+
+      if (soundscapeTimerMode !== 'none') {
+        clearInterval(soundscapeTimerInterval);
+        soundscapeTimerInterval = setInterval(() => {
+          if (soundscapeSecondsRemaining > 0) {
+            soundscapeSecondsRemaining--;
+            updateSoundscapeTimerDisplay();
+            if (soundscapeSecondsRemaining === 0) {
+              playTimerCompletionChime();
+              stopProceduralSoundscape();
+              alert('⏰ ¡Tiempo de Sesion de Taller completado! Descansa unos minutos.');
+            }
+          }
+        }, 1000);
+      }
+
+      const dock = document.getElementById('workshop-soundscape-widget');
+      if (dock) dock.style.display = 'flex';
+    } catch (err) {
+      console.error('Error starting soundscape audio synthesis:', err);
+    }
+  }
+
+  function stopProceduralSoundscape() {
+    if (!isSoundscapePlaying) return;
+
+    if (soundscapeMasterGain && soundscapeAudioCtx) {
+      soundscapeMasterGain.gain.setTargetAtTime(0.001, soundscapeAudioCtx.currentTime, 0.1);
+    }
+
+    setTimeout(() => {
+      activeSoundscapeNodes.forEach(nodeObj => {
+        try {
+          if (nodeObj.source && nodeObj.source.stop) nodeObj.source.stop();
+          if (nodeObj.source && nodeObj.source.disconnect) nodeObj.source.disconnect();
+          if (nodeObj.gainNode && nodeObj.gainNode.disconnect) nodeObj.gainNode.disconnect();
+        } catch (e) {}
+      });
+      activeSoundscapeNodes = [];
+    }, 150);
+
+    clearInterval(soundscapeTimerInterval);
+    isSoundscapePlaying = false;
+    updateSoundscapeUIPlayingState(false);
+  }
+
+  function updateSoundscapeUIPlayingState(playing) {
+    const toggleIcon = document.getElementById('ws-modal-toggle-icon');
+    const toggleText = document.getElementById('ws-modal-toggle-text');
+    const dockPlayBtn = document.getElementById('ws-dock-play-btn');
+
+    if (playing) {
+      if (toggleIcon) toggleIcon.textContent = '⏹';
+      if (toggleText) toggleText.textContent = 'Detener Ambiente';
+      if (dockPlayBtn) {
+        dockPlayBtn.textContent = '⏸';
+        dockPlayBtn.style.background = '#ef4444';
+        dockPlayBtn.style.color = '#fff';
+      }
+    } else {
+      if (toggleIcon) toggleIcon.textContent = '▶';
+      if (toggleText) toggleText.textContent = 'Reproducir Ambiente';
+      if (dockPlayBtn) {
+        dockPlayBtn.textContent = '▶';
+        dockPlayBtn.style.background = '#14b8a6';
+        dockPlayBtn.style.color = '#000';
+      }
+    }
+  }
+
+  function closeSoundscapeWidget() {
+    stopProceduralSoundscape();
+    const dock = document.getElementById('workshop-soundscape-widget');
+    if (dock) dock.style.display = 'none';
+  }
+
+  function createNoiseBuffer(type, durationSeconds) {
+    if (!soundscapeAudioCtx) return null;
+    const sampleRate = soundscapeAudioCtx.sampleRate;
+    const bufferSize = sampleRate * (durationSeconds || 5);
+    const buffer = soundscapeAudioCtx.createBuffer(1, bufferSize, sampleRate);
+    const output = buffer.getChannelData(0);
+
+    let lastOut = 0.0;
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      if (type === 'brown') {
+        output[i] = (lastOut + (0.02 * white)) / 1.02;
+        lastOut = output[i];
+        output[i] *= 3.5;
+      } else if (type === 'pink') {
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+        b6 = white * 0.115926;
+      } else {
+        output[i] = white * 0.3;
+      }
+    }
+    return buffer;
+  }
+
+  function buildSynthesizedPreset(preset) {
+    const ctx = soundscapeAudioCtx;
+    if (!ctx) return;
+
+    preset.layers.forEach(layer => {
+      const vol = soundscapeLayerVolumes[layer.id] !== undefined
+        ? soundscapeLayerVolumes[layer.id]
+        : layer.defaultVolume;
+
+      const layerGain = ctx.createGain();
+      layerGain.gain.setValueAtTime(vol, ctx.currentTime);
+      layerGain.connect(soundscapeMasterGain);
+
+      if (preset.id === 'lluvia-taller') {
+        if (layer.id === 'rain-heavy') {
+          const buf = createNoiseBuffer('brown', 6);
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.loop = true;
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(450, ctx.currentTime);
+          src.connect(filter);
+          filter.connect(layerGain);
+          src.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: src, gainNode: layerGain });
+        } else if (layer.id === 'rain-patter') {
+          const buf = createNoiseBuffer('pink', 4);
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.loop = true;
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(2200, ctx.currentTime);
+          filter.Q.setValueAtTime(1.8, ctx.currentTime);
+          src.connect(filter);
+          filter.connect(layerGain);
+          src.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: src, gainNode: layerGain });
+        } else if (layer.id === 'distant-thunder') {
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(60, ctx.currentTime);
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(80, ctx.currentTime);
+          osc.connect(filter);
+          filter.connect(layerGain);
+          osc.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: osc, gainNode: layerGain });
+        }
+      } else if (preset.id === 'compresor-aerografo') {
+        if (layer.id === 'compressor-hum') {
+          const osc = ctx.createOscillator();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(60, ctx.currentTime);
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(110, ctx.currentTime);
+          osc.connect(filter);
+          filter.connect(layerGain);
+          osc.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: osc, gainNode: layerGain });
+        } else if (layer.id === 'airflow-hiss') {
+          const buf = createNoiseBuffer('white', 4);
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.loop = true;
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(1400, ctx.currentTime);
+          filter.Q.setValueAtTime(1.5, ctx.currentTime);
+          src.connect(filter);
+          filter.connect(layerGain);
+          src.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: src, gainNode: layerGain });
+        } else if (layer.id === 'booth-fan') {
+          const buf = createNoiseBuffer('pink', 5);
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.loop = true;
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(220, ctx.currentTime);
+          src.connect(filter);
+          filter.connect(layerGain);
+          src.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: src, gainNode: layerGain });
+        }
+      } else if (preset.id === 'hangar-mecha') {
+        if (layer.id === 'hangar-drone') {
+          const osc = ctx.createOscillator();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(55, ctx.currentTime);
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(160, ctx.currentTime);
+          osc.connect(filter);
+          filter.connect(layerGain);
+          osc.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: osc, gainNode: layerGain });
+        } else if (layer.id === 'hydraulics') {
+          const buf = createNoiseBuffer('pink', 4);
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.loop = true;
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(650, ctx.currentTime);
+          filter.Q.setValueAtTime(3.0, ctx.currentTime);
+          src.connect(filter);
+          filter.connect(layerGain);
+          src.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: src, gainNode: layerGain });
+        } else if (layer.id === 'reactor-pulse') {
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(110, ctx.currentTime);
+          osc.connect(layerGain);
+          osc.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: osc, gainNode: layerGain });
+        }
+      } else if (preset.id === 'lo-fi-beats') {
+        if (layer.id === 'vinyl-crackle') {
+          const buf = createNoiseBuffer('pink', 3);
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.loop = true;
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'highpass';
+          filter.frequency.setValueAtTime(3000, ctx.currentTime);
+          src.connect(filter);
+          filter.connect(layerGain);
+          src.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: src, gainNode: layerGain });
+        } else if (layer.id === 'rhodes-chords') {
+          const osc = ctx.createOscillator();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(174.61, ctx.currentTime);
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(600, ctx.currentTime);
+          osc.connect(filter);
+          filter.connect(layerGain);
+          osc.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: osc, gainNode: layerGain });
+        } else if (layer.id === 'tape-flutter') {
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(87.31, ctx.currentTime);
+          osc.connect(layerGain);
+          osc.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: osc, gainNode: layerGain });
+        }
+      } else if (preset.id === 'jardin-zen') {
+        if (layer.id === 'bamboo-wind') {
+          const buf = createNoiseBuffer('pink', 5);
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.loop = true;
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(800, ctx.currentTime);
+          filter.Q.setValueAtTime(1.0, ctx.currentTime);
+          src.connect(filter);
+          filter.connect(layerGain);
+          src.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: src, gainNode: layerGain });
+        } else if (layer.id === 'water-stream') {
+          const buf = createNoiseBuffer('brown', 4);
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.loop = true;
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(750, ctx.currentTime);
+          src.connect(filter);
+          filter.connect(layerGain);
+          src.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: src, gainNode: layerGain });
+        } else if (layer.id === 'singing-bowl') {
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(432, ctx.currentTime);
+          osc.connect(layerGain);
+          osc.start();
+          activeSoundscapeNodes.push({ id: layer.id, source: osc, gainNode: layerGain });
+        }
+      }
+    });
+  }
+
+  function playTimerCompletionChime() {
+    try {
+      if (!soundscapeAudioCtx) return;
+      const ctx = soundscapeAudioCtx;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 1.3);
+    } catch (e) {}
+  }
+
   // --- Bulk Import Tool Engine (CSV / TSV / Excel for Stash & Paint Rack) ---
   let currentBulkImportTab = 'stash';
 

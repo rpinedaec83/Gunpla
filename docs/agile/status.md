@@ -4,12 +4,33 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio, Smart Builder AI Assistant & Stash Insurance Valuation Report Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) + 4 Technical Debt resolutions verified via `npm test` (131 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt20-stash-insurance-report` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio, Smart Builder AI Assistant, Stash Insurance Valuation Report & Workshop Ambient Soundscapes Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) + Pistas de Sonido y Soundscapes de Taller (DT21) + 4 Technical Debt resolutions verified via `npm test` (138 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt21-workshop-soundscapes` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Pistas de Sonido y Soundscapes de Taller (Workshop Ambient Soundscapes & Generator - DT21):**
+  - **Sintetizador Procedural Web Audio API (100% Offline, Zero-Bandwidth):**
+    - Lógica de síntesis procedural pura ejecutada en el navegador cliente mediante Web Audio API (`AudioContext`, `BiquadFilterNode`, `GainNode`, `OscillatorNode`, `AudioBuffer`):
+      - `lluvia-taller` (*Lluvia en el Taller*): Ruido browniano de baja frecuencia (chubasco de fondo), chispas de ruido rosa filtrado (gotas en cristal) y drone sub-grave a 60Hz (truenos lejanos).
+      - `compresor-aerografo` (*Estudio de Aerografía*): Zumbido armónico de motor a 60Hz/120Hz (compresor silencioso con tanque), siseo de flujo de aire continuo filtrado a 1.2kHz y ventilador de cabina de extracción a 220Hz.
+      - `hangar-mecha` (*Hangar Sci-Fi Mecha*): Resonancia de bahía a 55Hz, barrido oscilante paso-banda (presurización hidráulica) y pulso de reactor a 110Hz.
+      - `lo-fi-beats` (*Lo-Fi Chillhop Taller*): Micro-impulsos analógicos (crujido de vinilo), tríadas menores cálidas en Rhodes y vibrato LFO (calor de cinta analógica).
+      - `jardin-zen` (*Jardín Zen & Pincel*): Susurro de bambú con filtro dinámico, arroyo acuático continuo y onda senoidal pura a 432Hz (cuenco tibetano).
+  - **Mezclador Acústico Multicapa y Temporizador Pomodoro de Sesión:**
+    - Sliders de volumen independientes para cada capa sonora de cada ambiente.
+    - Temporizador integrado para modelistas: Modos Sin Límite, Pomodoro (25m de trabajo / 5m de descanso/limpieza), Foco Pintura (45m) y Sesión Maestra (60m) con timbre armónico senoidal (D5 + A5) de finalización.
+    - Mini-reproductor dock flotante `#workshop-soundscape-widget` en la esquina inferior derecha con botón de reproducción, indicador de preset, cuenta regresiva y slider de volumen maestro sin interrumpir la navegación.
+  - **Endpoints Especializados en API:**
+    - `GET /api/v1/workbench/soundscapes/presets`: Lista de presets con filtrado por categoría (`nature`, `workshop`, `scifi`, `music`).
+    - `GET /api/v1/workbench/soundscapes/presets/:id`: Detalle de configuración y capas de un preset con RFC 7807 404.
+    - `GET /api/v1/workbench/soundscapes/timer-modes`: Lista de modos de temporizador y duraciones en segundos.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/soundscapes.test.mjs` (4 pruebas completas de metadatos de capas, recuperación por ID, duraciones Pomodoro y cobertura acústica). Total: 138 tests unitarios pasando.
+    - Smoketest automatizado en `scripts/smoketest.mjs` validando endpoints, respuestas 404, temporizadores y elementos DOM.
+    - Despliegue en vivo en el clúster Proxmox LXC 190.
 
 - **Ficha de Tasación de Inventario y Seguro Patrimonial (Stash Inventory & Insurance Valuation Report - DT20):**
   - **Tasación Financiera y Multiplicadores de Valor de Reposición:**

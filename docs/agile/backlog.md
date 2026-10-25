@@ -4,9 +4,15 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
-- **Pistas de Sonido / Soundscapes de Taller:** Reproductor integrado de audio ambiente relajante para sesiones de pintura y montaje (lluvia, hangar sci-fi, compresor suave).
+- **Calculadora de Dilucion y Presion de Aerografo (Airbrush PSI & Thinner Ratio Calculator):** Asistente tecnico interactivo que calcula la relacion exacta pintura:diluyente segun quimica (laca, acrilico, poliuretano), tamano de boquilla (0.2mm, 0.3mm, 0.5mm) y presion ideal del compresor (PSI / Bar) para evitar efecto piel de naranja y pulverizado seco.
+- **Generador de Fichas Tecnicas & Manuales de Despiece (Parts Breakdown & Assembly Step Cards):** Exportador imprimible y digital de diagramas de ensamblaje con recetas de color por pieza para maquetas personalizadas.
+- **Control de Inventario de Herramientas & Vida Util de Cuchillas (Workbench Tool Inventory & Blade Wear Tracker):** Registro de alicates de precision monofilamento, aerografos, y contador de cortes para reemplazo de hojas de bisturi antes de causar marcas de tension.
 
 ## Completed Candidates & Parking Lot Items
+
+### WORKSHOP-SOUNDSCAPES -- Pistas de Sonido y Soundscapes de Taller (DT21) (COMPLETED)
+- Goal: In-browser procedural soundscape generator and ambient audio player embedded in "Mi Taller" to enhance focus and relaxation during scale model building, masking, and airbrushing sessions. Uses Web Audio API procedural synthesis with zero external audio download dependencies, supporting offline PWA playback, curated modeling presets (Lluvia en Taller, Compresor & Aerografo, Hangar Sci-Fi Mecha, Lo-Fi Chillhop, Jardin Zen & Pincel), Pomodoro session timers (25m build / 5m cleanup), and customizable volume mixing.
+- Delivered: Endpoints `GET /api/v1/workbench/soundscapes/presets`, `GET /api/v1/workbench/soundscapes/presets/:id` (with RFC 7807 404), and `GET /api/v1/workbench/soundscapes/timer-modes`; shared data types in `@gunpla/shared` (`SoundscapePreset`, `SoundscapeLayer`, `SoundscapeTimerMode`, `SoundscapeSessionState`); 5 curated presets catalog; pure Web Audio API procedural synthesis (Brown/Pink/White noise buffers, lowpass/bandpass filters, sawtooth/sine drones, Rhodes chords); Pomodoro focus timer with soft chime notification; Web UI modal `#modal-soundscapes` with preset cards, per-layer volume mixer, timer controls; persistent floating mini-dock `#workshop-soundscape-widget` in Mi Taller; toolbar action `🎵 Soundscapes` (`#btn-open-soundscapes`); 4 isolated unit tests (`tests/unit/soundscapes.test.mjs`, total 138 passing); end-to-end smoketest; and verified live deployment on LXC 190.
 
 ### STASH-INSURANCE -- Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) (COMPLETED)
 - Goal: Itemized inventory and collectibles insurance valuation report exporter for scale modelers. Aggregates stash and showcase kits with boxart/thumbnails, brands, scales, grades, acquisition cost, estimated market replacement value, category breakdown, and generates print-ready PDF/HTML report with appraiser signature blocks and accounting CSV export.
