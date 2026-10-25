@@ -494,6 +494,18 @@ export const openApiSpec = {
         }
       }
     },
+    '/api/v1/marketplace/listings/{id}/inquiries': {
+      post: {
+        tags: ['Marketplace'],
+        summary: 'Submit buyer inquiry or counter-offer for a listing via email (Resend)',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '201': { description: 'Inquiry sent successfully to seller' },
+          '400': { description: 'Validation error' },
+          '404': { description: 'Listing not found' }
+        }
+      }
+    },
     '/api/v1/commissions/builders': {
       get: {
         tags: ['Commissions'],

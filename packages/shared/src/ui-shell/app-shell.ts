@@ -1833,11 +1833,16 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
               ${l.notes}
             </p>
 
-            <div style="border-top: 1px solid var(--border-color); padding-top: 0.85rem; font-size: 0.8rem; color: #94a3b8; display: flex; justify-content: space-between; align-items: center;">
+            <div style="border-top: 1px solid var(--border-color); padding-top: 0.85rem; font-size: 0.8rem; color: #94a3b8; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
               <div>Vendedor: <strong>@${l.username}</strong><br><span style="font-size: 0.75rem; color: #64748b;">📍 ${l.contactLocation}</span></div>
-              <a href="${l.contactWhatsapp}" target="_blank" rel="noopener" class="filter-pill" style="color: #22c55e; border-color: rgba(34, 197, 94, 0.3); text-decoration: none; font-weight: 600;">
-                Contactar 💬
-              </a>
+              <div style="display: flex; gap: 0.4rem; align-items: center;">
+                <button type="button" class="filter-pill" onclick="openMarketplaceInquiryModal('${l.id}', '${(l.kit ? l.kit.name : 'Kit a Escala').replace(/'/g, "\\'")}', '${l.username}')" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.1); cursor: pointer; font-weight: 600;">
+                  ✉️ Consultar
+                </button>
+                <a href="${l.contactWhatsapp}" target="_blank" rel="noopener" class="filter-pill" style="color: #22c55e; border-color: rgba(34, 197, 94, 0.3); text-decoration: none; font-weight: 600;">
+                  WhatsApp 💬
+                </a>
+              </div>
             </div>
           </div>
         `
@@ -3037,6 +3042,60 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
   </div>
 </div>
 
+<!-- Marketplace Inquiry Modal -->
+<div id="modal-marketplace-inquiry" class="custom-modal" onclick="closeMarketplaceInquiryModal(event)">
+  <div class="auth-box" style="max-width: 520px;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeMarketplaceInquiryModal()">&times;</span>
+    
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+      <span style="font-size: 1.6rem;">✉️</span>
+      <div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin: 0;">Consultar al Vendedor</h3>
+        <p id="inquiry-modal-kit-banner" style="font-size: 0.82rem; color: var(--accent); margin-top: 0.15rem;"></p>
+      </div>
+    </div>
+
+    <form id="form-marketplace-inquiry" onsubmit="submitMarketplaceInquiry(event)" style="display: flex; flex-direction: column; gap: 0.85rem; margin-top: 0.85rem;">
+      <input type="hidden" id="inquiry-listing-id">
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.25rem;">Tu Nombre / Alias *</label>
+        <input type="text" id="inquiry-buyer-name" class="auth-input" placeholder="ej. Carlos Modelista" required>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div>
+          <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.25rem;">Tu Correo Electrónico *</label>
+          <input type="email" id="inquiry-buyer-email" class="auth-input" placeholder="tu@correo.com" required>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.25rem;">WhatsApp / Teléfono</label>
+          <input type="tel" id="inquiry-buyer-phone" class="auth-input" placeholder="+51 999 888 777">
+        </div>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.25rem;">Oferta Propuesta (Opcional, en PEN/USD)</label>
+        <input type="number" id="inquiry-offer-price" class="auth-input" placeholder="ej. 350" min="1" step="any">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.25rem;">Mensaje o Pregunta al Vendedor *</label>
+        <textarea id="inquiry-message" class="auth-input" rows="3" placeholder="Hola, ¿sigue disponible el kit? ¿Haces entregas en estación o envíos a provincia?" required></textarea>
+      </div>
+
+      <div id="inquiry-form-status" style="display: none; padding: 0.65rem; border-radius: 6px; font-size: 0.85rem;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+        <button type="button" class="filter-pill" onclick="closeMarketplaceInquiryModal()">Cancelar</button>
+        <button type="submit" id="inquiry-submit-btn" class="btn-primary" style="padding: 0.5rem 1.25rem;">
+          ✉️ Enviar Consulta por Email
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   window.__COMM_BUILDERS = ${JSON.stringify(data.commissionBuilders || [])};
 
@@ -4110,6 +4169,115 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     if (!e || e.target.id === 'modal-commission-success' || e.target.classList.contains('auth-close')) {
       const modal = document.getElementById('modal-commission-success');
       if (modal) modal.classList.remove('active');
+    }
+  }
+
+  function openMarketplaceInquiryModal(listingId, kitTitle, sellerUsername) {
+    const modal = document.getElementById('modal-marketplace-inquiry');
+    const idInput = document.getElementById('inquiry-listing-id');
+    const banner = document.getElementById('inquiry-modal-kit-banner');
+    const statusMsg = document.getElementById('inquiry-form-status');
+
+    if (idInput) idInput.value = listingId;
+    if (banner) {
+      banner.textContent = 'Kit: ' + kitTitle + ' • Vendedor: @' + sellerUsername;
+    }
+    if (statusMsg) statusMsg.style.display = 'none';
+
+    // Autofill buyer info if logged in
+    if (currentUser) {
+      const nameInput = document.getElementById('inquiry-buyer-name');
+      const emailInput = document.getElementById('inquiry-buyer-email');
+      const phoneInput = document.getElementById('inquiry-buyer-phone');
+
+      if (nameInput && !nameInput.value) nameInput.value = currentUser.displayName || currentUser.username;
+      if (emailInput && !emailInput.value) emailInput.value = currentUser.email || '';
+      if (phoneInput && !phoneInput.value && currentUser.whatsapp) phoneInput.value = currentUser.whatsapp;
+    }
+
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeMarketplaceInquiryModal(e) {
+    if (!e || e.target.id === 'modal-marketplace-inquiry' || e.target.classList.contains('auth-close') || e.target.textContent === 'Cancelar') {
+      const modal = document.getElementById('modal-marketplace-inquiry');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  async function submitMarketplaceInquiry(e) {
+    e.preventDefault();
+    const btn = document.getElementById('inquiry-submit-btn');
+    const statusMsg = document.getElementById('inquiry-form-status');
+
+    const listingId = document.getElementById('inquiry-listing-id')?.value;
+    const buyerName = document.getElementById('inquiry-buyer-name')?.value;
+    const buyerEmail = document.getElementById('inquiry-buyer-email')?.value;
+    const buyerPhone = document.getElementById('inquiry-buyer-phone')?.value;
+    const offerPriceVal = document.getElementById('inquiry-offer-price')?.value;
+    const offerPrice = offerPriceVal ? parseFloat(offerPriceVal) : undefined;
+    const message = document.getElementById('inquiry-message')?.value;
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Enviando consulta...';
+    }
+
+    try {
+      const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Tenant-Slug': '${config.tenantSlug}'
+      };
+      if (currentToken) {
+        headers['Authorization'] = 'Bearer ' + currentToken;
+      }
+
+      const res = await fetch(apiBase + '/api/v1/marketplace/listings/' + listingId + '/inquiries', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          buyerName,
+          buyerEmail,
+          buyerPhone,
+          offerPrice,
+          message
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || data.title || 'Error al enviar consulta');
+      }
+
+      if (statusMsg) {
+        statusMsg.style.display = 'block';
+        statusMsg.style.background = 'rgba(34, 197, 94, 0.2)';
+        statusMsg.style.color = '#4ade80';
+        statusMsg.style.border = '1px solid rgba(34, 197, 94, 0.4)';
+        statusMsg.textContent = '¡Consulta enviada al vendedor con éxito por correo!';
+      }
+
+      setTimeout(() => {
+        closeMarketplaceInquiryModal();
+        const form = document.getElementById('form-marketplace-inquiry');
+        if (form) form.reset();
+        if (statusMsg) statusMsg.style.display = 'none';
+      }, 1800);
+
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.style.display = 'block';
+        statusMsg.style.background = 'rgba(239, 68, 68, 0.2)';
+        statusMsg.style.color = '#f87171';
+        statusMsg.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+        statusMsg.textContent = err.message;
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '✉️ Enviar Consulta por Email';
+      }
     }
   }
 

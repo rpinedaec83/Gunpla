@@ -4,6 +4,8 @@ import {
   MarketplaceListingRecord,
   CreateMarketplaceListingRequest,
   UpdateMarketplaceListingRequest,
+  CreateListingInquiryRequest,
+  ListingInquiryRecord,
   CommissionBuilderRecord,
   CommissionRequestRecord,
   CreateCommissionRequestPayload,
@@ -17,6 +19,9 @@ import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
 import { requireAuth, optionalAuth } from '../auth-sso/auth.slice';
 import { sendTenantEmailViaResend } from '../notifications-resend/resend.slice';
+
+const escapeHtml = (str: string) =>
+  str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 export const marketplaceRouter = Router();
 export const commissionsRouter = Router();
@@ -378,12 +383,95 @@ marketplaceRouter.delete('/listings/:id', requireAuth, (req: Request, res: Respo
   return res.json({ status: 'removed', listing: removed });
 });
 
+/**
+ * POST /api/v1/marketplace/listings/:id/inquiries
+ * Submit an inquiry or counter-offer to a seller via email (Resend)
+ */
+marketplaceRouter.post('/listings/:id/inquiries', optionalAuth, async (req: Request, res: Response) => {
+  const listingId = req.params.id;
+  const db = getDb();
+  const allListings = (!db.marketplaceListings || db.marketplaceListings.length === 0)
+    ? INITIAL_LISTINGS
+    : db.marketplaceListings;
+
+  const listing = allListings.find(l => l.id === listingId);
+  if (!listing) {
+    return sendProblem(req, res, 404, 'Publicación No Encontrada', `No se encontró la publicación '${listingId}'.`);
+  }
+
+  const body = req.body as Partial<CreateListingInquiryRequest>;
+  const buyerName = (body.buyerName || req.user?.username || '').trim();
+  const buyerEmail = (body.buyerEmail || req.user?.email || '').trim();
+  const buyerPhone = body.buyerPhone ? String(body.buyerPhone).trim() : undefined;
+  const message = (body.message || '').trim();
+  const offerPrice = typeof body.offerPrice === 'number' && body.offerPrice > 0 ? body.offerPrice : undefined;
+
+  if (!buyerName) {
+    return sendProblem(req, res, 400, 'Datos Inválidos', 'El nombre del interesado (buyerName) es obligatorio.');
+  }
+
+  if (!buyerEmail || !buyerEmail.includes('@')) {
+    return sendProblem(req, res, 400, 'Datos Inválidos', 'El correo de contacto (buyerEmail) es obligatorio y debe ser válido.');
+  }
+
+  if (!message || message.length < 5) {
+    return sendProblem(req, res, 400, 'Datos Inválidos', 'El mensaje o consulta debe tener al menos 5 caracteres.');
+  }
+
+  const sellerUser = db.users.find(
+    u => u.id === listing.userId || u.username.toLowerCase() === listing.username.toLowerCase()
+  );
+  const sellerEmail = sellerUser?.email || `${listing.username}@plamoscale.com`;
+
+  const kitName = listing.kit?.name || (db.kits || []).find(k => k.id === listing.kitId)?.name || 'Kit de Modelismo';
+
+  const tenant = req.tenant || db.tenants[0];
+  const inquiryRecord: ListingInquiryRecord = {
+    id: `inq-${Date.now()}-${randomUUID().slice(0, 6)}`,
+    listingId: listing.id,
+    tenantSlug: tenant.slug,
+    buyerUserId: req.user?.id,
+    buyerName,
+    buyerEmail,
+    buyerPhone,
+    message,
+    offerPrice,
+    sellerUserId: listing.userId,
+    sellerUsername: listing.username,
+    sellerEmail,
+    createdAt: new Date().toISOString()
+  };
+
+  let emailRecord;
+  try {
+    emailRecord = await sendTenantEmailViaResend({
+      tenant,
+      to: [sellerEmail],
+      replyTo: buyerEmail,
+      subject: `[${tenant.name}] Consulta para tu publicación en el Bazar: ${kitName}`,
+      html: `<h2>Nueva consulta de compra para tu publicación</h2>
+<p>Hola <strong>${escapeHtml(listing.userDisplayName || listing.username)}</strong>,</p>
+<p><strong>${escapeHtml(buyerName)}</strong> (${escapeHtml(buyerEmail)}${buyerPhone ? `, Tel/WhatsApp: ${escapeHtml(buyerPhone)}` : ''}) te ha enviado una consulta sobre tu kit <strong>${escapeHtml(kitName)}</strong> publicado por <strong>${listing.currency} ${listing.price || 'A convenir'}</strong>:</p>
+${offerPrice ? `<p><strong>Oferta propuesta por el comprador:</strong> <span style="color:#4ade80;font-weight:bold;">${listing.currency} ${offerPrice}</span></p>` : ''}
+<div style="background:#1a2332;padding:14px;border-left:4px solid #10b981;border-radius:4px;color:#e2e8f0;margin:16px 0;font-family:sans-serif;">
+  ${escapeHtml(message)}
+</div>
+<p>Puedes responder directamente a este correo o escribirle al WhatsApp / teléfono indicado para coordinar la entrega.</p>`
+    });
+  } catch (emailErr) {
+    console.error('Failed to dispatch listing inquiry email notification:', emailErr);
+  }
+
+  return res.status(201).json({
+    status: 'sent',
+    inquiry: inquiryRecord,
+    emailRecord
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Custom Commissions Directory Routes
 // ---------------------------------------------------------------------------
-
-const escapeHtml = (str: string) =>
-  str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /**
  * GET /api/v1/commissions/builders
@@ -596,7 +684,7 @@ commissionsRouter.get('/requests/:idOrCode', (req: Request, res: Response) => {
  * PATCH /api/v1/commissions/requests/:id
  * Update status, quotePrice, estimatedDays, or responseNotes
  */
-commissionsRouter.patch('/requests/:id', requireAuth, (req: Request, res: Response) => {
+commissionsRouter.patch('/requests/:id', requireAuth, async (req: Request, res: Response) => {
   const db = getDb();
   const { id } = req.params;
   const user = req.user!;
@@ -617,6 +705,7 @@ commissionsRouter.patch('/requests/:id', requireAuth, (req: Request, res: Respon
     return sendProblem(req, res, 403, 'Acceso Denegado', 'No tienes permiso para actualizar esta solicitud de encargo.');
   }
 
+  const oldStatus = commission.status;
   const body = req.body as Partial<UpdateCommissionRequestPayload>;
   const validStatuses: CommissionRequestStatus[] = [
     'pending',
@@ -669,6 +758,63 @@ commissionsRouter.patch('/requests/:id', requireAuth, (req: Request, res: Respon
 
   commission.updatedAt = new Date().toISOString();
   saveDb(db);
+
+  const activeTenant =
+    req.tenant ||
+    db.tenants.find(t => t.slug === commission.tenantId) ||
+    db.tenants[0];
+
+  // 1. Notify Client when builder quotes the project
+  const wasQuoted = (body.quotePrice !== undefined || body.status === 'quoted') && (oldStatus !== 'quoted' || body.quotePrice !== undefined);
+  if (wasQuoted && (isBuilder || isAdmin) && commission.clientEmail) {
+    try {
+      await sendTenantEmailViaResend({
+        tenant: activeTenant,
+        to: [commission.clientEmail],
+        replyTo: activeTenant.contactEmail,
+        subject: `[${activeTenant.name}] Cotización formal recibida: ${commission.kitTitle} (${commission.code})`,
+        html: `<h2>Cotización formal para tu encargo de pintura</h2>
+<p>Hola <strong>${escapeHtml(commission.clientName)}</strong>,</p>
+<p>El modelista <strong>@${escapeHtml(commission.builderUsername)}</strong> ha evaluado tu solicitud para <strong>${escapeHtml(commission.kitTitle)}</strong> (${commission.code}):</p>
+<div style="background:#1a2332;padding:16px;border-radius:8px;color:#e2e8f0;margin:16px 0;font-family:sans-serif;">
+  <p><strong>Precio Cotizado:</strong> <span style="color:#4ade80;font-size:1.15rem;font-weight:bold;">${commission.currency} ${commission.quotePrice}</span></p>
+  <p><strong>Plazo Estimado de Trabajo:</strong> ${commission.estimatedDays || 'A convenir'} días</p>
+  ${commission.builderResponseNotes ? `<p><strong>Notas del Modelista:</strong></p><blockquote style="border-left:3px solid #38bdf8;padding-left:12px;color:#94a3b8;">${escapeHtml(commission.builderResponseNotes)}</blockquote>` : ''}
+</div>
+<p>Ingresa a tu taller en <em>Mi Taller &gt; Encargos</em> para aceptar la cotización o coordinar directamente por WhatsApp.</p>`
+      });
+    } catch (emailErr) {
+      console.error('Failed to dispatch commission quote email notification:', emailErr);
+    }
+  }
+
+  // 2. Notify Builder when client accepts quotation
+  if (body.status === 'accepted' && oldStatus !== 'accepted') {
+    const builderUser = db.users.find(
+      u => u.username.toLowerCase() === commission.builderUsername.toLowerCase()
+    );
+    const builderEmail = builderUser?.email || `${commission.builderUsername}@plamoscale.com`;
+
+    try {
+      await sendTenantEmailViaResend({
+        tenant: activeTenant,
+        to: [builderEmail],
+        replyTo: commission.clientEmail,
+        subject: `[${activeTenant.name}] ¡Cotización Aceptada! Encargo ${commission.kitTitle} (${commission.code})`,
+        html: `<h2>¡El cliente ha aceptado tu cotización!</h2>
+<p>Hola <strong>@${escapeHtml(commission.builderUsername)}</strong>,</p>
+<p>El cliente <strong>${escapeHtml(commission.clientName)}</strong> ha aceptado formalmente tu cotización de <strong>${commission.currency} ${commission.quotePrice}</strong> para el kit <strong>${escapeHtml(commission.kitTitle)}</strong> (${commission.code}).</p>
+<div style="background:#1a2332;padding:16px;border-radius:8px;color:#e2e8f0;margin:16px 0;font-family:sans-serif;">
+  <p><strong>Contacto del Cliente:</strong> ${escapeHtml(commission.clientEmail)}</p>
+  <p><strong>WhatsApp:</strong> <a href="https://wa.me/${commission.clientWhatsapp.replace(/[^0-9]/g, '')}" style="color:#22c55e;">${escapeHtml(commission.clientWhatsapp)}</a></p>
+  ${commission.clientCity ? `<p><strong>Ciudad:</strong> ${escapeHtml(commission.clientCity)}</p>` : ''}
+</div>
+<p>Ya puedes coordinar la recepción de la maqueta e iniciar los trabajos en tu mesa de armado.</p>`
+      });
+    } catch (emailErr) {
+      console.error('Failed to dispatch commission accept email notification:', emailErr);
+    }
+  }
 
   return res.json({
     status: 'updated',

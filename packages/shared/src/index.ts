@@ -614,6 +614,30 @@ export interface UpdateMarketplaceListingRequest {
   contactLocation?: string;
 }
 
+export interface CreateListingInquiryRequest {
+  buyerName: string;
+  buyerEmail: string;
+  buyerPhone?: string;
+  message: string;
+  offerPrice?: number;
+}
+
+export interface ListingInquiryRecord {
+  id: string;
+  listingId: string;
+  tenantSlug: string;
+  buyerUserId?: string;
+  buyerName: string;
+  buyerEmail: string;
+  buyerPhone?: string;
+  message: string;
+  offerPrice?: number;
+  sellerUserId: string;
+  sellerUsername: string;
+  sellerEmail: string;
+  createdAt: string;
+}
+
 export interface CommissionBuilderRecord {
   id: string;
   userId: string;

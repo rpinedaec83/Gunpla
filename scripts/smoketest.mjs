@@ -1490,7 +1490,88 @@ async function runSmoketest() {
 
     console.log('[PASS] Progressive Web App (PWA) & Offline Workshop Mode verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA CHECKS PASSED ===');
+    // 32. DT10: Real-Time Transactional Email Notifications & Marketplace Inquiries (Resend Outbox)
+    console.log('\n--- Checking DT10: Real-Time Transactional Email Notifications & Marketplace Inquiries (Resend Outbox) ---');
+
+    // 1. Post a comment by another modeler (Quattro Bajeena) on Amuro's build to trigger owner notification
+    const otherUserCommentRes = await fetch(`${baseUrl}/api/v1/builds/${newBuild.id}/comments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${quattroData.token}`
+      },
+      body: JSON.stringify({
+        comment: '¡Impresionante sombreado con aerógrafo en las alas del Eclipse, Amuro!'
+      })
+    });
+    assert.equal(otherUserCommentRes.status, 201, 'Comment from another user must succeed with 201');
+
+    // 2. Submit Marketplace Listing Inquiry via Resend
+    const inquiryRes = await fetch(`${baseUrl}/api/v1/marketplace/listings/listing-sazabi-verka/inquiries`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Tenant-Slug': 'gunplajunkies'
+      },
+      body: JSON.stringify({
+        buyerName: 'Renato Modelista',
+        buyerEmail: 'renato@example.com',
+        buyerPhone: '+51 987 654 321',
+        offerPrice: 350,
+        message: 'Hola Daniel, ¿haces entrega personal en el Ovalo de Miraflores?'
+      })
+    });
+    assert.equal(inquiryRes.status, 201, 'Marketplace inquiry must return 201 Created');
+    const inquiryData = await inquiryRes.json();
+    assert.equal(inquiryData.status, 'sent');
+    assert.equal(inquiryData.inquiry.buyerName, 'Renato Modelista');
+    assert.equal(inquiryData.inquiry.offerPrice, 350);
+    assert.equal(inquiryData.inquiry.sellerUsername, 'dcampos');
+    assert.ok(inquiryData.emailRecord, 'Must return email dispatch record');
+
+    // 3. Query Resend Email Outbox
+    const outboxRes = await fetch(`${baseUrl}/api/v1/notifications/outbox`);
+    assert.equal(outboxRes.status, 200, 'Outbox endpoint must return 200 OK');
+    const outboxData = await outboxRes.json();
+    assert.ok(Array.isArray(outboxData.items), 'Outbox must contain items array');
+    assert.ok(outboxData.totalCount >= 5, 'Outbox must record all transactional community emails');
+
+    // Verify contest judge evaluation notification
+    const contestJudgeEmail = outboxData.items.find(e => e.subject.includes('Evaluacion oficial de Jurado'));
+    assert.ok(contestJudgeEmail, 'Outbox must contain contest judge evaluation notification');
+    assert.ok(contestJudgeEmail.subject.includes('38/40 pts'), 'Email subject must reflect 38/40 pts score');
+    assert.ok(contestJudgeEmail.to.some(addr => addr.includes('aperich')), 'Email must be sent to entry author aperich');
+
+    // Verify build log comment notification
+    const buildCommentEmail = outboxData.items.find(e => e.subject.includes('Nuevo comentario en tu bitacora'));
+    assert.ok(buildCommentEmail, 'Outbox must contain build log comment notification');
+    assert.ok(buildCommentEmail.html.includes('Impresionante sombreado con aerógrafo'), 'Email must contain comment content');
+
+    // Verify commission quote notification
+    const commQuoteEmail = outboxData.items.find(e => e.subject.includes('Cotización formal recibida'));
+    assert.ok(commQuoteEmail, 'Outbox must contain commission quote notification');
+    assert.ok(commQuoteEmail.html.includes('620'), 'Email must include quoted price of 620');
+
+    // Verify commission acceptance notification
+    const commAcceptEmail = outboxData.items.find(e => e.subject.includes('Cotización Aceptada'));
+    assert.ok(commAcceptEmail, 'Outbox must contain commission accept notification');
+    assert.ok(commAcceptEmail.to.some(addr => addr.includes('aperich')), 'Acceptance email must be sent to builder');
+
+    // Verify marketplace listing inquiry email
+    const listingInquiryEmail = outboxData.items.find(e => e.subject.includes('Consulta para tu publicación en el Bazar'));
+    assert.ok(listingInquiryEmail, 'Outbox must contain marketplace listing inquiry email');
+    assert.ok(listingInquiryEmail.html.includes('Renato Modelista'), 'Email must contain buyer name');
+    assert.ok(listingInquiryEmail.html.includes('350'), 'Email must contain counter-offer price');
+
+    // 3. Verify Frontend UI includes Marketplace Inquiry Modal and Controls
+    assert.ok(plamoCommHtml.includes('id="modal-marketplace-inquiry"'), 'HTML must include marketplace inquiry modal');
+    assert.ok(plamoCommHtml.includes('openMarketplaceInquiryModal'), 'HTML must include openMarketplaceInquiryModal JS function');
+    assert.ok(plamoCommHtml.includes('submitMarketplaceInquiry'), 'HTML must include submitMarketplaceInquiry JS function');
+    assert.ok(plamoCommHtml.includes('✉️ Consultar'), 'HTML must render Consultar button on marketplace cards');
+
+    console.log('[PASS] Real-Time Transactional Email Notifications & Marketplace Inquiries (DT10) verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

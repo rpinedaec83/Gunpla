@@ -226,3 +226,22 @@ Decisions made:
 Lessons learned:
 - Combining Google One-Tap prompt on DOM load with an explicit modal button maximizes login conversion without intruding on casual visitors browsing the photo gallery.
 Usage: Moderate -- self-estimated
+
+### DT10 -- Slice 10: Real-Time Transactional Email Notifications via Resend & Marketplace Inquiries | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Connected real-time transactional email triggers via Resend (`sendTenantEmailViaResend`) across 4 community touchpoints:
+  1. Contest Judge Scoring (`POST /api/v1/contests/:id/entries/:entryId/judge`): automatically notifies entry author with total score (e.g. 38/40 pts), 4-criteria rubric breakdown, average score, and judge feedback.
+  2. Build Log Comments (`POST /api/v1/builds/:id/comments`): automatically notifies project owner when another user posts a comment on their build log, with self-notification prevention.
+  3. Commission Quotation and Acceptance (`PATCH /api/v1/commissions/requests/:id`): notifies client when builder formalizes quotation (price, days, notes); notifies builder when client accepts quotation to coordinate build kickoff.
+  4. Marketplace Listing Inquiries (`POST /api/v1/marketplace/listings/:id/inquiries`): endpoint allowing prospective buyers to contact sellers with questions and counter-offers via verified email.
+- Authored the frontend marketplace inquiry modal (`#modal-marketplace-inquiry`) with buyer name, email, WhatsApp, offer price, and inquiry message. Added `✉️ Consultar` trigger button on marketplace cards.
+- Documented new marketplace inquiry endpoint in OpenAPI 3.1 specification (`docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`).
+- Added comprehensive automated verification in `scripts/smoketest.mjs` verifying outbox records (`GET /api/v1/notifications/outbox`) for all 4 notification types.
+- Deployed and verified on homelab LXC 190 (`192.168.1.190`), with live verified email dispatch confirmation (`provider: 'resend-live'`).
+Issues hit:
+- Initially in smoketest, Amuro Ray was commenting on Amuro Ray's own build log, which correctly triggered self-notification suppression; updated test flow so another authenticated user (Quattro Bajeena) comments, confirming owner notification dispatch.
+Decisions made:
+- Preserved dual-mode email delivery: sends via live Resend API when RESEND_API_KEY is present and verified; queues into sandbox outbox during offline CI smoketests.
+Lessons learned:
+- Verifying the outbox endpoint directly in the regression harness provides guaranteed end-to-end proof that business triggers fire without requiring external inbox polling in test runners.
+Usage: Moderate -- self-estimated

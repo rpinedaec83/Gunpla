@@ -749,3 +749,16 @@ paths:
       responses:
         '201':
           description: Photo uploaded
+  /api/v1/marketplace/listings/{id}/inquiries:
+    post:
+      tags: [Marketplace]
+      summary: Submit buyer inquiry or counter-offer for a listing via Resend email
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Inquiry sent to seller

@@ -4,14 +4,23 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, B1-B3 & PWA Verified)**
-- Overall state: Green -- DT1 through DT9 + B1 (Rúbricas & Diplomas) + B2 (Comisiones Interactivas) + B3 (White-Label) + PWA (Modo Offline) verified via `npm run smoketest`.
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3 & PWA Verified)**
+- Overall state: Green -- DT1 through DT10 + B1 (Rubricas & Diplomas) + B2 (Comisiones Interactivas) + B3 (White-Label) + PWA (Modo Offline) verified via `npm run smoketest`.
 - Current branch or release line: `feature/dt9-google-oauth-sso` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
-- Last meaningful update: 2026-10-24
+- Last meaningful update: 2026-10-25
 
 ## Live Capabilities
 
-- **Progressive Web App (PWA) & Modo Offline para el Taller (`/manifest.json`, `/sw.js`, `/icons/*`):**
+- **Notificaciones Automaticas por Email en Tiempo Real (Resend) & Consultas en el Bazar (DT10 / /api/v1/marketplace/listings/:id/inquiries):**
+  - **Disparo Automatico Transaccional en Tiempo Real:**
+    - Evaluacion de Jurado (POST /api/v1/contests/:id/entries/:entryId/judge): Envio automatico de correo al autor del modelo con puntaje acumulado (ej. 38/40 pts), desglose de los 4 criterios (Montaje, Pintura, Acabado, Creatividad), promedio de jurados y comentarios tecnicos.
+    - Comentarios en Bitacoras (POST /api/v1/builds/:id/comments): Envio automatico de correo al creador de la maqueta cuando otro modelista comenta en su bitacora, con prevencion de auto-notificacion cuando comenta el propio autor.
+    - Cotizacion y Aceptacion de Encargos (PATCH /api/v1/commissions/requests/:id): Envio de correo formal con precio (PEN/USD) y plazo en dias al cliente al ser cotizado; y aviso inmediato al modelista cuando el cliente acepta la cotizacion para coordinar por WhatsApp.
+    - Consultas de Compraventa en el Bazar (POST /api/v1/marketplace/listings/:id/inquiries): Modal interactivo (#modal-marketplace-inquiry) en las tarjetas de publicacion para contactar al vendedor por correo, incluyendo datos del comprador, WhatsApp y contraoferta economica opcional.
+  - **Buzon Outbox Auditable (GET /api/v1/notifications/outbox):**
+    - Registro de cada mensaje con estado (sent / queued-sandbox), ID de Resend y resolucion de remitente verificado segun el portal activo (noreply@plamoscale.com o noreply@gunplajunkies.com).
+
+- **Progressive Web App (PWA) & Modo Offline para el Taller (/manifest.json, /sw.js, /icons/*):**
   - **Aplicación Web Instalable (PWA):**
     - Soporte nativo para instalación en pantalla de inicio en Android, iOS y Desktop.
     - Manifiestos dinámicos adaptados a cada portal (`/manifest.json`) con colores de marca, splash screen, orientación y categorías.

@@ -2,13 +2,22 @@
 
 Future work queue. Keep this separate from the active burn-down.
 
-## Next Candidates (Phase 2 — DVT Pilot & Community Expansion)
+## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
 - **Trusted Shops Stock Alerts Linked to Stash Wishlist:** Connect user wishlist to verified partner hobby shops (`Trusted Shops`) to notify of inventory arrivals and deals.
-- **Automated Resend Email Notification Triggers:** Automated email delivery for judge scores, build comments, and marketplace/commission inquiries.
 - **AI Paint Rack Equivalences Assistant:** Intelligent cross-brand paint matching assistant based on colors already owned in the builder's rack.
+- **Contest Community Voting Badges & Public Hall of Fame:** Public showcase and permanent trophy showcase for contest winners across community tenants.
 
 ## Completed Candidates & Parking Lot Items
+
+### DT10 -- Automated Resend Email Notification Triggers & Marketplace Inquiries (COMPLETED)
+- Goal: Automated transactional email delivery across community interactions (contest judge rubrics, build log comments, commission quotes/acceptance, and marketplace inquiries) with multi-domain sender verification and auditable outbox.
+- Delivered: Real-time transactional emails via `sendTenantEmailViaResend()` for:
+  1. Contest judge scores (POST /api/v1/contests/:id/entries/:entryId/judge) to entry authors with 4-criteria rubric breakdown and feedback.
+  2. Build log comments (POST /api/v1/builds/:id/comments) to build authors with self-notification prevention.
+  3. Commission quotes and acceptance (PATCH /api/v1/commissions/requests/:id) to clients and builders.
+  4. Marketplace inquiries (POST /api/v1/marketplace/listings/:id/inquiries) from prospective buyers to sellers with offer price, WhatsApp, and message.
+  5. UI modal `#modal-marketplace-inquiry` with `✉️ Consultar` button on listing cards and auditable outbox (`GET /api/v1/notifications/outbox`).
 
 ### PWA -- Progressive Web App & Offline Workshop Mode (COMPLETED)
 - Goal: Installable mobile and desktop application with offline caching capabilities, allowing modelers to inspect their Stash, Build Logs, and Paint Rack inside hobby shops or convention basements with zero network connectivity.

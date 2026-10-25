@@ -21,6 +21,7 @@ import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
 import { requireAuth } from '../auth-sso/auth.slice';
 import { uploadMedia, getStorageDiagnostics } from '../../core/storage';
+import { sendTenantEmailViaResend } from '../notifications-resend/resend.slice';
 
 export const buildsRouter = Router();
 export const mediaRouter = Router();
@@ -565,7 +566,7 @@ buildsRouter.post('/:id/like', requireAuth, (req: Request, res: Response) => {
  * POST /api/v1/builds/:id/comments
  * Add comment to a build log
  */
-buildsRouter.post('/:id/comments', requireAuth, (req: Request, res: Response) => {
+buildsRouter.post('/:id/comments', requireAuth, async (req: Request, res: Response) => {
   const user = req.user!;
   const buildId = req.params.id;
   const { comment } = req.body as CreateBuildCommentRequest;
@@ -593,6 +594,38 @@ buildsRouter.post('/:id/comments', requireAuth, (req: Request, res: Response) =>
 
   build.comments.push(newComment);
   saveDb(db);
+
+  // Trigger transactional notification email to build owner (if commenter is not the author)
+  if (build.userId !== user.id) {
+    const buildOwner = db.users.find(
+      u => u.id === build.userId || u.username.toLowerCase() === build.username.toLowerCase()
+    );
+    const ownerEmail = buildOwner?.email || `${build.username}@plamoscale.com`;
+    const activeTenant =
+      req.tenant ||
+      (build.category === 'gunpla-mecha'
+        ? db.tenants.find(t => t.slug === 'gunplajunkies')
+        : db.tenants.find(t => t.slug === 'plamoscale')) ||
+      db.tenants[0];
+
+    try {
+      await sendTenantEmailViaResend({
+        tenant: activeTenant,
+        to: [ownerEmail],
+        replyTo: user.email || activeTenant.contactEmail,
+        subject: `[${activeTenant.name}] Nuevo comentario en tu bitacora: ${build.title}`,
+        html: `<h2>Nuevo comentario en tu bitacora de armado</h2>
+<p>Hola <strong>${build.userDisplayName || build.username}</strong>,</p>
+<p>El modelista <strong>${user.username}</strong> ha dejado un comentario en tu proyecto <strong>${build.title}</strong>:</p>
+<blockquote style="background:#1a2332;padding:12px;border-left:4px solid #38bdf8;color:#e2e8f0;margin:16px 0;font-family:sans-serif;">
+  ${newComment.comment}
+</blockquote>
+<p>Entra a tu taller para responder y compartir tecnicas con la comunidad.</p>`
+      });
+    } catch (emailErr) {
+      console.error('Failed to dispatch build comment email notification:', emailErr);
+    }
+  }
 
   return res.status(201).json(newComment);
 });

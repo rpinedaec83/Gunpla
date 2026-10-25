@@ -13,6 +13,7 @@ import {
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
 import { requireAuth } from '../auth-sso/auth.slice';
+import { sendTenantEmailViaResend } from '../notifications-resend/resend.slice';
 
 export const communityRouter = Router();
 
@@ -555,7 +556,7 @@ function buildCertificateHtml(cert: ContestCertificateRecord): string {
  * POST /api/v1/contests/:id/entries/:entryId/judge
  * Official Judge Scoring with Standard 4-Criteria Rubric (Assembly, Painting, Finish, Creativity)
  */
-communityRouter.post('/contests/:id/entries/:entryId/judge', requireAuth, (req: Request, res: Response) => {
+communityRouter.post('/contests/:id/entries/:entryId/judge', requireAuth, async (req: Request, res: Response) => {
   const user = req.user!;
   const { id: contestId, entryId } = req.params;
   const { scores, feedback } = req.body || {};
@@ -676,6 +677,54 @@ communityRouter.post('/contests/:id/entries/:entryId/judge', requireAuth, (req: 
   entry.judgeScoreAverage = Number((sum / entry.judgeScores.length).toFixed(1));
 
   saveDb(db);
+
+  // Trigger transactional email notification via Resend to entry author
+  const authorUser = (db.users || []).find(
+    (u) => u.id === entry.userId || u.username.toLowerCase() === entry.username.toLowerCase()
+  );
+  const authorEmail = authorUser?.email || `${entry.username}@plamoscale.com`;
+
+  const activeTenant =
+    req.tenant ||
+    (db.tenants || []).find((t) => t.slug === contest.tenantSlug) || {
+      slug: contest.tenantSlug || 'gunplajunkies',
+      name: contest.tenantSlug === 'plamoscale' ? 'PlamoScale' : 'GunplaJunkies',
+      domain: contest.tenantSlug === 'plamoscale' ? 'plamoscale.com' : 'gunplajunkies.com',
+      emailFrom:
+        contest.tenantSlug === 'plamoscale'
+          ? 'PlamoScale <noreply@plamoscale.com>'
+          : 'GunplaJunkies <noreply@gunplajunkies.com>',
+      contactEmail:
+        contest.tenantSlug === 'plamoscale'
+          ? 'contacto@plamoscale.com'
+          : 'contacto@gunplajunkies.com'
+    };
+
+  try {
+    await sendTenantEmailViaResend({
+      tenant: activeTenant as any,
+      to: [authorEmail],
+      replyTo: user.email || activeTenant.contactEmail,
+      subject: `[${activeTenant.name}] Evaluacion oficial de Jurado: ${entry.title} (${totalScore}/40 pts)`,
+      html: `<h2>Evaluacion Oficial de Jurado - ${contest.title}</h2>
+<p>Hola <strong>${entry.userDisplayName || entry.username}</strong>,</p>
+<p>El juez oficial <strong>${user.username}</strong> ha calificado tu participacion en el concurso <strong>${contest.title}</strong>:</p>
+<div style="background:#1a2332;padding:16px;border-radius:8px;color:#e2e8f0;margin:16px 0;font-family:sans-serif;">
+  <h3 style="margin-top:0;color:#38bdf8;">Puntuacion Total: ${totalScore} / 40 pts</h3>
+  <ul style="line-height:1.6;">
+    <li><strong>Montaje & Construccion:</strong> ${numAssembly} / 10 pts</li>
+    <li><strong>Pintura & Aerografia:</strong> ${numPainting} / 10 pts</li>
+    <li><strong>Acabado & Weathering:</strong> ${numFinish} / 10 pts</li>
+    <li><strong>Creatividad & Presentacion:</strong> ${numCreativity} / 10 pts</li>
+  </ul>
+  <p><strong>Promedio acumulado actual:</strong> ${entry.judgeScoreAverage} pts (${entry.judgeCount} evaluaciones de jurado)</p>
+  ${feedback ? `<p><strong>Retroalimentacion del Juez:</strong></p><blockquote style="border-left:3px solid #38bdf8;padding-left:12px;color:#94a3b8;font-style:italic;">${String(feedback).trim()}</blockquote>` : ''}
+</div>
+<p>Puedes revisar los resultados completos y el podio en la seccion de concursos de la comunidad.</p>`
+    });
+  } catch (emailErr) {
+    console.error('Failed to dispatch contest judge email notification:', emailErr);
+  }
 
   return res.status(200).json({
     entry,
