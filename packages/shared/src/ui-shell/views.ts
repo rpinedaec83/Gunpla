@@ -438,6 +438,9 @@ export function renderViews(
               <button id="btn-open-ai-assistant" class="filter-pill" onclick="openAiAssistantModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(168, 85, 247, 0.4); color: #c084fc; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <span>🔍</span> Asistente IA
               </button>
+              <button id="btn-open-soundscapes" class="filter-pill" onclick="openSoundscapesModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(20, 184, 166, 0.4); color: #2dd4bf; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <span>🎵</span> Soundscapes
+              </button>
               <button class="filter-pill" onclick="openEditProfileModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <span>✏️</span> Editar Perfil
               </button>
@@ -580,6 +583,19 @@ export function renderViews(
           <div id="wb-commissions-list" style="display: flex; flex-direction: column; gap: 1.25rem;">
             <!-- Dynamically populated via loadWorkbenchData() -->
           </div>
+        </div>
+
+        <!-- Floating Soundscape Dock Widget -->
+        <div id="workshop-soundscape-widget" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 999; background: rgba(15, 23, 42, 0.94); border: 1px solid rgba(45, 212, 191, 0.4); backdrop-filter: blur(12px); border-radius: 9999px; padding: 0.45rem 0.9rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.6); align-items: center; gap: 0.75rem;">
+          <button id="ws-dock-play-btn" type="button" onclick="toggleSoundscapePlay()" style="background: #14b8a6; border: none; border-radius: 50%; width: 30px; height: 30px; color: #000; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+            ▶
+          </button>
+          <div style="cursor: pointer;" onclick="openSoundscapesModal()">
+            <div id="ws-dock-title" style="font-size: 0.76rem; font-weight: 700; color: #fff; line-height: 1.1;">Lluvia en el Taller</div>
+            <div id="ws-dock-timer" style="font-size: 0.68rem; color: #2dd4bf; font-family: monospace;">25:00</div>
+          </div>
+          <input id="ws-dock-volume" type="range" min="0" max="100" value="70" oninput="setSoundscapeMasterVolume(this.value)" style="width: 60px; height: 4px; accent-color: #14b8a6; cursor: pointer;" title="Volumen General" />
+          <button type="button" onclick="closeSoundscapeWidget()" style="background: transparent; border: none; color: #64748b; font-size: 1.1rem; cursor: pointer; padding: 0 0.2rem; line-height: 1;">&times;</button>
         </div>
       </div>
     </section>

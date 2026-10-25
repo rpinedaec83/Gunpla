@@ -333,6 +333,40 @@ export const openApiSpec = {
         }
       }
     },
+    '/api/v1/workbench/soundscapes/presets': {
+      get: {
+        tags: ['Workbench'],
+        summary: 'List curated procedural ambient soundscapes for workshop focus and painting sessions',
+        parameters: [
+          { name: 'category', in: 'query', schema: { type: 'string', enum: ['nature', 'workshop', 'scifi', 'music'] } }
+        ],
+        responses: {
+          '200': { description: 'List of ambient soundscape presets with layers' }
+        }
+      }
+    },
+    '/api/v1/workbench/soundscapes/presets/{id}': {
+      get: {
+        tags: ['Workbench'],
+        summary: 'Retrieve individual soundscape preset by identifier',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': { description: 'Soundscape preset details' },
+          '404': { description: 'Preset not found' }
+        }
+      }
+    },
+    '/api/v1/workbench/soundscapes/timer-modes': {
+      get: {
+        tags: ['Workbench'],
+        summary: 'List available Pomodoro and focus session timer modes for workshop builds',
+        responses: {
+          '200': { description: 'List of timer modes' }
+        }
+      }
+    },
     '/api/v1/workbench/import/stash': {
       post: {
         tags: ['Workbench'],

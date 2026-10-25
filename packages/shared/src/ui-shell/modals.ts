@@ -2215,6 +2215,124 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Modal: DT21 Workshop Soundscapes & Procedural Audio Generator -->
+<div id="modal-soundscapes" class="auth-modal-overlay" onclick="closeSoundscapesModal(event)">
+  <div class="auth-modal" style="max-width: 860px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; background: #0f172a; border: 1px solid rgba(45, 212, 191, 0.35); border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);" onclick="event.stopPropagation()">
+    <!-- Header -->
+    <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, rgba(20, 184, 166, 0.18) 0%, rgba(15,23,42,0.95) 100%); display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 0.65rem;">
+        <span style="font-size: 1.6rem;">🎵</span>
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Pistas de Sonido & Generador Ambiental de Taller</h3>
+          <p style="font-size: 0.78rem; color: #2dd4bf; margin: 0.15rem 0 0 0;">Audio procedural sintetizado en navegador para concentración, aerografía y montaje (100% offline)</p>
+        </div>
+      </div>
+      <span style="font-size: 1.5rem; color: #94a3b8; cursor: pointer; line-height: 1;" onclick="closeSoundscapesModal()">&times;</span>
+    </div>
+
+    <!-- Body -->
+    <div style="padding: 1.25rem 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.25rem;">
+      <!-- Presets Selection Cards -->
+      <div>
+        <div style="font-size: 0.82rem; font-weight: 700; color: #cbd5e1; margin-bottom: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">Ambientes de Taller Disponibles</div>
+        <div id="ws-presets-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.75rem;">
+          <!-- Dynamically populated or rendered with presets -->
+          <div class="ws-preset-card active" onclick="selectSoundscapePreset('lluvia-taller')" style="background: rgba(15, 23, 42, 0.85); border: 1.5px solid #38bdf8; border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+              <span style="font-size: 1.4rem;">🌧️</span>
+              <span style="font-size: 0.68rem; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 600;">Calma & Aislamiento</span>
+            </div>
+            <div style="font-weight: 700; color: #f8fafc; font-size: 0.88rem;">Lluvia en el Taller</div>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.2rem; line-height: 1.3;">Chubasco suave sobre tejado y ventanas, ideal para corte de compuertas y lijado.</div>
+          </div>
+
+          <div class="ws-preset-card" onclick="selectSoundscapePreset('compresor-aerografo')" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+              <span style="font-size: 1.4rem;">💨</span>
+              <span style="font-size: 0.68rem; color: #c084fc; background: rgba(192, 132, 252, 0.15); padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 600;">Foco de Pintura</span>
+            </div>
+            <div style="font-weight: 700; color: #f8fafc; font-size: 0.88rem;">Estudio de Aerografía</div>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.2rem; line-height: 1.3;">Zumbido constante de compresor de diafragma y siseo de flujo de aire en cabina.</div>
+          </div>
+
+          <div class="ws-preset-card" onclick="selectSoundscapePreset('hangar-mecha')" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+              <span style="font-size: 1.4rem;">🤖</span>
+              <span style="font-size: 0.68rem; color: #34d399; background: rgba(52, 211, 153, 0.15); padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 600;">Inmersión Sci-Fi</span>
+            </div>
+            <div style="font-weight: 700; color: #f8fafc; font-size: 0.88rem;">Hangar Sci-Fi Mecha</div>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.2rem; line-height: 1.3;">Ambiente industrial futurista: resonancia de bahía, sistemas hidráulicos y ecos lejanos.</div>
+          </div>
+
+          <div class="ws-preset-card" onclick="selectSoundscapePreset('lo-fi-beats')" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+              <span style="font-size: 1.4rem;">🎧</span>
+              <span style="font-size: 0.68rem; color: #fbbf24; background: rgba(251, 191, 36, 0.15); padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 600;">Ritmo Relajante</span>
+            </div>
+            <div style="font-weight: 700; color: #f8fafc; font-size: 0.88rem;">Lo-Fi Chillhop Taller</div>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.2rem; line-height: 1.3;">Acordes cálidos Rhodes, crujido sutil de vinilo y pulsación suave de 72 BPM.</div>
+          </div>
+
+          <div class="ws-preset-card" onclick="selectSoundscapePreset('jardin-zen')" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.85rem; cursor: pointer; transition: all 0.2s;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+              <span style="font-size: 1.4rem;">🎋</span>
+              <span style="font-size: 0.68rem; color: #2dd4bf; background: rgba(45, 212, 191, 0.15); padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 600;">Concentración Pura</span>
+            </div>
+            <div style="font-weight: 700; color: #f8fafc; font-size: 0.88rem;">Jardín Zen & Pincel</div>
+            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.2rem; line-height: 1.3;">Susurro de bambú, agua corriente y resonancias de cuenco para detalles finos.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Layer Mixer -->
+      <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <div style="font-size: 0.82rem; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px;">Mezclador de Capas Acústicas</div>
+          <span id="ws-mixer-preset-tag" style="font-size: 0.72rem; color: #2dd4bf; font-weight: 600;">Lluvia en el Taller</span>
+        </div>
+        <div id="ws-layers-mixer-container" style="display: flex; flex-direction: column; gap: 0.85rem;">
+          <!-- Dynamically populated per active preset -->
+        </div>
+      </div>
+
+      <!-- Pomodoro & Session Timer Block -->
+      <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="font-size: 0.82rem; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px;">Temporizador de Sesión / Pomodoro</div>
+          <div id="ws-modal-timer-digits" style="font-size: 1.5rem; font-weight: 900; color: #2dd4bf; font-family: monospace; letter-spacing: 1px;">25:00</div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button id="ws-timer-mode-none" type="button" class="filter-pill" onclick="setSoundscapeTimerMode('none')" style="font-size: 0.75rem; padding: 0.35rem 0.7rem;">Sin Límite</button>
+          <button id="ws-timer-mode-pomodoro-25" type="button" class="filter-pill active" onclick="setSoundscapeTimerMode('pomodoro-25')" style="font-size: 0.75rem; padding: 0.35rem 0.7rem; background: #0d9488; color: #fff;">Pomodoro (25m)</button>
+          <button id="ws-timer-mode-deep-work-45" type="button" class="filter-pill" onclick="setSoundscapeTimerMode('deep-work-45')" style="font-size: 0.75rem; padding: 0.35rem 0.7rem;">Foco Pintura (45m)</button>
+          <button id="ws-timer-mode-session-60" type="button" class="filter-pill" onclick="setSoundscapeTimerMode('session-60')" style="font-size: 0.75rem; padding: 0.35rem 0.7rem;">Sesión Maestra (60m)</button>
+          <button type="button" class="filter-pill" onclick="resetSoundscapeTimer()" style="font-size: 0.75rem; padding: 0.35rem 0.6rem; color: #94a3b8; margin-left: auto;">↺ Reiniciar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Controls -->
+    <div style="padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.95); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 0.78rem; color: #94a3b8;">Volumen Maestro:</span>
+        <input id="ws-modal-master-volume" type="range" min="0" max="100" value="70" oninput="setSoundscapeMasterVolume(this.value)" style="width: 110px; accent-color: #14b8a6; cursor: pointer;" />
+        <span id="ws-modal-volume-val" style="font-size: 0.78rem; color: #f1f5f9; font-family: monospace; min-width: 32px;">70%</span>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <button type="button" class="filter-pill" onclick="closeSoundscapesModal()" style="font-size: 0.8rem; padding: 0.45rem 0.85rem;">
+          Cerrar
+        </button>
+        <button id="btn-soundscape-modal-toggle" type="button" class="btn-primary" onclick="toggleSoundscapePlay()" style="font-size: 0.82rem; padding: 0.5rem 1.15rem; background: linear-gradient(135deg, #14b8a6, #0d9488); border: none; font-weight: 700; color: #000; display: inline-flex; align-items: center; gap: 0.4rem;">
+          <span id="ws-modal-toggle-icon">▶</span>
+          <span id="ws-modal-toggle-text">Reproducir Ambiente</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 
 `;

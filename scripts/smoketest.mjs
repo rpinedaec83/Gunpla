@@ -2648,7 +2648,60 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT20 Stash Inventory & Insurance Valuation Report verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE CHECKS PASSED ===');
+    // =========================================================================
+    // DT21: Workshop Soundscapes & Procedural Audio Generator
+    // =========================================================================
+    console.log('\n--- Verifying DT21 Workshop Soundscapes & Procedural Audio Generator ---');
+
+    // 1. List soundscape presets
+    const soundscapesRes = await fetch(`${baseUrl}/api/v1/workbench/soundscapes/presets`);
+    assert.equal(soundscapesRes.status, 200, 'GET /soundscapes/presets must return 200');
+    const soundscapesData = await soundscapesRes.json();
+    assert.equal(soundscapesData.totalCount, 5, 'Must return exactly 5 soundscape presets');
+    assert.ok(Array.isArray(soundscapesData.items), 'items must be an array');
+
+    // 2. Filter presets by category
+    const workshopCatRes = await fetch(`${baseUrl}/api/v1/workbench/soundscapes/presets?category=workshop`);
+    assert.equal(workshopCatRes.status, 200, 'Filter by category must return 200');
+    const workshopCatData = await workshopCatRes.json();
+    assert.ok(workshopCatData.items.length >= 1, 'Workshop category must contain at least 1 preset');
+    assert.equal(workshopCatData.items[0].id, 'compresor-aerografo', 'First workshop preset must be compresor-aerografo');
+
+    // 3. Retrieve individual soundscape preset by id
+    const soundSinglePresetRes = await fetch(`${baseUrl}/api/v1/workbench/soundscapes/presets/hangar-mecha`);
+    assert.equal(soundSinglePresetRes.status, 200, 'GET /soundscapes/presets/hangar-mecha must return 200');
+    const soundSinglePreset = await soundSinglePresetRes.json();
+    assert.equal(soundSinglePreset.id, 'hangar-mecha', 'id must match hangar-mecha');
+    assert.equal(soundSinglePreset.category, 'scifi', 'category must be scifi');
+    assert.ok(Array.isArray(soundSinglePreset.layers), 'layers must be an array');
+    assert.ok(soundSinglePreset.layers.length >= 3, 'Must have at least 3 audio layers');
+
+    // 4. Nonexistent preset returns RFC 7807 404 Problem Details
+    const notFoundSoundRes = await fetch(`${baseUrl}/api/v1/workbench/soundscapes/presets/nonexistent-soundscape`);
+    assert.equal(notFoundSoundRes.status, 404, 'Nonexistent soundscape must return 404');
+    const notFoundProb = await notFoundSoundRes.json();
+    assert.equal(notFoundProb.status, 404, 'Problem status must be 404');
+    assert.ok(notFoundProb.title, 'Problem title must be present');
+
+    // 5. Retrieve timer modes
+    const timerModesRes = await fetch(`${baseUrl}/api/v1/workbench/soundscapes/timer-modes`);
+    assert.equal(timerModesRes.status, 200, 'GET /soundscapes/timer-modes must return 200');
+    const timerModesData = await timerModesRes.json();
+    assert.ok(Array.isArray(timerModesData.modes), 'modes must be an array');
+    assert.ok(timerModesData.modes.length >= 4, 'Must have at least 4 timer modes');
+    const pomodoroMode = timerModesData.modes.find(m => m.id === 'pomodoro-25');
+    assert.ok(pomodoroMode, 'pomodoro-25 mode must exist');
+    assert.equal(pomodoroMode.durationSeconds, 1500, 'pomodoro-25 duration must be 1500 seconds');
+
+    // 6. Verify Web Shell UI elements in PlamoScale frontend
+    assert.ok(plamoWebShellHtml.includes('id="btn-open-soundscapes"'), 'PlamoScale must render Soundscapes toolbar button');
+    assert.ok(plamoWebShellHtml.includes('id="modal-soundscapes"'), 'PlamoScale must render modal-soundscapes');
+    assert.ok(plamoWebShellHtml.includes('id="workshop-soundscape-widget"'), 'PlamoScale must render workshop-soundscape-widget floating dock');
+    assert.ok(plamoWebShellHtml.includes('id="ws-dock-play-btn"'), 'PlamoScale must render dock play button');
+
+    console.log('[PASS] DT21 Workshop Soundscapes & Procedural Audio Generator verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

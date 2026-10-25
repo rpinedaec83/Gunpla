@@ -697,3 +697,32 @@ Decisions made:
 Lessons learned:
 - Differentiating between built showcase models (+50% for artisan labor and materials) and mint boxed stash (+15% for scarcity/inflation) accurately mirrors real-world collectibles insurance underwriting practices.
 Usage: Moderate -- self-estimated
+
+### DT21 -- Workshop Soundscapes & Procedural Audio Generator (Pistas de Sonido y Soundscapes de Taller) | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Designed shared data models and soundscape presets in `packages/shared/src/index.ts`:
+  - `SoundscapePresetId`, `SoundscapeCategory`, `SoundscapeLayer`, `SoundscapePreset`, `SoundscapeTimerMode`, `SoundscapeSessionState`.
+  - Defined 5 presets: `lluvia-taller`, `compresor-aerografo`, `hangar-mecha`, `lo-fi-beats`, `jardin-zen`.
+  - Authored lookup and timer helpers `getAllSoundscapePresets`, `getSoundscapePreset`, and `calculateTimerSeconds`.
+- Implemented backend API slice `apps/api/src/slices/soundscapes/soundscapes.slice.ts` and mounted in `apps/api/src/server.ts` at `/api/v1/workbench/soundscapes`:
+  - `GET /api/v1/workbench/soundscapes/presets`: Lists presets with category filtering.
+  - `GET /api/v1/workbench/soundscapes/presets/:id`: Single preset details with RFC 7807 404 Problem Details.
+  - `GET /api/v1/workbench/soundscapes/timer-modes`: Lists supported Pomodoro and focus session intervals.
+- Updated OpenAPI 3.1 specification in `docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`.
+- Implemented client-side Web Audio API synthesis engine and UI components in `packages/shared/src/ui-shell/`:
+  - Procedural sound generation without audio files: Brownian noise (rain), resonant filtered pink noise (airbrush air hiss & compressor hum), sub-bass drone oscillators (mecha hangar), vinyl crackle + Rhodes chords (lo-fi beats), swept bandpass + singing bowl sine (zen garden).
+  - Multichannel audio mixing: Independent gain nodes per layer with reactive volume sliders.
+  - Pomodoro timer: 25m, 45m, 60m focus sessions with dual chime harmonic notification (D5 + A5).
+  - Web UI modal `#modal-soundscapes` with preset selector cards, layer volume mixer, and Pomodoro controls.
+  - Floating persistent dock `#workshop-soundscape-widget` in Mi Taller with play/pause, title, timer countdown, and master volume slider.
+  - Quick action button `🎵 Soundscapes` (`#btn-open-soundscapes`) in Workbench toolbar.
+- Authored isolated unit test suite `tests/unit/soundscapes.test.mjs` (4 test cases covering presets data integrity, individual lookup, Pomodoro intervals math, and acoustic category coverage). Total unit tests: 138 passed in 380ms.
+- Extended end-to-end regression smoketest in `scripts/smoketest.mjs` verifying preset listing, category filtering, single preset retrieval, 404 RFC 7807 response, timer modes, and Web Shell UI elements.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190:8080`, `:3000`, `:3001`).
+Issues hit:
+- In `app-shell.ts`, inline `oninput="setSoundscapeLayerVolume('...'"` had nested quote escaping issues in generated HTML; resolved cleanly by using HTML5 data attribute `data-layer-id` with `setSoundscapeLayerVolume(this.dataset.layerId, this.value)`.
+Decisions made:
+- Utilizing 100% procedural Web Audio API synthesis avoids heavy MP3 downloads, copyright/licensing pitfalls, and network latency, enabling instant offline soundscapes within the Progressive Web App (PWA).
+Lessons learned:
+- Combining ambient workshop soundscapes directly with a Pomodoro session countdown encourages healthy building habits (e.g. taking breaks to stretch, avoiding eyestrain and cleaning airbrush nozzles).
+Usage: Moderate -- self-estimated
