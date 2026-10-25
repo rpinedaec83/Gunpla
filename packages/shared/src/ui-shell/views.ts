@@ -99,6 +99,21 @@ export function renderViews(
                     </div>
                     <p class="step-desc">${s.description}</p>
                     ${
+                      s.photoUrls && s.photoUrls.length > 0
+                        ? `
+                      <div class="step-photo-gallery" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;">
+                        ${s.photoUrls
+                          .map(
+                            (u) => `
+                          <img src="${u}" alt="${escapeHtml(s.title)}" style="width: 75px; height: 75px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid rgba(255,255,255,0.15);" onclick="openLightbox('${u}', '${escapeHtml(s.title)}', '@${b.username}')" />
+                        `
+                          )
+                          .join('')}
+                      </div>
+                    `
+                        : ''
+                    }
+                    ${
                       s.paintUsages && s.paintUsages.length > 0
                         ? `
                       <div class="paint-recipe-tags">

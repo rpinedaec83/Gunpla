@@ -278,8 +278,9 @@ export function renderModals(
         <textarea id="step-desc-input" class="auth-input" style="height: 70px; resize: none;" placeholder="Describe qué herramientas usaste, presiones de aire o dilución de pintura..."></textarea>
       </div>
       <div class="auth-input-group">
-        <label class="auth-label">Foto del Avance (Sube una imagen)</label>
-        <input type="file" id="step-photo-file" class="auth-input" accept="image/*" style="padding: 0.35rem 0.6rem; font-size: 0.75rem;">
+        <label class="auth-label">Fotos del Avance (Sube una o varias imágenes)</label>
+        <input type="file" id="step-photo-file" class="auth-input" accept="image/*" multiple style="padding: 0.35rem 0.6rem; font-size: 0.75rem;" onchange="previewStepPhotos(this)">
+        <div id="step-photo-preview-grid" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;"></div>
       </div>
       <button type="submit" id="step-submit-btn" class="btn-primary" style="width: 100%; justify-content: center; padding: 0.65rem; margin-top: 0.5rem;">
         Guardar Paso de Armado

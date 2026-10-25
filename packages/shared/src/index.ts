@@ -432,6 +432,19 @@ export interface CreateBuildStepRequest {
   paintUsages?: PaintRecipeUsage[];
 }
 
+export interface UpdateBuildStepRequest {
+  stage?: BuildStepStage;
+  title?: string;
+  description?: string;
+  photoUrls?: string[];
+  orderIndex?: number;
+  paintUsages?: PaintRecipeUsage[];
+}
+
+export interface ReorderBuildStepsRequest {
+  stepIds: string[];
+}
+
 export interface CreateBuildCommentRequest {
   comment: string;
 }

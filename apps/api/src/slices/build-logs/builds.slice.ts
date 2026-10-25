@@ -700,6 +700,155 @@ buildsRouter.post('/:id/steps', requireAuth, (req: Request, res: Response) => {
 });
 
 /**
+ * PATCH /api/v1/builds/:id/steps/reorder
+ * Reorder steps in a build project
+ */
+buildsRouter.patch('/:id/steps/reorder', requireAuth, (req: Request, res: Response) => {
+  const user = req.user!;
+  const buildId = req.params.id;
+  const { stepIds } = req.body || {};
+
+  if (!Array.isArray(stepIds) || stepIds.length === 0) {
+    return sendProblem(
+      req,
+      res,
+      400,
+      'Datos Inválidos',
+      'El campo stepIds debe ser un array no vacío con los IDs de los pasos ordenados.',
+      'validation-error'
+    );
+  }
+
+  const db = getDb();
+  const build = db.builds.find(b => b.id === buildId || b.slug === buildId);
+
+  if (!build) {
+    return sendProblem(req, res, 404, 'Bitácora No Encontrada', `No se encontró el proyecto con id '${buildId}'.`);
+  }
+
+  if (build.userId !== user.id) {
+    return sendProblem(req, res, 403, 'Acceso Prohibido', 'Solo el autor puede reordenar los pasos de esta bitácora.');
+  }
+
+  const stepMap = new Map(build.steps.map(s => [s.id, s]));
+  const reordered: BuildStep[] = [];
+
+  for (let i = 0; i < stepIds.length; i++) {
+    const sId = String(stepIds[i]);
+    const step = stepMap.get(sId);
+    if (step) {
+      step.orderIndex = i;
+      reordered.push(step);
+      stepMap.delete(sId);
+    }
+  }
+
+  // Preserve any steps that were not in stepIds
+  for (const remaining of stepMap.values()) {
+    remaining.orderIndex = reordered.length;
+    reordered.push(remaining);
+  }
+
+  build.steps = reordered;
+  build.updatedAt = new Date().toISOString();
+  saveDb(db);
+
+  return res.json({
+    success: true,
+    steps: build.steps
+  });
+});
+
+/**
+ * PATCH /api/v1/builds/:id/steps/:stepId
+ * Update details or media photos of an existing build step
+ */
+buildsRouter.patch('/:id/steps/:stepId', requireAuth, (req: Request, res: Response) => {
+  const user = req.user!;
+  const { id: buildId, stepId } = req.params;
+  const { title, description, stage, photoUrls, paintUsages } = req.body || {};
+
+  const db = getDb();
+  const build = db.builds.find(b => b.id === buildId || b.slug === buildId);
+
+  if (!build) {
+    return sendProblem(req, res, 404, 'Bitácora No Encontrada', `No se encontró el proyecto con id '${buildId}'.`);
+  }
+
+  if (build.userId !== user.id) {
+    return sendProblem(req, res, 403, 'Acceso Prohibido', 'Solo el autor puede editar pasos de esta bitácora.');
+  }
+
+  const step = build.steps.find(s => s.id === stepId);
+  if (!step) {
+    return sendProblem(req, res, 404, 'Paso No Encontrado', `No se encontró el paso con id '${stepId}'.`);
+  }
+
+  if (title !== undefined && typeof title === 'string' && title.trim().length > 0) {
+    step.title = title.trim();
+  }
+  if (description !== undefined && typeof description === 'string') {
+    step.description = description.trim();
+  }
+  if (stage !== undefined && typeof stage === 'string') {
+    step.stage = stage as any;
+  }
+  if (Array.isArray(photoUrls)) {
+    step.photoUrls = photoUrls;
+  }
+  if (Array.isArray(paintUsages)) {
+    step.paintUsages = paintUsages.map(u => ({
+      ...u,
+      paint: db.paints.find(p => p.id === u.paintId)
+    }));
+  }
+
+  build.updatedAt = new Date().toISOString();
+  saveDb(db);
+
+  return res.json(step);
+});
+
+/**
+ * DELETE /api/v1/builds/:id/steps/:stepId
+ * Delete a step from a build log
+ */
+buildsRouter.delete('/:id/steps/:stepId', requireAuth, (req: Request, res: Response) => {
+  const user = req.user!;
+  const { id: buildId, stepId } = req.params;
+
+  const db = getDb();
+  const build = db.builds.find(b => b.id === buildId || b.slug === buildId);
+
+  if (!build) {
+    return sendProblem(req, res, 404, 'Bitácora No Encontrada', `No se encontró el proyecto con id '${buildId}'.`);
+  }
+
+  if (build.userId !== user.id) {
+    return sendProblem(req, res, 403, 'Acceso Prohibido', 'Solo el autor puede eliminar pasos de esta bitácora.');
+  }
+
+  const stepIdx = build.steps.findIndex(s => s.id === stepId);
+  if (stepIdx === -1) {
+    return sendProblem(req, res, 404, 'Paso No Encontrado', `No se encontró el paso con id '${stepId}'.`);
+  }
+
+  build.steps.splice(stepIdx, 1);
+  build.steps.forEach((s, idx) => {
+    s.orderIndex = idx;
+  });
+
+  build.updatedAt = new Date().toISOString();
+  saveDb(db);
+
+  return res.json({
+    success: true,
+    deletedStepId: stepId,
+    remainingStepsCount: build.steps.length
+  });
+});
+
+/**
  * POST /api/v1/builds/:id/like
  * Toggle like for current user
  */
