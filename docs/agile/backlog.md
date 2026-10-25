@@ -4,10 +4,13 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
-- **Push Notifications & In-App Activity Bell:** Web push notification service worker listener for build comments and stock alert triggers.
 - **Advanced Build Step Media Reordering & Multi-Photo Gallery:** Drag-and-drop or reorder controls for build steps and multiple progress photos per milestone.
 
 ## Completed Candidates & Parking Lot Items
+
+### NOTIFICATIONS-BELL -- Push Notifications & In-App Activity Bell (COMPLETED)
+- Goal: Real-time notification center (Activity Bell with unread counter, dropdown drawer, relative timestamps, direct routing to builds/contests/commissions/wishlist) and Web Push Notification Service Worker integration (`/sw.js`, push event listener, registration, and subscription endpoints).
+- Delivered: Endpoints `GET /api/v1/notifications`, `PATCH /api/v1/notifications/:id/read`, `POST /api/v1/notifications/mark-all-read`, `POST /api/v1/notifications/push-subscribe`, `DELETE /api/v1/notifications/push-subscribe`, and `POST /api/v1/notifications/test`; central event dispatcher `dispatchNotification` across comments, contest judge scores, commission requests/updates, and shop stock arrivals; UI topbar `#activity-bell-btn`, unread badge `#activity-unread-badge`, dropdown drawer `#activity-bell-dropdown`, push banner `#activity-push-banner`; service worker `push` and `notificationclick` listeners; PostgreSQL tables `notifications` and `push_subscriptions`; 4 isolated unit tests (`tests/unit/notifications-bell.test.mjs`, total 66 passing); end-to-end smoketest; and verified live deployment on LXC 190.
 
 ### SOCIAL-OG -- Social Sharing OpenGraph Preview Cards & Meta Tags (COMPLETED)
 - Goal: Auto-generated dynamic preview images (1200x630) for contest podiums, build logs, and Hall of Fame when shared on Facebook, WhatsApp, X/Twitter, Discord, and Telegram.

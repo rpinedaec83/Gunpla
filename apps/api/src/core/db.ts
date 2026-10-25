@@ -16,7 +16,9 @@ import {
   CommissionBuilderRecord,
   CommissionRequestRecord,
   ShopRecord,
-  ShopStockItem
+  ShopStockItem,
+  NotificationItem,
+  PushSubscriptionRecord
 } from '@gunpla/shared';
 import { isPostgresConfigured, syncStateToPostgres } from './postgres';
 
@@ -37,6 +39,8 @@ export interface PlatformDatabaseState {
   commissionRequests: CommissionRequestRecord[];
   shops: ShopRecord[];
   shopStock: ShopStockItem[];
+  notifications: NotificationItem[];
+  pushSubscriptions: PushSubscriptionRecord[];
   lastSeededAt: string | null;
 }
 
@@ -65,6 +69,8 @@ function createEmptyState(): PlatformDatabaseState {
     commissionRequests: [],
     shops: [],
     shopStock: [],
+    notifications: [],
+    pushSubscriptions: [],
     lastSeededAt: null
   };
 }
@@ -94,6 +100,8 @@ export function getDb(): PlatformDatabaseState {
         commissionRequests: parsed.commissionRequests ?? [],
         shops: parsed.shops ?? [],
         shopStock: parsed.shopStock ?? [],
+        notifications: parsed.notifications ?? [],
+        pushSubscriptions: parsed.pushSubscriptions ?? [],
         lastSeededAt: parsed.lastSeededAt ?? null
       };
       return memoryState;

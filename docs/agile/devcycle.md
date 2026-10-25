@@ -9,7 +9,7 @@ Goal: Transition persistence to PostgreSQL 16 (`gunpla-db`), ensuring ACID relat
 
 ## Active Tasks
 
-(No active dev tasks pending in this devcycle. DT11 -- Social Sharing OpenGraph Preview Cards & Meta Tags is complete and active in production.)
+(No active dev tasks pending in this devcycle. DT12 -- Push Notifications & In-App Activity Bell is complete and active in production.)
 
 ## Reset
 

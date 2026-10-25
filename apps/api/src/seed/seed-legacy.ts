@@ -267,6 +267,8 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
     commissionRequests,
     shops,
     shopStock,
+    notifications: db.notifications || [],
+    pushSubscriptions: db.pushSubscriptions || [],
     lastSeededAt: now
   };
 

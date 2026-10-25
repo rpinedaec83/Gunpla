@@ -428,3 +428,40 @@ Decisions made:
 Lessons learned:
 - Providing route-aware meta tags directly from the server during initial SSR ensures that social crawlers (which do not execute client-side JavaScript) always extract the correct title, description, and preview image.
 Usage: Moderate -- self-estimated
+
+### DT12 -- Push Notifications & In-App Activity Bell | eMOE: 5 CU | aMOE: 5 CU
+What was done:
+- Designed and authored shared data models in `packages/shared/src/index.ts`: `NotificationItem`, `NotificationType`, `PushSubscriptionKeys`, `PushSubscriptionRecord`, and `NotificationsListResponse`.
+- Implemented backend notification slice `apps/api/src/slices/notifications-bell/notifications.slice.ts`:
+  - `dispatchNotification`: Central dispatcher supporting in-app notifications and Web Push payload simulation for registered subscriptions.
+  - `GET /api/v1/notifications`: List authenticated user notifications with unread count and `unreadOnly` query filtering.
+  - `PATCH /api/v1/notifications/:id/read`: Mark single notification as read with ownership verification (403 for unauthorized users).
+  - `POST /api/v1/notifications/mark-all-read`: Mark all notifications for authenticated user as read.
+  - `POST /api/v1/notifications/push-subscribe`: Register or update Web Push subscription.
+  - `DELETE /api/v1/notifications/push-subscribe`: Unregister push subscription.
+  - `POST /api/v1/notifications/test`: Test notification endpoint.
+- Integrated event-driven notification dispatching across key platform interactions:
+  - `builds.slice.ts`: When another builder comments on a project, dispatches `build_comment` to the project author.
+  - `community.slice.ts`: When a judge evaluates an entry, dispatches `contest_judged` with total rubric score to the entry owner.
+  - `community.slice.ts`: When a hobby shop receives stock for a model, dispatches `wishlist_stock` to all builders with that kit in their wishlist.
+  - `marketplace.slice.ts`: When a buyer sends an inquiry, dispatches `system` notification to the seller; when commissions are requested or updated, dispatches `commission_update` to builder or client.
+- Added PostgreSQL schema tables in `apps/api/sql/001_init_schema.sql` (`notifications`, `push_subscriptions`).
+- Updated OpenAPI 3.1 contract (`docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`).
+- Created frontend UI components in `packages/shared/src/ui-shell/app-shell.ts`:
+  - Topbar Activity Bell button (`#activity-bell-btn`) with dynamic unread counter badge (`#activity-unread-badge`).
+  - Activity Dropdown drawer (`#activity-bell-dropdown`) with type-specific badges (💬, ⚖️, 🏆, 🎨, 📦, 🔔), relative time formatting ("Hace 5m", "Hace 2h", "Ayer"), and mark all as read action.
+  - Interactive click handling (`handleNotificationClick`) navigating directly to the target view/modal and marking the notification as read.
+  - Web Push permission banner (`#activity-push-banner`) and subscription workflow (`requestPushSubscription`).
+- Added Web Push background engine in `packages/shared/src/ui-shell/pwa.ts`:
+  - Service worker `push` event listener with `registration.showNotification`.
+  - Service worker `notificationclick` listener with window matching, focusing, and route navigation.
+- Authored isolated unit test suite `tests/unit/notifications-bell.test.mjs` (4 test cases). Total unit test suite: 66 passed in 230ms.
+- Extended end-to-end regression smoketest in `scripts/smoketest.mjs` with full notification lifecycle and HTML assertions.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190`) with live curl assertions on API and both web applications.
+Issues hit:
+- In `app-shell.ts`, using string quotes inside inline template literals caused an escaping issue in the rendered JS; resolved by using standard HTML5 `data-notif-id` and `data-notif-link` attributes with `this.dataset`.
+Decisions made:
+- Integrating notifications directly into the core user events (comments, contest scoring, wishlist stock, and commissions) guarantees immediate value for builders without requiring third-party SaaS notification dependencies.
+Lessons learned:
+- Combining in-app activity bell with native Web Push in the service worker gives mobile PWA users a native-like notification experience even when the browser tab is closed.
+Usage: Moderate -- self-estimated

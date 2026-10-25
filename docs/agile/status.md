@@ -4,12 +4,36 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool & Social OpenGraph Cards Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + 4 Technical Debt resolutions verified via `npm test` (62 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `main` (merged and pushed with all PVT features up through Social OpenGraph Cards)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards & In-App Activity Bell Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + 4 Technical Debt resolutions verified via `npm test` (66 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt12-push-notifications-activity-bell` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Notificaciones Web Push y Campana de Actividad en la App (Push Notifications & In-App Activity Bell):**
+  - **Campana de Notificaciones Interactiva en Topbar (`#activity-bell-btn`):**
+    - Contador numérico flotante (`#activity-unread-badge`) que refleja en tiempo real las notificaciones no leídas.
+    - Menú desplegable (`#activity-bell-dropdown`) con vista rápida de las últimas 50 notificaciones recibidas, categorizadas por icono temático (💬 comentario en bitácora, ⚖️ evaluación de jurado, 🏆 galardón de concurso, 🎨 actualización de encargo, 📦 alerta de stock en tienda aliada, ⭐ voto comunitario, 🔔 aviso de plataforma).
+    - Formateo de fecha y hora relativo ("Hace unos segundos", "Hace 5m", "Hace 2h", "Ayer").
+    - Navegación con un clic (`handleNotificationClick`): marca la notificación como leída en el backend (`PATCH /api/v1/notifications/:id/read`) y redirige automáticamente al recurso objetivo (`#/builds/...`, `#/contests/...`, `#/workbench`).
+    - Botón "Marcar todas como leídas" (`#activity-mark-all-read`) con actualización optimista de la interfaz.
+  - **Soporte de Web Push en Service Worker (`/sw.js`):**
+    - Event listener nativo `push` en el Service Worker de la PWA que despliega notificaciones del sistema operativo con icono y vibración.
+    - Event listener `notificationclick` que enfoca la ventana existente de la aplicación y navega al enlace de destino o abre una nueva ventana.
+    - Banner de activación de alertas de escritorio (`#activity-push-banner`) con flujo de suscripción (`requestPushSubscription`) invocando `registration.pushManager.subscribe`.
+  - **Endpoints Especializados de Notificaciones:**
+    - `GET /api/v1/notifications`: Listado de notificaciones para el usuario autenticado con conteo `unreadCount` y filtro opcional `?unreadOnly=true`.
+    - `PATCH /api/v1/notifications/:id/read`: Marca una notificación específica como leída validando la propiedad del usuario (403 Forbidden).
+    - `POST /api/v1/notifications/mark-all-read`: Marca todas las notificaciones pendientes del usuario como leídas.
+    - `POST /api/v1/notifications/push-subscribe`: Registra o actualiza una suscripción de navegador Web Push con deduplicación por usuario y endpoint.
+    - `DELETE /api/v1/notifications/push-subscribe`: Cancela una suscripción Web Push.
+    - `POST /api/v1/notifications/test`: Genera una notificación de prueba para validación inmediata.
+  - **Despacho Automático de Notificaciones Orientado a Eventos (`dispatchNotification`):**
+    - Disparado automáticamente al comentar una bitácora (notifica al autor), al calificar una obra de concurso (notifica al participante), al actualizar o cotizar un encargo (notifica al modelista o cliente) y cuando una tienda aliada registra stock para una maqueta en el Wishlist (notifica a todos los modelistas interesados).
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/notifications-bell.test.mjs` (4 casos de prueba aislados cubriendo creación de notificaciones, conteo no leído, deduplicación de push subscriptions y generación del código del Service Worker). Total unit tests: 66 passed en 230ms.
+    - Extensión de `scripts/smoketest.mjs` verificando endpoints de autenticación, marcado como leído, suscripción push, presencia del componente en el HTML de PlamoScale y GunplaJunkies, y listeners en `sw.js`.
 
 - **Tarjetas Dinamicas de Previsualizacion Social OpenGraph & Twitter Cards (Social Sharing OpenGraph Preview Cards):**
   - **Generador Vectorial de Tarjetas Sociales 1200x630 (`generateSocialCardSvg`):**
