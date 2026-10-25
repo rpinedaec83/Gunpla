@@ -258,6 +258,16 @@ export const openApiSpec = {
         }
       }
     },
+    '/api/v1/workbench/wishlist-alerts': {
+      get: {
+        tags: ['Workbench'],
+        summary: 'Live matches between user wishlist items and verified Trusted Shops stock',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '200': { description: 'Wishlist stock alerts list' }
+        }
+      }
+    },
     '/api/v1/workbench/paints': {
       get: {
         tags: ['Workbench'],
@@ -444,6 +454,28 @@ export const openApiSpec = {
         tags: ['Community'],
         summary: 'List trusted hobby shops directory with WhatsApp and product catalog links',
         responses: { '200': { description: 'Shops list' } }
+      }
+    },
+    '/api/v1/shops/{id}/stock': {
+      get: {
+        tags: ['Community'],
+        summary: 'Get stock inventory for a trusted hobby shop',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Shop stock list' },
+          '404': { description: 'Shop not found' }
+        }
+      },
+      post: {
+        tags: ['Community'],
+        summary: 'Add or update kit stock in a trusted shop (alerts modelers with kit in wishlist)',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '201': { description: 'Stock item added/updated and alerts emitted' },
+          '400': { description: 'Validation error' },
+          '404': { description: 'Shop not found' }
+        }
       }
     },
     '/api/v1/marketplace/listings': {

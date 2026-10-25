@@ -4,12 +4,29 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA & Tech Debt Hardening Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + 4 Technical Debt resolutions (Dynamic DB Sync, Security Hardening, Frontend Modularization, Native Unit Test Suite) verified via `npm test` and live LXC 190 deployment.
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening & Stock Alerts Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + 4 Technical Debt resolutions (Dynamic DB Sync, Security Hardening, Frontend Modularization, Native Unit Test Suite) verified via `npm test` (25 unit tests + full integration suite) and live LXC 190 deployment.
 - Current branch or release line: `feature/dt9-google-oauth-sso` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Alertas de Stock en Tiendas de Confianza vinculadas a la Wishlist del Stash (Stock Alerts):**
+  - **Cruce Automático de Inventario & Wishlist:**
+    - Endpoint autenticado `GET /api/v1/workbench/wishlist-alerts` que cruza los kits en lista de deseos (`status: 'wishlist'`) del usuario contra el inventario disponible (`inStock: true`) en tiendas verificadas.
+    - Soporte para coincidencia exacta por `kitId` y coincidencia difusa (fuzzy matching) normalizada por tokens de nombre de maqueta (limpiando escalas numéricas como `1/144`, `1/100`).
+  - **Gestión de Stock por Tiendas (`/api/v1/shops/:id/stock`):**
+    - `GET /api/v1/shops/:id/stock`: Catálogo público de inventario en tienda con precios en PEN, descuentos promocionales y etiquetas (`Llegada Reciente`).
+    - `POST /api/v1/shops/:id/stock`: Registro y actualización de existencias en tienda con disparo transaccional de correos de alerta via Resend a todos los modelistas con ese kit en su lista de deseos.
+  - **Integración UI en el Taller (Workbench Shell):**
+    - Badge numérico en el botón de la pestaña Stash (`#wb-stash-alerts-badge`) destacando la cantidad de kits en stock.
+    - Banner visual de alerta (`#wb-wishlist-alerts-banner`) en la sub-pestaña de Stash con acceso directo al catálogo de tiendas.
+    - Tarjetas de Wishlist enriquecidas con badge de disponibilidad inmediata, precio en PEN, descuento aplicado, y botón de pedido directo por WhatsApp.
+  - **Persistencia Híbrida en PostgreSQL 16:**
+    - Tabla relacional `shop_stock` con índices y sincronización bidireccional UPSERT.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/wishlist-alerts.test.mjs` (5 casos de prueba aislados).
+    - Extensión de `scripts/smoketest.mjs` con cobertura end-to-end de consulta, actualización de stock y verificación en UI.
 
 - **Saneamiento Integral de Deuda Tecnica y Suite de Pruebas Unitarias:**
   - **Base de Datos y Sincronizacion Optimizada:**

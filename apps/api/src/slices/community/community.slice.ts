@@ -4,6 +4,9 @@ import QRCode from 'qrcode';
 import {
   ContestRecord,
   ShopRecord,
+  ShopStockItem,
+  WishlistStockAlert,
+  StashItemRecord,
   ContestEntryRecord,
   CreateContestEntryRequest,
   VoteContestEntryResponse,
@@ -211,6 +214,147 @@ export function getShopsFromDb(): ShopRecord[] {
     return db.shops;
   }
   return INITIAL_SHOPS;
+}
+
+export const INITIAL_SHOP_STOCK: ShopStockItem[] = [
+  {
+    id: 'stock-hinu-gunplaperu',
+    shopId: 'shop-gunpla-peru-store',
+    kitId: 'kit-rg-hinu',
+    kitName: 'RG 1/144 Hi-Nu Gundam',
+    brand: 'Bandai Spirits',
+    scale: '1/144',
+    grade: 'RG (Real Grade)',
+    category: 'gunpla-mecha',
+    pricePEN: 239.90,
+    inStock: true,
+    stockCount: 4,
+    discountPercentage: 5,
+    promoLabel: 'Llegada Reciente',
+    shopUrl: 'https://chat.whatsapp.com/GJsVix10Hqy2ywwYmh8EYx',
+    lastUpdated: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'stock-barbatos-plamoscale',
+    shopId: 'shop-plamoscale-trusted-catalog',
+    kitId: 'kit-mg-barbatos',
+    kitName: 'MG 1/100 Gundam Barbatos',
+    brand: 'Bandai Spirits',
+    scale: '1/100',
+    grade: 'MG (Master Grade)',
+    category: 'gunpla-mecha',
+    pricePEN: 210.00,
+    inStock: true,
+    stockCount: 2,
+    promoLabel: 'Stock Limitado',
+    shopUrl: 'https://chat.whatsapp.com/GJsVix10Hqy2ywwYmh8EYx',
+    lastUpdated: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'stock-tiger1-scalehobby',
+    shopId: 'shop-scale-hobby-art',
+    kitId: 'kit-tamiya-tiger1',
+    kitName: 'Tiger I Early Production',
+    brand: 'Tamiya',
+    scale: '1/35',
+    category: 'military',
+    pricePEN: 165.00,
+    inStock: true,
+    stockCount: 3,
+    discountPercentage: 10,
+    promoLabel: '10% OFF en Efectivo',
+    shopUrl: 'https://chat.whatsapp.com/GJsVix10Hqy2ywwYmh8EYx',
+    lastUpdated: '2026-10-25T00:00:00Z'
+  },
+  {
+    id: 'stock-spitfire-scalehobby',
+    shopId: 'shop-scale-hobby-art',
+    kitId: 'kit-tamiya-spitfire',
+    kitName: 'Supermarine Spitfire Mk.I',
+    brand: 'Tamiya',
+    scale: '1/48',
+    category: 'aviation',
+    pricePEN: 145.00,
+    inStock: true,
+    stockCount: 5,
+    shopUrl: 'https://chat.whatsapp.com/GJsVix10Hqy2ywwYmh8EYx',
+    lastUpdated: '2026-10-25T00:00:00Z'
+  }
+];
+
+export function getShopStockFromDb(): ShopStockItem[] {
+  const db = getDb();
+  if (db.shopStock && db.shopStock.length > 0) {
+    return db.shopStock;
+  }
+  return INITIAL_SHOP_STOCK;
+}
+
+export function matchWishlistWithShopStock(
+  stashItems: StashItemRecord[],
+  stockItems: ShopStockItem[],
+  shops: ShopRecord[]
+): WishlistStockAlert[] {
+  const wishlistItems = (stashItems || []).filter(item => item.status === 'wishlist');
+  const availableStock = (stockItems || []).filter(s => s.inStock);
+  const alerts: WishlistStockAlert[] = [];
+
+  for (const item of wishlistItems) {
+    const matches = availableStock.filter(stock => {
+      if (item.kitId && stock.kitId && item.kitId === stock.kitId) {
+        return true;
+      }
+      if (item.kit?.name && stock.kitName) {
+        const norm1 = item.kit.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const norm2 = stock.kitName.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (norm1 === norm2 || norm1.includes(norm2) || norm2.includes(norm1)) {
+          return true;
+        }
+
+        // Token-based matching ignoring scale fractions like 1/144, 1/100, etc.
+        const cleanWords = (str: string) =>
+          str.toLowerCase()
+            .replace(/\b1\/\d+\b/g, '') // remove scale like 1/144, 1/100
+            .replace(/[^a-z0-9\s]/g, ' ')
+            .split(/\s+/)
+            .filter(w => w.length > 1 && !/^\d+$/.test(w));
+
+        const words1 = cleanWords(item.kit.name);
+        const words2 = cleanWords(stock.kitName);
+        if (words1.length > 0 && words2.length > 0) {
+          const matchCount = words1.filter(w => words2.includes(w)).length;
+          if (matchCount >= Math.min(2, words1.length) && (matchCount / words1.length >= 0.6 || matchCount / words2.length >= 0.6)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
+
+    for (const match of matches) {
+      const shop = shops.find(s => s.id === match.shopId);
+      alerts.push({
+        stashItemId: item.id,
+        kitId: match.kitId || item.kitId,
+        kitName: match.kitName || item.kit?.name || 'Kit Deseado',
+        brand: match.brand || item.kit?.brand || 'Bandai',
+        scale: match.scale || item.kit?.scale,
+        shopId: match.shopId,
+        shopName: shop ? shop.name : match.shopId,
+        shopCity: shop ? shop.city : 'Lima',
+        pricePEN: match.pricePEN,
+        discountPercentage: match.discountPercentage,
+        promoLabel: match.promoLabel,
+        shopWhatsappUrl: shop?.whatsappUrl || match.shopUrl,
+        shopCatalogUrl: shop?.catalogUrl || match.shopUrl,
+        shopWebsiteUrl: shop?.websiteUrl,
+        inStock: match.inStock,
+        matchedAt: new Date().toISOString()
+      });
+    }
+  }
+
+  return alerts;
 }
 
 /**
@@ -945,5 +1089,173 @@ communityRouter.get('/shops', (_req: Request, res: Response) => {
   return res.json({
     items: shops,
     totalCount: shops.length
+  });
+});
+
+/**
+ * GET /api/v1/shops/:id
+ * Retrieve shop details with associated stock items
+ */
+communityRouter.get('/shops/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const shops = getShopsFromDb();
+  const shop = shops.find(s => s.id === id);
+  if (!shop) {
+    return sendProblem(req, res, 404, 'Tienda No Encontrada', `La tienda '${id}' no existe.`);
+  }
+
+  const allStock = getShopStockFromDb();
+  const shopStock = allStock.filter(s => s.shopId === id);
+
+  return res.json({
+    ...shop,
+    stockItems: shopStock
+  });
+});
+
+/**
+ * GET /api/v1/shops/:id/stock
+ * List stock items for a trusted shop
+ */
+communityRouter.get('/shops/:id/stock', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const shops = getShopsFromDb();
+  const shop = shops.find(s => s.id === id);
+  if (!shop) {
+    return sendProblem(req, res, 404, 'Tienda No Encontrada', `La tienda '${id}' no existe.`);
+  }
+
+  const allStock = getShopStockFromDb();
+  const shopStock = allStock.filter(s => s.shopId === id);
+
+  return res.json({
+    shopId: id,
+    shopName: shop.name,
+    items: shopStock,
+    totalCount: shopStock.length
+  });
+});
+
+/**
+ * POST /api/v1/shops/:id/stock
+ * Add or update stock item in a trusted shop
+ * Emits transactional notification to modelers who have this kit in their wishlist
+ */
+communityRouter.post('/shops/:id/stock', requireAuth, async (req: Request, res: Response) => {
+  const { id: shopId } = req.params;
+  const user = req.user!;
+  const shops = getShopsFromDb();
+  const shop = shops.find(s => s.id === shopId);
+  if (!shop) {
+    return sendProblem(req, res, 404, 'Tienda No Encontrada', `La tienda '${shopId}' no existe.`);
+  }
+
+  const { kitId, kitName, brand, scale, grade, category, pricePEN, inStock, stockCount, discountPercentage, promoLabel, shopUrl } = req.body || {};
+
+  if (!kitName || pricePEN === undefined || pricePEN === null) {
+    return sendProblem(
+      req,
+      res,
+      400,
+      'Datos Incompletos',
+      'kitName y pricePEN son campos obligatorios para registrar inventario.',
+      'validation-error'
+    );
+  }
+
+  const numPrice = Number(pricePEN);
+  if (isNaN(numPrice) || numPrice <= 0) {
+    return sendProblem(
+      req,
+      res,
+      400,
+      'Precio Inválido',
+      'El precio (pricePEN) debe ser un número positivo.',
+      'validation-error'
+    );
+  }
+
+  const db = getDb();
+  if (!db.shopStock) {
+    db.shopStock = [...INITIAL_SHOP_STOCK];
+  }
+
+  const now = new Date().toISOString();
+  const existingIndex = db.shopStock.findIndex(
+    s => s.shopId === shopId && (s.kitId === kitId || s.kitName.toLowerCase() === String(kitName).trim().toLowerCase())
+  );
+
+  const stockItem: ShopStockItem = {
+    id: existingIndex >= 0 ? db.shopStock[existingIndex].id : `stock-${randomUUID().slice(0, 8)}`,
+    shopId,
+    kitId: kitId || undefined,
+    kitName: String(kitName).trim(),
+    brand: brand ? String(brand).trim() : 'Bandai Spirits',
+    scale: scale ? String(scale).trim() : undefined,
+    grade: grade ? String(grade).trim() : undefined,
+    category: category || 'gunpla-mecha',
+    pricePEN: numPrice,
+    inStock: inStock !== false,
+    stockCount: stockCount !== undefined ? Number(stockCount) : 1,
+    discountPercentage: discountPercentage ? Number(discountPercentage) : undefined,
+    promoLabel: promoLabel ? String(promoLabel).trim() : undefined,
+    shopUrl: shopUrl ? String(shopUrl).trim() : (shop.whatsappUrl || shop.catalogUrl),
+    lastUpdated: now
+  };
+
+  if (existingIndex >= 0) {
+    db.shopStock[existingIndex] = stockItem;
+  } else {
+    db.shopStock.push(stockItem);
+  }
+
+  saveDb(db);
+
+  // If item is in stock, alert modelers with this kit in their wishlist
+  let notifiedUsersCount = 0;
+  if (stockItem.inStock) {
+    const matchingStashItems = (db.stashItems || []).filter(
+      s => s.status === 'wishlist' && (s.kitId === stockItem.kitId || s.kitId === kitId)
+    );
+
+    const activeTenant = req.tenant || (db.tenants || [])[0];
+
+    for (const stashItem of matchingStashItems) {
+      const targetUser = (db.users || []).find(u => u.id === stashItem.userId);
+      if (targetUser && targetUser.email) {
+        notifiedUsersCount++;
+        const discountText = stockItem.discountPercentage ? ` (${stockItem.discountPercentage}% de descuento)` : '';
+        sendTenantEmailViaResend({
+          tenant: activeTenant,
+          to: [targetUser.email],
+          subject: `🔔 ¡Alerta de Stock! ${stockItem.kitName} disponible en ${shop.name}`,
+          html: `
+            <div style="font-family: sans-serif; background: #0b0f19; color: #f1f5f9; padding: 24px; border-radius: 8px;">
+              <h2 style="color: #38bdf8; margin-top: 0;">¡Un kit de tu Wishlist llegó a tienda!</h2>
+              <p>Hola <strong>${targetUser.displayName}</strong>,</p>
+              <p>El kit que guardaste en tu lista de deseos de tu taller ya tiene stock disponible:</p>
+              <div style="background: #111827; border-left: 4px solid #38bdf8; padding: 16px; margin: 16px 0; border-radius: 4px;">
+                <h3 style="margin: 0 0 8px 0; color: #ffffff;">${stockItem.kitName}</h3>
+                <p style="margin: 4px 0; color: #94a3b8;">Tienda: <strong style="color: #ffffff;">${shop.name}</strong> (${shop.city})</p>
+                <p style="margin: 4px 0; color: #4ade80; font-size: 1.15rem; font-weight: bold;">Precio: PEN ${stockItem.pricePEN.toFixed(2)}${discountText}</p>
+                ${stockItem.promoLabel ? `<p style="margin: 4px 0; color: #facc15; font-size: 0.85rem;">🏷️ ${stockItem.promoLabel}</p>` : ''}
+              </div>
+              <p>Puedes contactar a la tienda directamente por WhatsApp o revisar su catálogo para coordinar tu compra:</p>
+              <div style="margin: 20px 0;">
+                ${shop.whatsappUrl ? `<a href="${shop.whatsappUrl}" style="background: #22c55e; color: #ffffff; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-right: 12px; display: inline-block;">💬 Contactar por WhatsApp</a>` : ''}
+                ${shop.catalogUrl ? `<a href="${shop.catalogUrl}" style="background: #3b82f6; color: #ffffff; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">🌐 Ver Catálogo</a>` : ''}
+              </div>
+              <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 24px 0;" />
+              <p style="font-size: 0.8rem; color: #64748b;">Notificación automática de Stock Wishlist • ${activeTenant.name}</p>
+            </div>
+          `
+        }).catch(() => {});
+      }
+    }
+  }
+
+  return res.status(201).json({
+    stockItem,
+    notifiedUsersCount
   });
 });

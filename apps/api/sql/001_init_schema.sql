@@ -241,6 +241,28 @@ CREATE TABLE IF NOT EXISTS shops (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS shop_stock (
+    id VARCHAR(64) PRIMARY KEY,
+    shop_id VARCHAR(64) REFERENCES shops(id) ON DELETE CASCADE,
+    kit_id VARCHAR(64) REFERENCES kits(id) ON DELETE SET NULL,
+    kit_name VARCHAR(255) NOT NULL,
+    brand VARCHAR(100) NOT NULL,
+    scale VARCHAR(50),
+    grade VARCHAR(50),
+    category VARCHAR(50),
+    price_pen NUMERIC(10, 2) NOT NULL,
+    in_stock BOOLEAN NOT NULL DEFAULT TRUE,
+    stock_count INTEGER DEFAULT 1,
+    discount_percentage NUMERIC(5, 2),
+    promo_label VARCHAR(100),
+    shop_url TEXT,
+    last_updated TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_shop_stock_shop ON shop_stock(shop_id);
+CREATE INDEX IF NOT EXISTS idx_shop_stock_kit ON shop_stock(kit_id);
+
 CREATE INDEX IF NOT EXISTS idx_media_assets_builder ON media_assets(builder_username);
 CREATE INDEX IF NOT EXISTS idx_media_assets_category ON media_assets(category);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);

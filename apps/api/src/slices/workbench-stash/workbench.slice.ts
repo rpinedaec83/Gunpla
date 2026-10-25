@@ -14,6 +14,11 @@ import {
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
 import { requireAuth } from '../auth-sso/auth.slice';
+import {
+  getShopStockFromDb,
+  getShopsFromDb,
+  matchWishlistWithShopStock
+} from '../community/community.slice';
 
 export const workbenchRouter = Router();
 
@@ -49,6 +54,32 @@ workbenchRouter.get('/summary', (req: Request, res: Response) => {
   };
 
   return res.json(summary);
+});
+
+/**
+ * GET /api/v1/workbench/wishlist-alerts
+ * Live matches between user's stash wishlist and Trusted Shops stock
+ */
+workbenchRouter.get('/wishlist-alerts', (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const db = getDb();
+
+  const userStash = db.stashItems.filter(item => item.userId === userId);
+  const populatedStash = userStash.map(item => ({
+    ...item,
+    kit: db.kits.find(k => k.id === item.kitId)
+  }));
+
+  const shopStock = getShopStockFromDb();
+  const shops = getShopsFromDb();
+  const alerts = matchWishlistWithShopStock(populatedStash, shopStock, shops);
+
+  return res.json({
+    alerts,
+    items: alerts,
+    totalAlerts: alerts.length,
+    totalCount: alerts.length
+  });
 });
 
 // ---------------------------------------------------------------------------

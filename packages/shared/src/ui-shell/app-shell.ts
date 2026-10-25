@@ -3186,6 +3186,40 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
       window.__WB_COMMISSIONS = commsData.items || [];
       renderWbCommissions();
 
+      // 5. Fetch Wishlist Stock Alerts
+      const alertsRes = await fetch(apiBase + '/api/v1/workbench/wishlist-alerts', { headers: authHeaders });
+      const alertsData = alertsRes.ok ? await alertsRes.json() : { alerts: [] };
+      window.__WISHLIST_ALERTS = alertsData.alerts || [];
+
+      const stashAlertsBadge = document.getElementById('wb-stash-alerts-badge');
+      if (stashAlertsBadge) {
+        if (window.__WISHLIST_ALERTS.length > 0) {
+          stashAlertsBadge.textContent = '🔔 ' + window.__WISHLIST_ALERTS.length;
+          stashAlertsBadge.style.display = 'inline-block';
+        } else {
+          stashAlertsBadge.style.display = 'none';
+        }
+      }
+
+      const bannerContainer = document.getElementById('wb-wishlist-alerts-banner');
+      if (bannerContainer) {
+        if (window.__WISHLIST_ALERTS.length > 0) {
+          bannerContainer.style.display = 'block';
+          bannerContainer.innerHTML =
+            '<div style="background: linear-gradient(90deg, rgba(34, 197, 94, 0.12), rgba(56, 189, 248, 0.12)); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 8px; padding: 0.85rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">' +
+              '<div style="display: flex; align-items: center; gap: 0.75rem;">' +
+                '<span style="font-size: 1.5rem;">🔔</span>' +
+                '<div>' +
+                  '<strong style="color: #4ade80; font-size: 0.9rem;">¡Tienes ' + window.__WISHLIST_ALERTS.length + ' maqueta(s) de tu Wishlist en stock en tiendas verificadas!</strong>' +
+                  '<div style="color: #cbd5e1; font-size: 0.78rem;">Revisa las ofertas disponibles y contacta directamente a las tiendas por WhatsApp.</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+        } else {
+          bannerContainer.style.display = 'none';
+        }
+      }
+
       const pendingReceived = (window.__WB_COMMISSIONS || []).filter(c => 
         c.builderUsername && c.builderUsername.toLowerCase() === currentUser.username.toLowerCase() && c.status === 'pending'
       ).length;
@@ -3238,6 +3272,23 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
             const boxArt = kit.boxartUrl || '/legacy-media/plamoscale/images/aperich/thumbs/01.jpg';
             const stars = '⭐'.repeat(item.rating || 5);
 
+            const matchingAlert = (window.__WISHLIST_ALERTS || []).find(a => a.stashItemId === item.id || (item.kitId && a.kitId === item.kitId));
+            const alertCardHtml = (item.status === 'wishlist' && matchingAlert)
+              ? '<div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 6px; padding: 0.5rem; margin-bottom: 0.6rem;">' +
+                  '<div style="font-size: 0.72rem; color: #4ade80; font-weight: 700; display: flex; align-items: center; gap: 0.3rem;">' +
+                    '<span>🔔</span> ¡En Stock en ' + matchingAlert.shopName + '!' +
+                  '</div>' +
+                  '<div style="font-size: 0.78rem; color: #fff; margin: 0.2rem 0;">' +
+                    '<strong>PEN ' + Number(matchingAlert.pricePEN).toFixed(2) + '</strong>' +
+                    (matchingAlert.discountPercentage ? ' <span style="color: #facc15; font-size: 0.72rem;">(' + matchingAlert.discountPercentage + '% OFF)</span>' : '') +
+                  '</div>' +
+                  '<div style="display: flex; gap: 0.35rem; margin-top: 0.35rem;">' +
+                    (matchingAlert.shopWhatsappUrl ? '<a href="' + matchingAlert.shopWhatsappUrl + '" target="_blank" rel="noopener" class="btn-primary" style="font-size: 0.7rem; padding: 0.25rem 0.5rem; background: #22c55e; border-color: #22c55e; text-decoration: none;">💬 WhatsApp</a>' : '') +
+                    (matchingAlert.shopCatalogUrl ? '<a href="' + matchingAlert.shopCatalogUrl + '" target="_blank" rel="noopener" class="filter-pill" style="font-size: 0.7rem; padding: 0.25rem 0.5rem; text-decoration: none;">Catálogo</a>' : '') +
+                  '</div>' +
+                '</div>'
+              : '';
+
             return '<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column;">' +
               '<img src="' + boxArt + '" alt="' + kitName + '" style="width: 100%; height: 160px; object-fit: cover; background: #020617;">' +
               '<div style="padding: 1rem; flex: 1; display: flex; flex-direction: column;">' +
@@ -3245,6 +3296,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
                 '<h4 style="font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; line-height: 1.3;">' + kitName + '</h4>' +
                 '<div style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.75rem;">' + stars + (item.pricePaid ? ' • ' + (item.currency || 'PEN') + ' ' + item.pricePaid : '') + '</div>' +
                 (item.notes ? '<p style="font-size: 0.75rem; color: #94a3b8; font-style: italic; margin-bottom: 0.75rem;">"' + item.notes + '"</p>' : '') +
+                alertCardHtml +
                 '<div style="margin-top: auto; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">' +
                   '<label style="display: block; font-size: 0.7rem; color: #64748b; margin-bottom: 0.25rem;">Estado:</label>' +
                   '<select class="auth-input" style="padding: 0.35rem 0.5rem; font-size: 0.78rem; margin-bottom: 0.6rem;" onchange="updateStashStatus(&quot;' + item.id + '&quot;, this.value)">' +

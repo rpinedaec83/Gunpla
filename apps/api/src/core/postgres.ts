@@ -473,6 +473,61 @@ async function syncStateToPostgresInternal(client: any, state: PlatformDatabaseS
       ]
     );
   }
+
+  // 13. Shop Stock
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS shop_stock (
+      id VARCHAR(64) PRIMARY KEY,
+      shop_id VARCHAR(64) REFERENCES shops(id) ON DELETE CASCADE,
+      kit_id VARCHAR(64) REFERENCES kits(id) ON DELETE SET NULL,
+      kit_name VARCHAR(255) NOT NULL,
+      brand VARCHAR(100) NOT NULL,
+      scale VARCHAR(50),
+      grade VARCHAR(50),
+      category VARCHAR(50),
+      price_pen NUMERIC(10, 2) NOT NULL,
+      in_stock BOOLEAN NOT NULL DEFAULT TRUE,
+      stock_count INTEGER DEFAULT 1,
+      discount_percentage NUMERIC(5, 2),
+      promo_label VARCHAR(100),
+      shop_url TEXT,
+      last_updated TIMESTAMPTZ DEFAULT NOW(),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  const stockToSync = state.shopStock && state.shopStock.length > 0 ? state.shopStock : [];
+  for (const st of stockToSync) {
+    await client.query(
+      `INSERT INTO shop_stock (id, shop_id, kit_id, kit_name, brand, scale, grade, category, price_pen, in_stock, stock_count, discount_percentage, promo_label, shop_url, last_updated, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())
+       ON CONFLICT (id) DO UPDATE SET
+         price_pen = EXCLUDED.price_pen,
+         in_stock = EXCLUDED.in_stock,
+         stock_count = EXCLUDED.stock_count,
+         discount_percentage = EXCLUDED.discount_percentage,
+         promo_label = EXCLUDED.promo_label,
+         shop_url = EXCLUDED.shop_url,
+         last_updated = EXCLUDED.last_updated`,
+      [
+        st.id,
+        st.shopId,
+        st.kitId ?? null,
+        st.kitName,
+        st.brand,
+        st.scale ?? null,
+        st.grade ?? null,
+        st.category ?? null,
+        st.pricePEN,
+        st.inStock,
+        st.stockCount ?? 1,
+        st.discountPercentage ?? null,
+        st.promoLabel ?? null,
+        st.shopUrl ?? null,
+        st.lastUpdated || new Date().toISOString()
+      ]
+    );
+  }
 }
 
 /**
@@ -506,7 +561,8 @@ export async function getPostgresStats(): Promise<{
         'contest_entries',
         'marketplace_listings',
         'commission_builders',
-        'shops'
+        'shops',
+        'shop_stock'
       ];
 
       const tables: Record<string, number> = {};

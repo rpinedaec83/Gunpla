@@ -445,7 +445,7 @@ export function renderViews(
         <!-- Workbench Sub-Tabs -->
         <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; flex-wrap: wrap;">
           <button id="wb-subtab-btn-stash" class="filter-pill active" onclick="switchWorkbenchSubtab('stash')">
-            📦 Mi Stash de Maquetas
+            📦 Mi Stash de Maquetas <span id="wb-stash-alerts-badge" class="nav-badge" style="display:none; background: #22c55e; color: #fff; margin-left: 0.35rem; font-size: 0.72rem; padding: 0.1rem 0.45rem;">0</span>
           </button>
           <button id="wb-subtab-btn-builds" class="filter-pill" onclick="switchWorkbenchSubtab('builds')">
             📝 Mis Bitácoras de Armado
@@ -460,6 +460,9 @@ export function renderViews(
 
         <!-- Sub-Tab 1: Stash Grid -->
         <div id="wb-subtab-stash" class="wb-subtab-content">
+          <!-- Wishlist Stock Alerts Live Banner -->
+          <div id="wb-wishlist-alerts-banner" style="display: none; margin-bottom: 1.25rem;"></div>
+
           <div id="wb-stash-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem;">
             <!-- Dynamically populated via loadWorkbenchData() -->
           </div>

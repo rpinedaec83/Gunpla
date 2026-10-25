@@ -1571,7 +1571,83 @@ async function runSmoketest() {
 
     console.log('[PASS] Real-Time Transactional Email Notifications & Marketplace Inquiries (DT10) verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA CHECKS PASSED ===');
+    // -------------------------------------------------------------
+    // 25. Verify Trusted Shops Wishlist Stock Alerts & Inventory Management
+    // -------------------------------------------------------------
+    console.log('--- Verifying Trusted Shops Wishlist Stock Alerts ---');
+
+    // 1. Amuro adds a kit to his wishlist
+    const wishRes = await fetch(`${baseUrl}/api/v1/workbench/stash`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        kitId: 'kit-rg-hinu',
+        status: 'wishlist'
+      })
+    });
+    assert.equal(wishRes.status, 201, 'POST /api/v1/workbench/stash with wishlist status must return 201 Created');
+    const wishItem = await wishRes.json();
+    assert.equal(wishItem.status, 'wishlist');
+
+    // 2. Fetch Wishlist Stock Alerts for Amuro
+    const alertsRes = await fetch(`${baseUrl}/api/v1/workbench/wishlist-alerts`, {
+      headers: {
+        Authorization: `Bearer ${googleSsoData.token}`
+      }
+    });
+    assert.equal(alertsRes.status, 200, 'GET /api/v1/workbench/wishlist-alerts must return 200 OK');
+    const alertsData = await alertsRes.json();
+    assert.ok(Array.isArray(alertsData.items), 'Wishlist alerts must return items array');
+    assert.ok(alertsData.items.length >= 1, 'Must find at least 1 in-stock match for RG Hi-Nu Gundam');
+    const hinuAlert = alertsData.items.find(a => a.kitId === 'kit-rg-hinu');
+    assert.ok(hinuAlert, 'Must find stock alert for RG Hi-Nu Gundam');
+    assert.equal(hinuAlert.shopName, 'Hobby & Gunpla Perú Store');
+    assert.equal(hinuAlert.pricePEN, 239.9);
+    assert.ok(hinuAlert.shopWhatsappUrl && (hinuAlert.shopWhatsappUrl.includes('whatsapp.com') || hinuAlert.shopWhatsappUrl.includes('wa.me')), 'Alert must include WhatsApp direct link');
+
+    // 3. Shop Stock API: GET and POST stock items
+    const shopStockGetRes = await fetch(`${baseUrl}/api/v1/shops/shop-gunpla-peru-store/stock`);
+    assert.equal(shopStockGetRes.status, 200, 'GET /api/v1/shops/:id/stock must return 200 OK');
+    const shopStockData = await shopStockGetRes.json();
+    assert.ok(Array.isArray(shopStockData.items), 'Shop stock must be an array');
+    assert.ok(shopStockData.items.some(s => s.kitId === 'kit-rg-hinu'));
+
+    // Register new stock item for MG Barbatos
+    const shopStockPostRes = await fetch(`${baseUrl}/api/v1/shops/shop-scale-hobby-art/stock`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        kitId: 'kit-mg-barbatos',
+        kitName: 'MG 1/100 Gundam Barbatos',
+        brand: 'Bandai Spirits',
+        scale: '1/100',
+        pricePEN: 219.00,
+        inStock: true,
+        stockCount: 5,
+        discountPercentage: 10,
+        promoLabel: '10% OFF'
+      })
+    });
+    assert.equal(shopStockPostRes.status, 201, 'POST /api/v1/shops/:id/stock must return 201 Created');
+    const postedStock = await shopStockPostRes.json();
+    assert.ok(postedStock.stockItem, 'POST /api/v1/shops/:id/stock must return stockItem object');
+    assert.equal(postedStock.stockItem.kitId, 'kit-mg-barbatos');
+    assert.equal(postedStock.stockItem.pricePEN, 219.00);
+
+    // 4. Verify Frontend UI includes Wishlist Alert UI Slots & Badges
+    assert.ok(plamoCommHtml.includes('id="wb-stash-alerts-badge"'), 'HTML must include wishlist alerts badge on stash tab');
+    assert.ok(plamoCommHtml.includes('id="wb-wishlist-alerts-banner"'), 'HTML must include wishlist alerts banner slot');
+    assert.ok(plamoCommHtml.includes('/api/v1/workbench/wishlist-alerts'), 'HTML must fetch wishlist alerts in loadWorkbenchData');
+
+    console.log('[PASS] Trusted Shops Wishlist Stock Alerts & Fan-Out Notifications verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

@@ -554,6 +554,43 @@ export interface ContestRecord {
   entries?: ContestEntryRecord[];
 }
 
+export interface ShopStockItem {
+  id: string;
+  shopId: string;
+  kitId?: string;
+  kitName: string;
+  brand: string;
+  scale?: string;
+  grade?: string;
+  category?: ScaleCategory;
+  pricePEN: number;
+  inStock: boolean;
+  stockCount?: number;
+  discountPercentage?: number;
+  promoLabel?: string;
+  shopUrl?: string;
+  lastUpdated: string;
+}
+
+export interface WishlistStockAlert {
+  stashItemId: string;
+  kitId: string;
+  kitName: string;
+  brand: string;
+  scale?: string;
+  shopId: string;
+  shopName: string;
+  shopCity: string;
+  pricePEN: number;
+  discountPercentage?: number;
+  promoLabel?: string;
+  shopWhatsappUrl?: string;
+  shopCatalogUrl?: string;
+  shopWebsiteUrl?: string;
+  inStock: boolean;
+  matchedAt: string;
+}
+
 export interface ShopRecord {
   id: string;
   name: string;
@@ -566,6 +603,7 @@ export interface ShopRecord {
   instagramUrl?: string;
   specialties: string[];
   isVerified: boolean;
+  stockItems?: ShopStockItem[];
 }
 
 export type BoxCondition = 'mint_sealed' | 'opened_complete' | 'started' | 'damaged_box';

@@ -15,7 +15,8 @@ import {
   MarketplaceListingRecord,
   CommissionBuilderRecord,
   CommissionRequestRecord,
-  ShopRecord
+  ShopRecord,
+  ShopStockItem
 } from '@gunpla/shared';
 import { isPostgresConfigured, syncStateToPostgres } from './postgres';
 
@@ -35,6 +36,7 @@ export interface PlatformDatabaseState {
   commissionBuilders: CommissionBuilderRecord[];
   commissionRequests: CommissionRequestRecord[];
   shops: ShopRecord[];
+  shopStock: ShopStockItem[];
   lastSeededAt: string | null;
 }
 
@@ -62,6 +64,7 @@ function createEmptyState(): PlatformDatabaseState {
     commissionBuilders: [],
     commissionRequests: [],
     shops: [],
+    shopStock: [],
     lastSeededAt: null
   };
 }
@@ -90,6 +93,7 @@ export function getDb(): PlatformDatabaseState {
         commissionBuilders: parsed.commissionBuilders ?? [],
         commissionRequests: parsed.commissionRequests ?? [],
         shops: parsed.shops ?? [],
+        shopStock: parsed.shopStock ?? [],
         lastSeededAt: parsed.lastSeededAt ?? null
       };
       return memoryState;

@@ -277,3 +277,23 @@ Decisions made:
 Lessons learned:
 - Modularizing the frontend HTML templates into separate `views` and `modals` modules drastically improves IDE performance and eliminates cognitive load when modifying specific user flows.
 Usage: Moderate -- self-estimated
+
+### STOCK-ALERTS -- Trusted Shops Stock Alerts Linked to Stash Wishlist | eMOE: 3 CU | aMOE: 3 CU
+What was done:
+- Designed and added `ShopStockItem` and `WishlistStockAlert` models to `@gunpla/shared`, updating `ShopRecord` and `PlatformDatabaseState`.
+- Implemented `GET /api/v1/workbench/wishlist-alerts` to match user stash items in wishlist status (`status: 'wishlist'`) against live shop stock (`inStock: true`).
+- Supported exact `kitId` matching and fuzzy normalized token matching ignoring scale notations (e.g. `1/144`, `1/100`).
+- Implemented `GET /api/v1/shops/:id/stock` and `POST /api/v1/shops/:id/stock` for inventory registration and updates with automated transactional email fanout via Resend to users having that kit in their wishlist.
+- Created `shop_stock` table in PostgreSQL 16 (`apps/api/sql/001_init_schema.sql` and `apps/api/src/core/postgres.ts`) with UPSERT synchronization and runtime stats.
+- Integrated UI in Workbench: `#wb-stash-alerts-badge` on Stash tab, `#wb-wishlist-alerts-banner` slot in Stash sub-tab, and wishlist cards decorated with stock status, price in PEN, discount tags, and WhatsApp direct ordering links.
+- Created unit test suite `tests/unit/wishlist-alerts.test.mjs` (5 test cases) and added full end-to-end assertions in `scripts/smoketest.mjs`.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190`) with PostgreSQL 16 and live web containers.
+Issues hit:
+- Initial fuzzy matching strictly compared concatenated alphanumeric strings (`rghinugundam` vs `rg1144hinugundam`), which failed because of scale numbers embedded in kit names. Resolved by tokenizing and filtering out scale fractions (`\b1\/\d+\b`) and numeric scale tokens, achieving 100% test pass rate.
+- Field name discrepancy between `whatsappUrl` vs `shopWhatsappUrl` in smoketest assertion; aligned to interface definition.
+Decisions made:
+- When a shop updates or registers new inventory (`POST /api/v1/shops/:id/stock`), an automated email fan-out runs asynchronously over all users whose wishlist includes that kit, linking directly to WhatsApp and shop catalog.
+- Retained both `alerts` and `items` in `/api/v1/workbench/wishlist-alerts` JSON response for complete backwards and forwards compatibility.
+Lessons learned:
+- Normalizing kit titles by stripping common scale tokens (`1/144`, `1/100`, `1/72`, `1/35`) enables robust fuzzy matching even when users register kits manually without an official catalog reference.
+Usage: Moderate -- self-estimated

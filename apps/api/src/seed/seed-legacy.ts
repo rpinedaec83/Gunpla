@@ -5,7 +5,7 @@ import { Tenant, UserRecord, MediaAsset, ScaleCategory } from '@gunpla/shared';
 import { getDb, saveDb, PlatformDatabaseState } from '../core/db';
 import { INITIAL_KITS, INITIAL_PAINTS } from './seed-catalog';
 import { INITIAL_BUILDS } from './seed-builds';
-import { INITIAL_CONTESTS, INITIAL_CONTEST_ENTRIES, INITIAL_SHOPS } from '../slices/community/community.slice';
+import { INITIAL_CONTESTS, INITIAL_CONTEST_ENTRIES, INITIAL_SHOPS, INITIAL_SHOP_STOCK } from '../slices/community/community.slice';
 import { INITIAL_LISTINGS, INITIAL_COMMISSION_BUILDERS, INITIAL_COMMISSION_REQUESTS } from '../slices/marketplace/marketplace.slice';
 
 const ALL_CATEGORIES: ScaleCategory[] = [
@@ -248,6 +248,7 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
   const commissionBuilders = !forceReset && db.commissionBuilders && db.commissionBuilders.length > 0 ? db.commissionBuilders : INITIAL_COMMISSION_BUILDERS;
   const commissionRequests = !forceReset && db.commissionRequests && db.commissionRequests.length > 0 ? db.commissionRequests : INITIAL_COMMISSION_REQUESTS;
   const shops = !forceReset && db.shops && db.shops.length > 0 ? db.shops : INITIAL_SHOPS;
+  const shopStock = !forceReset && db.shopStock && db.shopStock.length > 0 ? db.shopStock : INITIAL_SHOP_STOCK;
 
   const nextState: PlatformDatabaseState = {
     tenants,
@@ -265,6 +266,7 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
     commissionBuilders,
     commissionRequests,
     shops,
+    shopStock,
     lastSeededAt: now
   };
 

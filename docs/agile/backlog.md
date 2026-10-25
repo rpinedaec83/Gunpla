@@ -4,11 +4,15 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
-- **Trusted Shops Stock Alerts Linked to Stash Wishlist:** Connect user wishlist to verified partner hobby shops (`Trusted Shops`) to notify of inventory arrivals and deals.
 - **AI Paint Rack Equivalences Assistant:** Intelligent cross-brand paint matching assistant based on colors already owned in the builder's rack.
 - **Contest Community Voting Badges & Public Hall of Fame:** Public showcase and permanent trophy showcase for contest winners across community tenants.
+- **Direct WhatsApp Community Feed & Build Inquiries:** Direct contact channels between builders and collectors on showcased models.
 
 ## Completed Candidates & Parking Lot Items
+
+### STOCK-ALERTS -- Trusted Shops Stock Alerts Linked to Stash Wishlist (COMPLETED)
+- Goal: Connect user wishlist in personal stash with verified partner hobby shops (`Trusted Shops`) to notify of inventory arrivals and deals in real-time.
+- Delivered: Endpoints `GET /api/v1/workbench/wishlist-alerts`, `GET /api/v1/shops/:id/stock`, and `POST /api/v1/shops/:id/stock`; exact and fuzzy name token matching; transactional email fan-out via Resend; UI alert badges (`#wb-stash-alerts-badge`) and banners (`#wb-wishlist-alerts-banner`); direct WhatsApp ordering buttons on wishlist cards; unit tests (`tests/unit/wishlist-alerts.test.mjs`); and PostgreSQL 16 `shop_stock` relational table.
 
 ### DT10 -- Automated Resend Email Notification Triggers & Marketplace Inquiries (COMPLETED)
 - Goal: Automated transactional email delivery across community interactions (contest judge rubrics, build log comments, commission quotes/acceptance, and marketplace inquiries) with multi-domain sender verification and auditable outbox.
