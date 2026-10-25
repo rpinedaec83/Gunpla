@@ -15,6 +15,66 @@ if (process.env.NODE_ENV === 'production' && (!configuredJwtSecret || configured
 
 const JWT_SECRET = configuredJwtSecret || DEFAULT_DEV_JWT_SECRET;
 
+export interface AgeGateEvaluation {
+  allowed: boolean;
+  isAdult: boolean;
+  ageBracket: 'under_14' | 'minor_14_17' | 'adult_18_plus';
+  numBirthYear?: number;
+  age?: number;
+}
+
+export function evaluateAgeGate(
+  birthYear: unknown,
+  currentYear = new Date().getFullYear()
+): AgeGateEvaluation {
+  if (birthYear === undefined || birthYear === null || birthYear === '') {
+    return {
+      allowed: true,
+      isAdult: true,
+      ageBracket: 'adult_18_plus',
+      numBirthYear: undefined
+    };
+  }
+
+  const num = Number(birthYear);
+  if (isNaN(num)) {
+    return {
+      allowed: false,
+      isAdult: false,
+      ageBracket: 'under_14'
+    };
+  }
+
+  const age = currentYear - num;
+  if (age < 14) {
+    return {
+      allowed: false,
+      isAdult: false,
+      ageBracket: 'under_14',
+      numBirthYear: num,
+      age
+    };
+  }
+
+  if (age < 18) {
+    return {
+      allowed: true,
+      isAdult: false,
+      ageBracket: 'minor_14_17',
+      numBirthYear: num,
+      age
+    };
+  }
+
+  return {
+    allowed: true,
+    isAdult: true,
+    ageBracket: 'adult_18_plus',
+    numBirthYear: num,
+    age
+  };
+}
+
 export interface JwtPayloadData {
   sub: string;
   username: string;
@@ -285,33 +345,21 @@ async function handleSignup(req: Request, res: Response): Promise<void> {
 
   // Legal Age Verification (Ley N° 29733 - Perú & LATAM)
   const { birthYear } = req.body || {};
-  const currentYear = new Date().getFullYear();
-  let isAdult = true;
-  let ageBracket: 'under_14' | 'minor_14_17' | 'adult_18_plus' = 'adult_18_plus';
-  let numBirthYear: number | undefined = undefined;
-
-  if (birthYear !== undefined && birthYear !== null && birthYear !== '') {
-    numBirthYear = Number(birthYear);
-    const age = currentYear - numBirthYear;
-    if (age < 14) {
-      sendProblem(
-        req,
-        res,
-        403,
-        'Acceso Restringido por Edad',
-        'De conformidad con el Artículo 27 del Reglamento de la Ley N° 29733 (Protección de Datos Personales de Perú), los menores de 14 años no pueden registrar cuentas en la plataforma.',
-        'underage-restriction'
-      );
-      return;
-    }
-    if (age < 18) {
-      isAdult = false;
-      ageBracket = 'minor_14_17';
-    } else {
-      isAdult = true;
-      ageBracket = 'adult_18_plus';
-    }
+  const ageGate = evaluateAgeGate(birthYear);
+  if (!ageGate.allowed) {
+    sendProblem(
+      req,
+      res,
+      403,
+      'Acceso Restringido por Edad',
+      'De conformidad con el Artículo 27 del Reglamento de la Ley N° 29733 (Protección de Datos Personales de Perú), los menores de 14 años no pueden registrar cuentas en la plataforma.',
+      'underage-restriction'
+    );
+    return;
   }
+  const isAdult = ageGate.isAdult;
+  const ageBracket = ageGate.ageBracket;
+  const numBirthYear = ageGate.numBirthYear;
 
   const newUser: UserRecord = {
     id: `user-${Date.now()}`,
@@ -405,8 +453,7 @@ async function handleSignin(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const currentYear = new Date().getFullYear();
-  if (user.birthYear !== undefined && (currentYear - user.birthYear) < 14) {
+  if (user.birthYear !== undefined && !evaluateAgeGate(user.birthYear).allowed) {
     sendProblem(
       req,
       res,
@@ -446,33 +493,21 @@ async function handleGoogleSso(req: Request, res: Response): Promise<void> {
   }
 
   // Legal Age Verification (Ley N° 29733 - Perú & LATAM)
-  const currentYear = new Date().getFullYear();
-  let isAdult = true;
-  let ageBracket: 'under_14' | 'minor_14_17' | 'adult_18_plus' = 'adult_18_plus';
-  let numBirthYear: number | undefined = undefined;
-
-  if (birthYear !== undefined && birthYear !== null && birthYear !== '') {
-    numBirthYear = Number(birthYear);
-    const age = currentYear - numBirthYear;
-    if (age < 14) {
-      sendProblem(
-        req,
-        res,
-        403,
-        'Acceso Restringido por Edad',
-        'De conformidad con el Artículo 27 del Reglamento de la Ley N° 29733 (Protección de Datos Personales de Perú), los menores de 14 años no pueden acceder a la plataforma.',
-        'underage-restriction'
-      );
-      return;
-    }
-    if (age < 18) {
-      isAdult = false;
-      ageBracket = 'minor_14_17';
-    } else {
-      isAdult = true;
-      ageBracket = 'adult_18_plus';
-    }
+  const ageGate = evaluateAgeGate(birthYear);
+  if (!ageGate.allowed) {
+    sendProblem(
+      req,
+      res,
+      403,
+      'Acceso Restringido por Edad',
+      'De conformidad con el Artículo 27 del Reglamento de la Ley N° 29733 (Protección de Datos Personales de Perú), los menores de 14 años no pueden acceder a la plataforma.',
+      'underage-restriction'
+    );
+    return;
   }
+  const isAdult = ageGate.isAdult;
+  const ageBracket = ageGate.ageBracket;
+  const numBirthYear = ageGate.numBirthYear;
 
   const googleProfile = await verifyGoogleIdToken(String(idToken));
   if (!googleProfile || !googleProfile.emailVerified) {
@@ -496,7 +531,7 @@ async function handleGoogleSso(req: Request, res: Response): Promise<void> {
   );
 
   if (user) {
-    if (user.birthYear !== undefined && (currentYear - user.birthYear) < 14) {
+    if (user.birthYear !== undefined && !evaluateAgeGate(user.birthYear).allowed) {
       sendProblem(
         req,
         res,

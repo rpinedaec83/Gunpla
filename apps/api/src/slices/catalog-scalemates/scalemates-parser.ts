@@ -61,22 +61,15 @@ export function parseScalematesSlug(urlStr: string): Partial<ParsedScalematesRes
   let detectedBrand = 'Unknown Brand';
   let remainingTokens = [...tokens];
 
-  // Try matching known brand
-  for (const [key, label] of Object.entries(KNOWN_BRANDS)) {
+  // Try matching known brand (longest key first)
+  const sortedBrands = Object.entries(KNOWN_BRANDS).sort((a, b) => b[0].length - a[0].length);
+  for (const [key, label] of sortedBrands) {
     const keyParts = key.split('-');
     if (tokens.slice(0, keyParts.length).join('-').toLowerCase() === key) {
       detectedBrand = label;
       remainingTokens = tokens.slice(keyParts.length);
       break;
     }
-  }
-
-  // Detect scale
-  let detectedScale = '1/144';
-  const scaleRegex = /(1)-(\d+)/;
-  const scaleMatch = corePart.match(scaleRegex);
-  if (scaleMatch) {
-    detectedScale = `${scaleMatch[1]}/${scaleMatch[2]}`;
   }
 
   // Detect grade
@@ -102,6 +95,22 @@ export function parseScalematesSlug(urlStr: string): Partial<ParsedScalematesRes
     detectedCategory = 'automotive';
   } else if (lower.includes('ship') || lower.includes('yamato') || lower.includes('destroyer') || lower.includes('carrier') || lower.includes('submarine')) {
     detectedCategory = 'naval';
+  }
+
+  // Detect scale
+  let detectedScale = '1/144';
+  const scaleRegex = /(1)-(\d+)/;
+  const scaleMatch = corePart.match(scaleRegex);
+  if (scaleMatch) {
+    detectedScale = `${scaleMatch[1]}/${scaleMatch[2]}`;
+  } else if (detectedCategory === 'military') {
+    detectedScale = '1/35';
+  } else if (detectedCategory === 'aviation') {
+    detectedScale = '1/48';
+  } else if (detectedCategory === 'automotive') {
+    detectedScale = '1/24';
+  } else if (detectedCategory === 'naval') {
+    detectedScale = '1/700';
   }
 
   // Clean name from tokens

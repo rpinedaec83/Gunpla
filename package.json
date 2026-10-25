@@ -13,7 +13,8 @@
     "start": "npm --workspace=@gunpla/api run start",
     "db:seed": "npm --workspace=@gunpla/api run db:seed",
     "smoketest": "node scripts/smoketest.mjs",
-    "test": "node scripts/smoketest.mjs"
+    "test:unit": "node --test tests/unit/**/*.test.mjs",
+    "test": "npm run test:unit && npm run smoketest"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

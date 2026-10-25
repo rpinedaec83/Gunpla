@@ -17,6 +17,66 @@ import { sendTenantEmailViaResend } from '../notifications-resend/resend.slice';
 
 export const communityRouter = Router();
 
+export interface RubricValidationResult {
+  valid: boolean;
+  error?: string;
+  scores?: {
+    assembly: number;
+    painting: number;
+    finish: number;
+    creativity: number;
+  };
+}
+
+export function validateRubricScores(scores: any): RubricValidationResult {
+  if (!scores || typeof scores !== 'object') {
+    return {
+      valid: false,
+      error: 'Debe proporcionar las puntuaciones de la rúbrica (assembly, painting, finish, creativity).'
+    };
+  }
+  const numAssembly = Number(scores.assembly);
+  const numPainting = Number(scores.painting);
+  const numFinish = Number(scores.finish);
+  const numCreativity = Number(scores.creativity);
+
+  if (
+    isNaN(numAssembly) || numAssembly < 1 || numAssembly > 10 ||
+    isNaN(numPainting) || numPainting < 1 || numPainting > 10 ||
+    isNaN(numFinish) || numFinish < 1 || numFinish > 10 ||
+    isNaN(numCreativity) || numCreativity < 1 || numCreativity > 10
+  ) {
+    return {
+      valid: false,
+      error: 'Cada criterio de la rúbrica (assembly, painting, finish, creativity) debe ser un número entre 1 y 10.'
+    };
+  }
+
+  return {
+    valid: true,
+    scores: {
+      assembly: numAssembly,
+      painting: numPainting,
+      finish: numFinish,
+      creativity: numCreativity
+    }
+  };
+}
+
+export function computeJudgeMetrics(judgeScores: Array<{ totalScore: number }>): {
+  judgeCount: number;
+  judgeScoreAverage: number;
+} {
+  if (!judgeScores || judgeScores.length === 0) {
+    return { judgeCount: 0, judgeScoreAverage: 0 };
+  }
+  const sum = judgeScores.reduce((acc, curr) => acc + curr.totalScore, 0);
+  return {
+    judgeCount: judgeScores.length,
+    judgeScoreAverage: Number((sum / judgeScores.length).toFixed(1))
+  };
+}
+
 export const INITIAL_CONTESTS: ContestRecord[] = [
   {
     id: 'contest-gunpla-cup-2026',
@@ -594,38 +654,19 @@ communityRouter.post('/contests/:id/entries/:entryId/judge', requireAuth, async 
     );
   }
 
-  if (!scores || typeof scores !== 'object') {
-    return sendProblem(
-      req,
-      res,
-      400,
-      'Rúbrica Requerida',
-      'Debe proporcionar las puntuaciones de la rúbrica (assembly, painting, finish, creativity).',
-      'validation-error'
-    );
-  }
-
-  const { assembly, painting, finish, creativity } = scores;
-  const numAssembly = Number(assembly);
-  const numPainting = Number(painting);
-  const numFinish = Number(finish);
-  const numCreativity = Number(creativity);
-
-  if (
-    isNaN(numAssembly) || numAssembly < 1 || numAssembly > 10 ||
-    isNaN(numPainting) || numPainting < 1 || numPainting > 10 ||
-    isNaN(numFinish) || numFinish < 1 || numFinish > 10 ||
-    isNaN(numCreativity) || numCreativity < 1 || numCreativity > 10
-  ) {
+  const rubric = validateRubricScores(scores);
+  if (!rubric.valid || !rubric.scores) {
     return sendProblem(
       req,
       res,
       400,
       'Puntuaciones Inválidas',
-      'Cada criterio de la rúbrica (assembly, painting, finish, creativity) debe ser un número entre 1 y 10.',
+      rubric.error || 'Cada criterio de la rúbrica debe ser un número entre 1 y 10.',
       'validation-error'
     );
   }
+
+  const { assembly: numAssembly, painting: numPainting, finish: numFinish, creativity: numCreativity } = rubric.scores;
 
   const contest = getContestsFromDb().find(c => c.id === contestId || c.slug === contestId);
   if (!contest) {
@@ -688,9 +729,9 @@ communityRouter.post('/contests/:id/entries/:entryId/judge', requireAuth, async 
   }
 
   // Update summary metrics on entry
-  const sum = entry.judgeScores.reduce((acc, curr) => acc + curr.totalScore, 0);
-  entry.judgeCount = entry.judgeScores.length;
-  entry.judgeScoreAverage = Number((sum / entry.judgeScores.length).toFixed(1));
+  const metrics = computeJudgeMetrics(entry.judgeScores);
+  entry.judgeCount = metrics.judgeCount;
+  entry.judgeScoreAverage = metrics.judgeScoreAverage;
 
   saveDb(db);
 
