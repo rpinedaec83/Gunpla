@@ -4,7 +4,15 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 — DVT Pilot & Community Expansion)
 
+- **PWA & Offline Mode for Workshop & Conventions:** Web App Manifest, Service Worker, and local cache for offline Stash and Paint Rack lookups in hobby shops and convention floors.
+- **Trusted Shops Stock Alerts Linked to Stash Wishlist:** Connect user wishlist to verified partner hobby shops (`Trusted Shops`) to notify of inventory arrivals and deals.
+- **Automated Resend Email Notification Triggers:** Automated email delivery for judge scores, build comments, and marketplace/commission inquiries.
+
 ## Completed Candidates & Parking Lot Items
+
+### B2 -- Slice 7: Custom Painting Commissions & Interactive Ordering Workflow (COMPLETED)
+- Goal: End-to-end custom painting and building commission request flow linking clients with verified builders, including finish tier specification (Clean Build, Custom Paint, Weathering, Masterpiece), kit supply selection, budget tracking, quotation negotiation, and a dedicated management panel in "Mi Taller".
+- Delivered: Endpoints `POST /api/v1/commissions/requests`, `GET /api/v1/commissions/requests`, `GET .../:idOrCode`, and `PATCH .../:id`; unique tracking codes (`COM-2026-XXXX`), 4 finish tiers, kit supply options, modal `#modal-commission-request`, quotation modal `#modal-quote-commission`, success modal `#modal-commission-success` with direct WhatsApp deep-links, and 4th sub-tab in Workbench (`#wb-subtab-commissions`) for managing incoming orders (builders) and outgoing requests (clients).
 
 ### B1 -- Slice 6: Interactive Group Builds, Contests & Judging Rubrics (COMPLETED)
 - Goal: Full contest lifecycle management for tenant admins (creating categories, submission verification codes, judge scoring rubrics, community voting, and digital winner badges/certificates).

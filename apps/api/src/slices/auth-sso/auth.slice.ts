@@ -109,6 +109,35 @@ export function requireAuth(
   }
 }
 
+export function optionalAuth(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): void {
+  const authHeader = req.header('Authorization');
+  const token = authHeader?.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : undefined;
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as JwtPayloadData;
+      req.user = {
+        id: decoded.sub,
+        username: decoded.username,
+        email: decoded.email,
+        roles: decoded.roles,
+        tenantSlug: decoded.tenantSlug,
+        isAdult: decoded.isAdult !== false,
+        ageBracket: decoded.ageBracket || 'adult_18_plus'
+      };
+    } catch {
+      // Ignore token failure for optional auth
+    }
+  }
+  next();
+}
+
 export function requireRole(allowedRoles: RoleName[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {

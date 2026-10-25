@@ -628,6 +628,77 @@ export interface CommissionBuilderRecord {
   instagramUrl?: string;
 }
 
+export type CommissionScopeLevel =
+  | 'level_1_clean_build'    // Montaje Limpio, Lijado, Panel Lining & Topcoat
+  | 'level_2_custom_paint'   // Aerografía & Pintura Custom Completa, Calcas al Agua, Barniz
+  | 'level_3_weathering'     // Weathering Avanzado, Desgaste, Óxido, Sombreado & Chipping
+  | 'level_4_masterpiece';   // Masterpiece / Modificaciones Resina / Plaplate / Diorama
+
+export type CommissionKitSupply =
+  | 'client_provides_kit'    // El cliente provee la maqueta
+  | 'builder_sources_kit'    // El modelista adquiere el kit
+  | 'undecided';             // A convenir
+
+export type CommissionRequestStatus =
+  | 'pending'                // Pendiente de respuesta
+  | 'quoted'                 // Cotizado por el modelista
+  | 'accepted'               // Aceptado por el cliente
+  | 'in_progress'            // En proceso en la mesa de trabajo
+  | 'completed'              // Finalizado y entregado
+  | 'declined';              // Rechazado / Cancelado
+
+export interface CommissionRequestRecord {
+  id: string;
+  code: string;              // ej. "COM-2026-X9Y2"
+  tenantId: string;
+  builderUsername: string;
+  builderDisplayName?: string;
+  clientUserId?: string;
+  clientName: string;
+  clientEmail: string;
+  clientWhatsapp: string;
+  clientCity?: string;
+  kitTitle: string;
+  scaleCategory: string;
+  scopeLevel: CommissionScopeLevel;
+  kitSupply: CommissionKitSupply;
+  targetBudget?: number;
+  currency: string;
+  targetDeadline?: string;
+  referenceLinks?: string[];
+  projectNotes: string;
+  status: CommissionRequestStatus;
+  quotePrice?: number;
+  estimatedDays?: number;
+  builderResponseNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCommissionRequestPayload {
+  builderUsername: string;
+  kitTitle: string;
+  scaleCategory?: string;
+  scopeLevel: CommissionScopeLevel;
+  kitSupply: CommissionKitSupply;
+  targetBudget?: number;
+  currency?: string;
+  targetDeadline?: string;
+  referenceLinks?: string[];
+  projectNotes: string;
+  clientName: string;
+  clientEmail: string;
+  clientWhatsapp: string;
+  clientCity?: string;
+}
+
+export interface UpdateCommissionRequestPayload {
+  status?: CommissionRequestStatus;
+  quotePrice?: number;
+  estimatedDays?: number;
+  builderResponseNotes?: string;
+}
+
 export interface PaginatedResult<T> {
   items: T[];
   nextCursor: string | null;

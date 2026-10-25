@@ -6,7 +6,7 @@ import { getDb, saveDb, PlatformDatabaseState } from '../core/db';
 import { INITIAL_KITS, INITIAL_PAINTS } from './seed-catalog';
 import { INITIAL_BUILDS } from './seed-builds';
 import { INITIAL_CONTEST_ENTRIES } from '../slices/community/community.slice';
-import { INITIAL_LISTINGS } from '../slices/marketplace/marketplace.slice';
+import { INITIAL_LISTINGS, INITIAL_COMMISSION_REQUESTS } from '../slices/marketplace/marketplace.slice';
 
 const ALL_CATEGORIES: ScaleCategory[] = [
   'gunpla-mecha',
@@ -244,6 +244,7 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
   const builds = !forceReset && db.builds && db.builds.length > 0 ? db.builds : INITIAL_BUILDS;
   const contestEntries = !forceReset && db.contestEntries && db.contestEntries.length > 0 ? db.contestEntries : INITIAL_CONTEST_ENTRIES;
   const marketplaceListings = !forceReset && db.marketplaceListings && db.marketplaceListings.length > 0 ? db.marketplaceListings : INITIAL_LISTINGS;
+  const commissionRequests = !forceReset && db.commissionRequests && db.commissionRequests.length > 0 ? db.commissionRequests : INITIAL_COMMISSION_REQUESTS;
 
   const nextState: PlatformDatabaseState = {
     tenants,
@@ -257,6 +258,7 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
     builds,
     contestEntries,
     marketplaceListings,
+    commissionRequests,
     lastSeededAt: now
   };
 

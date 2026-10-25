@@ -1270,7 +1270,173 @@ async function runSmoketest() {
 
     console.log('[PASS] Official Judge Rubrics & Contest Diplomas (B1) verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS CHECKS PASSED ===');
+    // 29. B2 -- Custom Painting Commissions & Interactive Ordering Workflow
+    console.log('\n--- Checking Custom Commissions & Painting Orders Workflow (B2) ---');
+
+    // 1. Validation: Missing kitTitle must return 400
+    const invalidCommRes1 = await fetch(`${baseUrl}/api/v1/commissions/requests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        builderUsername: 'aperich',
+        clientName: 'Roberto Pineda',
+        clientEmail: 'roberto@example.com',
+        clientWhatsapp: '+51 999 888 777',
+        scopeLevel: 'level_2_custom_paint',
+        projectNotes: 'Aerografía personalizada'
+      })
+    });
+    assert.equal(invalidCommRes1.status, 400, 'Missing kitTitle must return 400 Problem Details');
+
+    // 2. Validation: Unknown builder must return 404
+    const invalidCommRes2 = await fetch(`${baseUrl}/api/v1/commissions/requests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        builderUsername: 'non_existent_builder_xyz',
+        kitTitle: 'MG RX-78-2',
+        clientName: 'Roberto Pineda',
+        clientEmail: 'roberto@example.com',
+        clientWhatsapp: '+51 999 888 777',
+        scopeLevel: 'level_2_custom_paint',
+        projectNotes: 'Aerografía personalizada'
+      })
+    });
+    assert.equal(invalidCommRes2.status, 404, 'Non-existent builder must return 404 Problem Details');
+
+    // 3. Validation: Invalid scope level must return 400
+    const invalidCommRes3 = await fetch(`${baseUrl}/api/v1/commissions/requests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        builderUsername: 'aperich',
+        kitTitle: 'MG Sazabi',
+        clientName: 'Roberto Pineda',
+        clientEmail: 'roberto@example.com',
+        clientWhatsapp: '+51 999 888 777',
+        scopeLevel: 'level_invalid_unknown',
+        projectNotes: 'Aerografía personalizada'
+      })
+    });
+    assert.equal(invalidCommRes3.status, 400, 'Invalid scopeLevel must return 400 Problem Details');
+
+    // 4. Valid commission request creation (Client: amuroray, Target Builder: aperich)
+    const validCommRes = await fetch(`${baseUrl}/api/v1/commissions/requests`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${judgeToken}`
+      },
+      body: JSON.stringify({
+        builderUsername: 'aperich',
+        kitTitle: 'PG 1/60 Unleashed RX-78-2 Gundam',
+        scaleCategory: 'gunpla-mecha',
+        scopeLevel: 'level_2_custom_paint',
+        kitSupply: 'client_provides_kit',
+        targetBudget: 650,
+        currency: 'PEN',
+        targetDeadline: '2026-12-20',
+        clientName: 'Amuro Ray',
+        clientEmail: 'amuro.ray@gunplajunkies.com',
+        clientWhatsapp: '+51 999 777 666',
+        clientCity: 'Lima (Miraflores)',
+        projectNotes: 'Pintura completa con sombreado pre-shading sutil, inner frame metálico y calcas doradas.'
+      })
+    });
+    assert.equal(validCommRes.status, 201, 'Valid commission request must return 201 Created');
+    const createdCommData = await validCommRes.json();
+    assert.equal(createdCommData.status, 'created');
+    assert.ok(createdCommData.request.id.startsWith('req-com-'));
+    assert.ok(createdCommData.request.code.startsWith('COM-2026-'));
+    assert.equal(createdCommData.request.builderUsername, 'aperich');
+    assert.equal(createdCommData.request.status, 'pending');
+    assert.equal(createdCommData.request.scopeLevel, 'level_2_custom_paint');
+    const commId = createdCommData.request.id;
+    const commCode = createdCommData.request.code;
+
+    // 5. Query commission requests by builder and code
+    const getCommsRes = await fetch(`${baseUrl}/api/v1/commissions/requests?builderUsername=aperich`);
+    assert.equal(getCommsRes.status, 200);
+    const commsList = await getCommsRes.json();
+    assert.ok(commsList.items.length >= 2, 'Must include initial seeded commission and the newly created one');
+    assert.ok(commsList.items.some(c => c.code === commCode));
+
+    const getSingleCommRes = await fetch(`${baseUrl}/api/v1/commissions/requests/${commCode}`);
+    assert.equal(getSingleCommRes.status, 200);
+    const singleCommData = await getSingleCommRes.json();
+    assert.equal(singleCommData.request.id, commId);
+
+    // 6. Unauthorized update attempt by unrelated user (quattro) -> 403 Forbidden
+    const unauthUpdateRes = await fetch(`${baseUrl}/api/v1/commissions/requests/${commId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${quattroData.token}`
+      },
+      body: JSON.stringify({ quotePrice: 999, status: 'quoted' })
+    });
+    assert.equal(unauthUpdateRes.status, 403, 'Unrelated user must be rejected with 403 Forbidden');
+
+    // 7. Builder quote: Login as aperich and respond with quote price and estimated days
+    const aperichLoginRes = await fetch(`${baseUrl}/api/v1/auth/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: 'aperich', password: 'PlamoScaleDev2026!' })
+    });
+    assert.equal(aperichLoginRes.status, 200, 'aperich login must succeed');
+    const aperichSession = await aperichLoginRes.json();
+    const aperichToken = aperichSession.token;
+
+    const builderQuoteRes = await fetch(`${baseUrl}/api/v1/commissions/requests/${commId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${aperichToken}`
+      },
+      body: JSON.stringify({
+        quotePrice: 620,
+        estimatedDays: 28,
+        status: 'quoted',
+        builderResponseNotes: 'Excelente kit PG. Cuento con las pinturas Mr. Color y barniz mate GX113. Plazo de 28 días.'
+      })
+    });
+    assert.equal(builderQuoteRes.status, 200, 'Builder must be able to submit quote with 200 OK');
+    const quotedCommData = await builderQuoteRes.json();
+    assert.equal(quotedCommData.request.status, 'quoted');
+    assert.equal(quotedCommData.request.quotePrice, 620);
+    assert.equal(quotedCommData.request.estimatedDays, 28);
+    assert.ok(quotedCommData.request.builderResponseNotes.includes('GX113'));
+
+    // 8. Client acceptance: Amuro Ray (client) accepts the quotation
+    const clientAcceptRes = await fetch(`${baseUrl}/api/v1/commissions/requests/${commId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${judgeToken}` // amuroray
+      },
+      body: JSON.stringify({
+        status: 'accepted'
+      })
+    });
+    assert.equal(clientAcceptRes.status, 200, 'Client must be able to accept quote with 200 OK');
+    const acceptedCommData = await clientAcceptRes.json();
+    assert.equal(acceptedCommData.request.status, 'accepted');
+
+    // 9. Verify Web Frontends render Commission Request modals & Workbench sub-tab
+    const plamoCommCheck = await fetch(`${plamoUrl}/`);
+    assert.equal(plamoCommCheck.status, 200);
+    const plamoCommHtml = await plamoCommCheck.text();
+    assert.ok(plamoCommHtml.includes('id="modal-commission-request"'), 'Must render commission request modal');
+    assert.ok(plamoCommHtml.includes('id="modal-quote-commission"'), 'Must render quote commission modal');
+    assert.ok(plamoCommHtml.includes('id="modal-commission-success"'), 'Must render commission success modal');
+    assert.ok(plamoCommHtml.includes('id="wb-subtab-commissions"'), 'Must render workbench commissions sub-tab');
+    assert.ok(plamoCommHtml.includes('openCommissionModal'), 'Must include openCommissionModal JS function');
+    assert.ok(plamoCommHtml.includes('submitCommissionRequest'), 'Must include submitCommissionRequest JS function');
+    assert.ok(plamoCommHtml.includes('submitQuote'), 'Must include submitQuote JS function');
+
+    console.log('[PASS] Custom Commissions & Painting Orders Workflow (B2) verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

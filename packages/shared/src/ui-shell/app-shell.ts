@@ -1484,7 +1484,7 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
         </div>
 
         <!-- Workbench Sub-Tabs -->
-        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; flex-wrap: wrap;">
           <button id="wb-subtab-btn-stash" class="filter-pill active" onclick="switchWorkbenchSubtab('stash')">
             📦 Mi Stash de Maquetas
           </button>
@@ -1493,6 +1493,9 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
           </button>
           <button id="wb-subtab-btn-paints" class="filter-pill" onclick="switchWorkbenchSubtab('paints')">
             🎨 Mi Rack de Pinturas
+          </button>
+          <button id="wb-subtab-btn-commissions" class="filter-pill" onclick="switchWorkbenchSubtab('commissions')">
+            💼 Encargos & Comisiones <span id="wb-commissions-badge" class="nav-badge" style="display:none; margin-left: 0.35rem; font-size: 0.72rem; padding: 0.1rem 0.45rem;">0</span>
           </button>
         </div>
 
@@ -1513,6 +1516,27 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
         <!-- Sub-Tab 3: Paint Rack Grid -->
         <div id="wb-subtab-paints" class="wb-subtab-content" style="display: none;">
           <div id="wb-paints-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;">
+            <!-- Dynamically populated via loadWorkbenchData() -->
+          </div>
+        </div>
+
+        <!-- Sub-Tab 4: Commissions Grid -->
+        <div id="wb-subtab-commissions" class="wb-subtab-content" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button id="comm-subfilter-received" class="filter-pill active" onclick="filterWbCommissions('received')">
+                📥 Solicitudes Recibidas (Como Modelista)
+              </button>
+              <button id="comm-subfilter-sent" class="filter-pill" onclick="filterWbCommissions('sent')">
+                📤 Mis Encargos Solicitados (Como Cliente)
+              </button>
+            </div>
+            <button class="btn-primary" onclick="switchTab('commissions')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">
+              🔍 Explorar Modelistas
+            </button>
+          </div>
+
+          <div id="wb-commissions-list" style="display: flex; flex-direction: column; gap: 1.25rem;">
             <!-- Dynamically populated via loadWorkbenchData() -->
           </div>
         </div>
@@ -1832,11 +1856,16 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
               Tarifa estimada: <strong style="color: #4ade80;">Desde PEN ${cb.startingPricePEN}</strong>
             </div>
 
-            <div style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+            <div style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 0.85rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem;">
               ${cb.instagramUrl ? `<a href="${cb.instagramUrl}" target="_blank" rel="noopener" style="font-size: 0.8rem; color: var(--accent); text-decoration: none;">Instagram ➔</a>` : '<span></span>'}
-              <a href="${cb.whatsappUrl}" target="_blank" rel="noopener" class="btn-primary" style="padding: 0.35rem 0.85rem; font-size: 0.82rem; text-decoration: none;">
-                Cotizar Proyecto 💬
-              </a>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button type="button" class="btn-primary" onclick="openCommissionModal('${cb.username}', '${cb.displayName.replace(/'/g, "\\'")}', ${cb.startingPricePEN || 150})" style="padding: 0.35rem 0.85rem; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;">
+                  🎨 Solicitar Encargo
+                </button>
+                <a href="${cb.whatsappUrl}" target="_blank" rel="noopener" class="filter-pill" style="padding: 0.35rem 0.7rem; font-size: 0.8rem; text-decoration: none; border-color: rgba(34, 197, 94, 0.4); color: #4ade80;">
+                  WhatsApp 💬
+                </a>
+              </div>
             </div>
           </div>
         `
@@ -2781,7 +2810,216 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
   </div>
 </div>
 
+<!-- Commission Request Modal -->
+<div id="modal-commission-request" class="custom-modal" onclick="closeCommissionModal(event)">
+  <div class="auth-box" style="max-width: 680px; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeCommissionModal()">&times;</span>
+    
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+      <span style="font-size: 1.6rem;">🎨</span>
+      <div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin: 0;">Solicitar Encargo de Pintura & Armado</h3>
+        <p id="comm-target-builder-banner" style="font-size: 0.82rem; color: var(--accent); margin-top: 0.15rem;"></p>
+      </div>
+    </div>
+
+    <form id="form-commission-request" onsubmit="submitCommissionRequest(event)" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+      <input type="hidden" id="comm-builder-username">
+      <input type="hidden" id="comm-builder-display-name">
+
+      <!-- Kit & Escala -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div>
+          <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.25rem;">Maqueta / Kit a Trabajar *</label>
+          <input type="text" id="comm-kit-title" class="auth-input" placeholder="ej. MG 1/100 Sazabi Ver. Ka" required>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.25rem;">Categoría & Escala *</label>
+          <select id="comm-scale-category" class="auth-input">
+            <option value="gunpla-mecha">Gunpla / Mecha (MG, RG, PG, HG)</option>
+            <option value="military">Militar / Blindados (1/35, 1/72)</option>
+            <option value="aviation">Aviación / Aviones (1/48, 1/72)</option>
+            <option value="automotive">Automotriz & Motos (1/24, 1/12)</option>
+            <option value="figures">Figuras & Sci-Fi</option>
+            <option value="diorama">Diorama Escénico Completo</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Scope Level Selection (4 Tiers) -->
+      <div>
+        <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.4rem;">Nivel de Acabado Deseado *</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;">
+          <label class="scope-option" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; cursor: pointer; display: flex; gap: 0.5rem; align-items: flex-start;">
+            <input type="radio" name="comm-scope-level" value="level_1_clean_build" style="margin-top: 0.2rem;">
+            <div>
+              <strong style="color: #fff; font-size: 0.82rem;">Nivel 1: Montaje Limpio</strong>
+              <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.2rem;">Lijado de nubs, panel lining prolijo, topcoat mate/satinado.</div>
+            </div>
+          </label>
+
+          <label class="scope-option" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; cursor: pointer; display: flex; gap: 0.5rem; align-items: flex-start;">
+            <input type="radio" name="comm-scope-level" value="level_2_custom_paint" checked style="margin-top: 0.2rem;">
+            <div>
+              <strong style="color: #38bdf8; font-size: 0.82rem;">Nivel 2: Pintura Custom</strong>
+              <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.2rem;">Aerografía completa, paleta personalizada, calcas al agua y barniz.</div>
+            </div>
+          </label>
+
+          <label class="scope-option" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; cursor: pointer; display: flex; gap: 0.5rem; align-items: flex-start;">
+            <input type="radio" name="comm-scope-level" value="level_3_weathering" style="margin-top: 0.2rem;">
+            <div>
+              <strong style="color: #f59e0b; font-size: 0.82rem;">Nivel 3: Weathering Avanzado</strong>
+              <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.2rem;">Chipping, óxidos, sombreado, filtros al óleo y pigmentos.</div>
+            </div>
+          </label>
+
+          <label class="scope-option" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; cursor: pointer; display: flex; gap: 0.5rem; align-items: flex-start;">
+            <input type="radio" name="comm-scope-level" value="level_4_masterpiece" style="margin-top: 0.2rem;">
+            <div>
+              <strong style="color: #c084fc; font-size: 0.82rem;">Nivel 4: Masterpiece / Diorama</strong>
+              <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.2rem;">Modificaciones en pla-plate/resina, LEDs, peana y terreno.</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Kit Supply & Budget -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div>
+          <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.25rem;">Suministro del Kit *</label>
+          <select id="comm-kit-supply" class="auth-input">
+            <option value="client_provides_kit">📦 Yo entrego la maqueta (en caja)</option>
+            <option value="builder_sources_kit">🛒 Deseo que el modelista compre el kit</option>
+            <option value="undecided">🤝 A convenir / Por definir</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.25rem;">Presupuesto Estimado (PEN)</label>
+          <input type="number" id="comm-target-budget" class="auth-input" placeholder="ej. 350" min="0">
+        </div>
+      </div>
+
+      <!-- Contact Details -->
+      <div style="background: rgba(0,0,0,0.2); padding: 0.85rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #fff; margin-bottom: 0.6rem;">Tus Datos de Contacto</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.6rem;">
+          <div>
+            <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem;">Tu Nombre / Alias *</label>
+            <input type="text" id="comm-client-name" class="auth-input" placeholder="ej. Carlos Mendoza" required>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem;">WhatsApp / Teléfono *</label>
+            <input type="text" id="comm-client-whatsapp" class="auth-input" placeholder="+51 987 654 321" required>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div>
+            <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem;">Correo Electrónico *</label>
+            <input type="email" id="comm-client-email" class="auth-input" placeholder="tu@correo.com" required>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem;">Ciudad / Distrito</label>
+            <input type="text" id="comm-client-city" class="auth-input" placeholder="ej. Lima (Miraflores)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Project Notes -->
+      <div>
+        <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.25rem;">Descripción y Referencias del Encargo *</label>
+        <textarea id="comm-project-notes" class="auth-input" rows="3" placeholder="Describe los colores que deseas, si quieres efectos de sombreado, calcas al agua o enlaces a fotos de referencia..." required></textarea>
+      </div>
+
+      <div id="comm-form-status" style="font-size: 0.82rem; display: none;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.6rem;">
+        <button type="button" class="filter-pill" onclick="closeCommissionModal()">Cancelar</button>
+        <button type="submit" id="comm-submit-btn" class="btn-primary" style="padding: 0.55rem 1.25rem;">
+          🚀 Enviar Solicitud de Encargo
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Quote Commission Modal (For Builders) -->
+<div id="modal-quote-commission" class="custom-modal" onclick="closeQuoteModal(event)">
+  <div class="auth-box" style="max-width: 520px;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeQuoteModal()">&times;</span>
+    <h3 style="font-size: 1.2rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">📝 Cotizar Solicitud de Encargo</h3>
+    <p id="quote-modal-kit-banner" style="font-size: 0.82rem; color: var(--accent); margin-bottom: 1rem;"></p>
+
+    <form id="form-quote-commission" onsubmit="submitQuote(event)" style="display: flex; flex-direction: column; gap: 0.85rem;">
+      <input type="hidden" id="quote-request-id">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div>
+          <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem;">Precio Cotizado (PEN) *</label>
+          <input type="number" id="quote-price-input" class="auth-input" placeholder="ej. 420" min="0" required>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem;">Plazo Estimado (Días) *</label>
+          <input type="number" id="quote-days-input" class="auth-input" placeholder="ej. 20" min="1" required>
+        </div>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem;">Estado del Encargo *</label>
+        <select id="quote-status-select" class="auth-input">
+          <option value="quoted">🔵 Cotizado (Enviar propuesta al cliente)</option>
+          <option value="in_progress">🟠 En Mesa de Trabajo (WIP iniciado)</option>
+          <option value="completed">🟣 Finalizado (Listo para entrega)</option>
+          <option value="declined">⚪ Rechazar / Cancelar Encargo</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem;">Mensaje y Condiciones Técnicas</label>
+        <textarea id="quote-notes-input" class="auth-input" rows="3" placeholder="Indica qué pinturas y barnices usarás, condiciones de entrega o anticipo..."></textarea>
+      </div>
+
+      <div id="quote-status-msg" style="font-size: 0.82rem; display: none;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.5rem;">
+        <button type="button" class="filter-pill" onclick="closeQuoteModal()">Cancelar</button>
+        <button type="submit" id="quote-submit-btn" class="btn-primary">
+          Guardar & Notificar al Cliente
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Commission Success Modal -->
+<div id="modal-commission-success" class="custom-modal" onclick="closeCommissionSuccessModal(event)">
+  <div class="auth-box" style="max-width: 480px; text-align: center;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeCommissionSuccessModal()">&times;</span>
+    <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎉</div>
+    <h3 style="font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;">¡Solicitud de Encargo Enviada!</h3>
+    <p style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 1.25rem;">
+      Tu encargo ha sido registrado exitosamente y notificado al modelista.
+    </p>
+
+    <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--accent-color); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+      <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;">Código de Seguimiento:</div>
+      <div id="comm-success-code" style="font-size: 1.4rem; font-weight: 800; color: var(--accent); font-family: monospace; letter-spacing: 1px; margin-top: 0.25rem;">COM-2026-XXXX</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+      <a id="comm-success-whatsapp-btn" href="#" target="_blank" rel="noopener" class="btn-primary" style="background: #22c55e; border-color: #22c55e; justify-content: center; text-decoration: none; padding: 0.65rem;">
+        💬 Abrir WhatsApp con el Modelista
+      </a>
+      <button class="filter-pill" onclick="closeCommissionSuccessModal(); switchTab('workbench'); switchWorkbenchSubtab('commissions');" style="padding: 0.55rem;">
+        💼 Ver Mis Encargos en Mi Taller
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
+  window.__COMM_BUILDERS = ${JSON.stringify(data.commissionBuilders || [])};
+
   function escapeHtml(str) {
     if (!str) return '';
     return String(str)
@@ -3665,6 +3903,422 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Interactive Custom Commissions & Painting Orders Logic (B2)
+  // -------------------------------------------------------------------------
+  function openCommissionModal(builderUsername, builderDisplayName, startingPrice) {
+    const modal = document.getElementById('modal-commission-request');
+    const uInput = document.getElementById('comm-builder-username');
+    const dInput = document.getElementById('comm-builder-display-name');
+    const banner = document.getElementById('comm-target-builder-banner');
+    const statusMsg = document.getElementById('comm-form-status');
+
+    if (uInput) uInput.value = builderUsername;
+    if (dInput) dInput.value = builderDisplayName;
+    if (banner) {
+      banner.textContent = 'Destinatario: ' + builderDisplayName + ' (@' + builderUsername + ') • Tarifa estimada desde PEN ' + (startingPrice || 150);
+    }
+    if (statusMsg) statusMsg.style.display = 'none';
+
+    // Autofill client info if logged in
+    if (currentUser) {
+      const nameInput = document.getElementById('comm-client-name');
+      const emailInput = document.getElementById('comm-client-email');
+      const waInput = document.getElementById('comm-client-whatsapp');
+
+      if (nameInput && !nameInput.value) nameInput.value = currentUser.displayName || currentUser.username;
+      if (emailInput && !emailInput.value) emailInput.value = currentUser.email || '';
+      if (waInput && !waInput.value && currentUser.whatsapp) waInput.value = currentUser.whatsapp;
+    }
+
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeCommissionModal(e) {
+    if (!e || e.target.id === 'modal-commission-request' || e.target.classList.contains('auth-close') || e.target.textContent === 'Cancelar') {
+      const modal = document.getElementById('modal-commission-request');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  async function submitCommissionRequest(e) {
+    e.preventDefault();
+    const btn = document.getElementById('comm-submit-btn');
+    const statusMsg = document.getElementById('comm-form-status');
+
+    const builderUsername = document.getElementById('comm-builder-username')?.value;
+    const kitTitle = document.getElementById('comm-kit-title')?.value;
+    const scaleCategory = document.getElementById('comm-scale-category')?.value;
+    const scopeLevel = document.querySelector('input[name="comm-scope-level"]:checked')?.value || 'level_2_custom_paint';
+    const kitSupply = document.getElementById('comm-kit-supply')?.value;
+    const targetBudgetVal = document.getElementById('comm-target-budget')?.value;
+    const targetBudget = targetBudgetVal ? parseFloat(targetBudgetVal) : undefined;
+    const clientName = document.getElementById('comm-client-name')?.value;
+    const clientWhatsapp = document.getElementById('comm-client-whatsapp')?.value;
+    const clientEmail = document.getElementById('comm-client-email')?.value;
+    const clientCity = document.getElementById('comm-client-city')?.value;
+    const projectNotes = document.getElementById('comm-project-notes')?.value;
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Enviando solicitud...';
+    }
+
+    try {
+      const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Tenant-Slug': '${config.tenantSlug}'
+      };
+      if (currentToken) {
+        headers['Authorization'] = 'Bearer ' + currentToken;
+      }
+
+      const res = await fetch(apiBase + '/api/v1/commissions/requests', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          builderUsername,
+          kitTitle,
+          scaleCategory,
+          scopeLevel,
+          kitSupply,
+          targetBudget,
+          currency: 'PEN',
+          clientName,
+          clientWhatsapp,
+          clientEmail,
+          clientCity,
+          projectNotes
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || data.title || 'Error al enviar solicitud de encargo');
+      }
+
+      closeCommissionModal();
+
+      // Show success modal with tracking code & WhatsApp quick-action
+      const successModal = document.getElementById('modal-commission-success');
+      const codeSlot = document.getElementById('comm-success-code');
+      const waBtn = document.getElementById('comm-success-whatsapp-btn');
+
+      if (codeSlot) codeSlot.textContent = data.request.code;
+
+      if (waBtn) {
+        const targetB = (window.__COMM_BUILDERS || []).find(b => b.username === builderUsername);
+        const waUrl = targetB?.whatsappUrl || 'https://chat.whatsapp.com/GJsVix10Hqy2ywwYmh8EYx';
+        const msg = 'Hola @' + builderUsername + ', te acabo de enviar una solicitud de encargo en PlamoScale con código ' + data.request.code + ' para mi maqueta "' + kitTitle + '". ¿Podemos coordinar los detalles?';
+        waBtn.href = waUrl.startsWith('https://chat.whatsapp.com') 
+          ? waUrl 
+          : 'https://wa.me/' + waUrl.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent(msg);
+      }
+
+      if (successModal) successModal.classList.add('active');
+
+      if (currentUser && currentToken) {
+        loadWorkbenchData();
+      }
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.style.display = 'block';
+        statusMsg.style.color = '#ef4444';
+        statusMsg.textContent = err.message || 'Error inesperado al enviar el encargo';
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🚀 Enviar Solicitud de Encargo';
+      }
+    }
+  }
+
+  function closeCommissionSuccessModal(e) {
+    if (!e || e.target.id === 'modal-commission-success' || e.target.classList.contains('auth-close')) {
+      const modal = document.getElementById('modal-commission-success');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  function filterWbCommissions(subfilter) {
+    window.__COMM_SUBFILTER = subfilter;
+    const btnReceived = document.getElementById('comm-subfilter-received');
+    const btnSent = document.getElementById('comm-subfilter-sent');
+
+    if (btnReceived) btnReceived.classList.toggle('active', subfilter === 'received');
+    if (btnSent) btnSent.classList.toggle('active', subfilter === 'sent');
+
+    renderWbCommissions();
+  }
+
+  function renderWbCommissions() {
+    const container = document.getElementById('wb-commissions-list');
+    if (!container) return;
+    const filter = window.__COMM_SUBFILTER || 'received';
+    const allComms = window.__WB_COMMISSIONS || [];
+
+    const items = allComms.filter(c => {
+      if (filter === 'received') {
+        return c.builderUsername && c.builderUsername.toLowerCase() === (currentUser?.username || '').toLowerCase();
+      } else {
+        return (c.clientUserId && c.clientUserId === currentUser?.id) ||
+               (c.clientEmail && c.clientEmail.toLowerCase() === (currentUser?.email || '').toLowerCase());
+      }
+    });
+
+    const scopeLabels = {
+      level_1_clean_build: 'Nivel 1: Montaje Limpio & Panel Lining',
+      level_2_custom_paint: 'Nivel 2: Pintura Custom & Aerografía',
+      level_3_weathering: 'Nivel 3: Weathering & Desgaste Avanzado',
+      level_4_masterpiece: 'Nivel 4: Masterpiece & Diorama'
+    };
+
+    const statusBadges = {
+      pending: '<span class="status-badge" style="background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.4);">🟡 Pendiente de Cotización</span>',
+      quoted: '<span class="status-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4);">🔵 Cotizado por Modelista</span>',
+      accepted: '<span class="status-badge" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4);">🟢 Aceptado</span>',
+      in_progress: '<span class="status-badge" style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.4);">🟠 En Mesa de Trabajo (WIP)</span>',
+      completed: '<span class="status-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4);">🟣 Finalizado</span>',
+      declined: '<span class="status-badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">⚪ Cancelado / Rechazado</span>'
+    };
+
+    if (items.length === 0) {
+      container.innerHTML = 
+        '<div style="background: rgba(255,255,255,0.02); border: 1px dashed var(--border-color); border-radius: 10px; padding: 3rem 1.5rem; text-align: center;">' +
+          '<div style="font-size: 2.5rem; margin-bottom: 0.75rem;">💼</div>' +
+          '<h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.4rem;">' +
+            (filter === 'received' ? 'No tienes solicitudes de encargo recibidas' : 'No has enviado ninguna solicitud de encargo') +
+          '</h3>' +
+          '<p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.25rem;">' +
+            (filter === 'received' ? 'Cuando otros modelistas o clientes soliciten tus servicios de armado y pintura, aparecerán aquí para que envíes tu cotización.' : 'Explora el directorio de modelistas para solicitar el armado y pintura profesional de tu maqueta favorita.') +
+          '</p>' +
+          '<button class="btn-primary" onclick="switchTab(&quot;commissions&quot;)">🎨 Explorar Directorio de Modelistas</button>' +
+        '</div>';
+      return;
+    }
+
+    container.innerHTML = items.map(c => {
+      const isBuilder = c.builderUsername && c.builderUsername.toLowerCase() === (currentUser?.username || '').toLowerCase();
+      const isClient = (c.clientUserId && c.clientUserId === currentUser?.id) ||
+                       (c.clientEmail && c.clientEmail.toLowerCase() === (currentUser?.email || '').toLowerCase());
+      const scopeName = scopeLabels[c.scopeLevel] || c.scopeLevel;
+      const statusHtml = statusBadges[c.status] || '<span class="status-badge">' + escapeHtml(c.status) + '</span>';
+
+      const cleanWhatsapp = (c.clientWhatsapp || '').replace(/[^0-9]/g, '');
+      const clientWaLink = cleanWhatsapp ? 'https://wa.me/' + cleanWhatsapp + '?text=' + encodeURIComponent('Hola ' + c.clientName + ', te escribo respecto a tu encargo (' + c.code + ') para la maqueta "' + c.kitTitle + '".') : '#';
+
+      return '<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.85rem;">' +
+        '<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">' +
+          '<div>' +
+            '<div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">' +
+              '<span style="font-size: 0.75rem; font-family: monospace; background: rgba(255,255,255,0.06); padding: 0.2rem 0.5rem; border-radius: 4px; color: var(--accent); font-weight: 700;">' + escapeHtml(c.code) + '</span>' +
+              '<span style="font-size: 0.78rem; color: #94a3b8;">' + new Date(c.createdAt).toLocaleDateString() + '</span>' +
+            '</div>' +
+            '<h4 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">' + escapeHtml(c.kitTitle) + '</h4>' +
+            '<div style="font-size: 0.82rem; color: #38bdf8; margin-top: 0.2rem;">' +
+              '🏷️ ' + escapeHtml(c.scaleCategory || 'gunpla-mecha') + ' • 🛠️ ' + escapeHtml(scopeName) +
+            '</div>' +
+          '</div>' +
+          '<div style="text-align: right;">' +
+            statusHtml +
+          '</div>' +
+        '</div>' +
+
+        '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; background: rgba(0,0,0,0.2); padding: 0.85rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04); font-size: 0.82rem;">' +
+          '<div>' +
+            '<span style="color: #64748b;">' + (isBuilder ? 'Cliente Solicitante:' : 'Modelista Asignado:') + '</span><br>' +
+            '<strong style="color: #f1f5f9;">' + escapeHtml(isBuilder ? c.clientName : (c.builderDisplayName || '@' + c.builderUsername)) + '</strong>' +
+            (isBuilder && c.clientCity ? '<span style="font-size: 0.75rem; color: #94a3b8;"> (📍 ' + escapeHtml(c.clientCity) + ')</span>' : '') +
+          '</div>' +
+          '<div>' +
+            '<span style="color: #64748b;">Suministro del Kit:</span><br>' +
+            '<strong style="color: #f1f5f9;">' + (c.kitSupply === 'client_provides_kit' ? '📦 Cliente provee kit' : (c.kitSupply === 'builder_sources_kit' ? '🛒 Modelista adquiere kit' : '🤝 A convenir')) + '</strong>' +
+          '</div>' +
+          '<div>' +
+            '<span style="color: #64748b;">Presupuesto Cliente:</span><br>' +
+            '<strong style="color: #4ade80;">' + (c.targetBudget ? escapeHtml(c.currency || 'PEN') + ' ' + c.targetBudget : 'A convenir') + '</strong>' +
+          '</div>' +
+          '<div>' +
+            '<span style="color: #64748b;">Cotización Oficial:</span><br>' +
+            '<strong style="color: ' + (c.quotePrice ? '#38bdf8' : '#94a3b8') + ';">' +
+              (c.quotePrice ? escapeHtml(c.currency || 'PEN') + ' ' + c.quotePrice + ' (' + (c.estimatedDays || 15) + ' días)' : 'Pendiente de cotizar') +
+            '</strong>' +
+          '</div>' +
+        '</div>' +
+
+        '<div style="font-size: 0.85rem; color: #cbd5e1; background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 6px; border-left: 3px solid var(--accent-color);">' +
+          '<div style="font-size: 0.75rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;">Notas del Proyecto:</div>' +
+          '<div style="line-height: 1.4;">' + escapeHtml(c.projectNotes) + '</div>' +
+          (c.builderResponseNotes ? 
+            '<div style="margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed rgba(255,255,255,0.1);">' +
+              '<div style="font-size: 0.75rem; color: #38bdf8; font-weight: 600; text-transform: uppercase; margin-bottom: 0.2rem;">Respuesta del Modelista:</div>' +
+              '<div style="color: #e2e8f0; font-style: italic;">"' + escapeHtml(c.builderResponseNotes) + '"</div>' +
+            '</div>' : '') +
+        '</div>' +
+
+        '<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.6rem; border-top: 1px solid var(--border-color); padding-top: 0.85rem; margin-top: 0.25rem;">' +
+          '<div style="display: flex; gap: 0.5rem; align-items: center;">' +
+            (isBuilder ? 
+              '<a href="' + clientWaLink + '" target="_blank" rel="noopener" class="filter-pill" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; color: #4ade80; border-color: rgba(34, 197, 94, 0.4); text-decoration: none;">💬 WhatsApp Cliente</a>' +
+              '<span style="font-size: 0.75rem; color: #94a3b8;">📧 ' + escapeHtml(c.clientEmail) + '</span>'
+              : '<span style="font-size: 0.8rem; color: #94a3b8;">Modelista: <strong>@' + escapeHtml(c.builderUsername) + '</strong></span>'
+            ) +
+          '</div>' +
+
+          '<div style="display: flex; gap: 0.5rem; align-items: center;">' +
+            (isBuilder ? 
+              '<button class="btn-primary" onclick="openQuoteModal(&quot;' + c.id + '&quot;)" style="font-size: 0.82rem; padding: 0.4rem 0.9rem;">📝 Cotizar / Responder</button>' 
+              : '') +
+            (isClient && c.status === 'quoted' ? 
+              '<button class="btn-primary" onclick="acceptCommissionQuote(&quot;' + c.id + '&quot;)" style="background: #22c55e; border-color: #22c55e; font-size: 0.82rem; padding: 0.4rem 0.9rem;">✅ Aceptar Cotización</button>' +
+              '<button class="filter-pill" onclick="declineCommissionQuote(&quot;' + c.id + '&quot;)" style="font-size: 0.82rem; padding: 0.4rem 0.75rem; color: #f87171; border-color: rgba(239, 68, 68, 0.4);">❌ Rechazar</button>'
+              : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function openQuoteModal(requestId) {
+    const target = (window.__WB_COMMISSIONS || []).find(c => c.id === requestId);
+    if (!target) return;
+
+    const modal = document.getElementById('modal-quote-commission');
+    const idInput = document.getElementById('quote-request-id');
+    const banner = document.getElementById('quote-modal-kit-banner');
+    const priceInput = document.getElementById('quote-price-input');
+    const daysInput = document.getElementById('quote-days-input');
+    const statusSelect = document.getElementById('quote-status-select');
+    const notesInput = document.getElementById('quote-notes-input');
+    const statusMsg = document.getElementById('quote-status-msg');
+
+    if (idInput) idInput.value = target.id;
+    if (banner) banner.textContent = 'Obra: ' + target.kitTitle + ' (' + target.code + ') • Solicitante: ' + target.clientName;
+    if (priceInput) priceInput.value = target.quotePrice || target.targetBudget || '';
+    if (daysInput) daysInput.value = target.estimatedDays || 20;
+    if (statusSelect) statusSelect.value = target.status === 'pending' ? 'quoted' : target.status;
+    if (notesInput) notesInput.value = target.builderResponseNotes || '';
+    if (statusMsg) statusMsg.style.display = 'none';
+
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeQuoteModal(e) {
+    if (!e || e.target.id === 'modal-quote-commission' || e.target.classList.contains('auth-close') || e.target.textContent === 'Cancelar') {
+      const modal = document.getElementById('modal-quote-commission');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  async function submitQuote(e) {
+    e.preventDefault();
+    const btn = document.getElementById('quote-submit-btn');
+    const statusMsg = document.getElementById('quote-status-msg');
+    const requestId = document.getElementById('quote-request-id')?.value;
+    const quotePrice = parseFloat(document.getElementById('quote-price-input')?.value || '0');
+    const estimatedDays = parseInt(document.getElementById('quote-days-input')?.value || '1', 10);
+    const status = document.getElementById('quote-status-select')?.value;
+    const builderResponseNotes = document.getElementById('quote-notes-input')?.value;
+
+    if (!requestId || !currentToken) return;
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+    }
+
+    try {
+      const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+      const res = await fetch(apiBase + '/api/v1/commissions/requests/' + encodeURIComponent(requestId), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': '${config.tenantSlug}'
+        },
+        body: JSON.stringify({
+          quotePrice,
+          estimatedDays,
+          status,
+          builderResponseNotes
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || data.title || 'Error al actualizar cotización');
+      }
+
+      closeQuoteModal();
+      loadWorkbenchData();
+      alert('¡Cotización guardada y actualizada con éxito!');
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.style.display = 'block';
+        statusMsg.style.color = '#ef4444';
+        statusMsg.textContent = err.message || 'Error inesperado';
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Guardar & Notificar al Cliente';
+      }
+    }
+  }
+
+  async function acceptCommissionQuote(requestId) {
+    if (!confirm('¿Deseas aceptar formalmente la cotización para este encargo? El modelista comenzará el trabajo según los términos acordados.')) {
+      return;
+    }
+    try {
+      const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+      const res = await fetch(apiBase + '/api/v1/commissions/requests/' + encodeURIComponent(requestId), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': '${config.tenantSlug}'
+        },
+        body: JSON.stringify({ status: 'accepted' })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Error al aceptar cotización');
+      }
+      loadWorkbenchData();
+      alert('¡Cotización aceptada! Comunícate con el modelista por WhatsApp para coordinar el pago inicial y entrega del kit.');
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+
+  async function declineCommissionQuote(requestId) {
+    if (!confirm('¿Estás seguro de que deseas rechazar o cancelar esta solicitud de encargo?')) {
+      return;
+    }
+    try {
+      const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+      const res = await fetch(apiBase + '/api/v1/commissions/requests/' + encodeURIComponent(requestId), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': '${config.tenantSlug}'
+        },
+        body: JSON.stringify({ status: 'declined' })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Error al rechazar cotización');
+      }
+      loadWorkbenchData();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+
   function goToWorkbench() {
     switchTab('workbench');
   }
@@ -4286,6 +4940,25 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData): stri
       const buildsData = buildsRes.ok ? await buildsRes.json() : { items: [] };
       const buildItems = buildsData.items || [];
       window.__WB_BUILDS = buildItems;
+
+      // 4. Fetch Commission Requests
+      const commsRes = await fetch(apiBase + '/api/v1/commissions/requests', { headers: authHeaders });
+      const commsData = commsRes.ok ? await commsRes.json() : { items: [] };
+      window.__WB_COMMISSIONS = commsData.items || [];
+      renderWbCommissions();
+
+      const pendingReceived = (window.__WB_COMMISSIONS || []).filter(c => 
+        c.builderUsername && c.builderUsername.toLowerCase() === currentUser.username.toLowerCase() && c.status === 'pending'
+      ).length;
+      const commBadge = document.getElementById('wb-commissions-badge');
+      if (commBadge) {
+        if (pendingReceived > 0) {
+          commBadge.textContent = pendingReceived;
+          commBadge.style.display = 'inline-block';
+        } else {
+          commBadge.style.display = 'none';
+        }
+      }
 
       // Update Metrics
       const totalKits = stashItems.length;

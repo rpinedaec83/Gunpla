@@ -11,7 +11,8 @@ import {
   PaintRackItemRecord,
   BuildProjectRecord,
   ContestEntryRecord,
-  MarketplaceListingRecord
+  MarketplaceListingRecord,
+  CommissionRequestRecord
 } from '@gunpla/shared';
 import { isPostgresConfigured, syncStateToPostgres } from './postgres';
 
@@ -27,6 +28,7 @@ export interface PlatformDatabaseState {
   builds: BuildProjectRecord[];
   contestEntries: ContestEntryRecord[];
   marketplaceListings: MarketplaceListingRecord[];
+  commissionRequests: CommissionRequestRecord[];
   lastSeededAt: string | null;
 }
 
@@ -48,6 +50,7 @@ function createEmptyState(): PlatformDatabaseState {
     builds: [],
     contestEntries: [],
     marketplaceListings: [],
+    commissionRequests: [],
     lastSeededAt: null
   };
 }
@@ -72,6 +75,7 @@ export function getDb(): PlatformDatabaseState {
         builds: parsed.builds ?? [],
         contestEntries: parsed.contestEntries ?? [],
         marketplaceListings: parsed.marketplaceListings ?? [],
+        commissionRequests: parsed.commissionRequests ?? [],
         lastSeededAt: parsed.lastSeededAt ?? null
       };
       return memoryState;

@@ -496,9 +496,49 @@ export const openApiSpec = {
     },
     '/api/v1/commissions/builders': {
       get: {
-        tags: ['Marketplace'],
+        tags: ['Commissions'],
         summary: 'List verified modelers accepting custom painting and building commissions',
         responses: { '200': { description: 'List of commission builders' } }
+      }
+    },
+    '/api/v1/commissions/requests': {
+      post: {
+        tags: ['Commissions'],
+        summary: 'Submit a new commission request to a verified builder',
+        responses: {
+          '201': { description: 'Commission request created' },
+          '400': { description: 'Validation error' },
+          '404': { description: 'Builder not found' }
+        }
+      },
+      get: {
+        tags: ['Commissions'],
+        summary: 'List commission requests with filter by builder or client',
+        responses: { '200': { description: 'List of commission requests' } }
+      }
+    },
+    '/api/v1/commissions/requests/{idOrCode}': {
+      get: {
+        tags: ['Commissions'],
+        summary: 'Retrieve a single commission request by ID or code',
+        parameters: [{ name: 'idOrCode', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Commission request details' },
+          '404': { description: 'Request not found' }
+        }
+      }
+    },
+    '/api/v1/commissions/requests/{id}': {
+      patch: {
+        tags: ['Commissions'],
+        summary: 'Update commission status, quote price, estimated days, or response notes',
+        security: [{ BearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Commission request updated' },
+          '403': { description: 'Forbidden' },
+          '404': { description: 'Request not found' }
+        }
       }
     }
   }

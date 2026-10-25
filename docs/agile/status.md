@@ -4,12 +4,29 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8 & DT9 Verified)**
-- Overall state: Green -- DT1 through DT9 implemented and verified via `npm run smoketest` (`25/25 checks passed`).
+- Stage: **PVT (In Progress -- DT8, DT9 & B1-B3 Verified)**
+- Overall state: Green -- DT1 through DT9 + B1 (Rúbricas & Diplomas) + B2 (Comisiones Interactivas) + B3 (White-Label) verified via `npm run smoketest`.
 - Current branch or release line: `feature/dt9-google-oauth-sso` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-24
 
 ## Live Capabilities
+
+- **Flujo Interactivo de Comisiones y Encargos de Pintura (`B2` / `/api/v1/commissions/*`):**
+  - **Solicitud de Encargo en UI Web (`POST /api/v1/commissions/requests`, `#modal-commission-request`):**
+    - Modal interactivo desde el directorio de modelistas (`#view-commissions`) para solicitar trabajos de armado y pintura a modelistas verificados (`aperich`, `fog1labs1`, `dcampos`).
+    - Selección de maqueta/kit, escala/categoría, suministro de maqueta (*El cliente envía el kit en caja* vs *El modelista adquiere el kit*), presupuesto tentativo y notas del proyecto.
+    - **4 Niveles de Acabado Estandarizados (Scope Level):**
+      - *Nivel 1: Montaje Limpio & Panel Lining* (Lijado fino de nubs, encastre, panel accent, topcoat mate/satinado).
+      - *Nivel 2: Pintura Custom Completa / Aerografía* (Imprimación, paleta a elección, sombras, calcas al agua, barniz).
+      - *Nivel 3: Weathering Avanzado & Detallado* (Desgaste, chipping, óxidos, sombreado, filtros y pigmentos).
+      - *Nivel 4: Masterpiece / Modificaciones & Diorama* (Pla-plate, resina, iluminación LED, peana y terreno).
+    - Generación automática de código de seguimiento único (`COM-2026-XXXX`) y modal de confirmación (`#modal-commission-success`) con enlace directo para chatear por WhatsApp con el modelista.
+  - **Panel de Gestión de Encargos en "Mi Taller" (`#wb-subtab-commissions`):**
+    - 4ta subpestaña en el Workbench con badge de avisos pendientes en tiempo real.
+    - Selector dual: *📥 Solicitudes Recibidas (Como Modelista)* y *📤 Mis Encargos Solicitados (Como Cliente)*.
+    - **Gestión para el Modelista:** Modal `#modal-quote-commission` para cotizar precio formal (PEN/USD), plazo estimado en días, condiciones técnicas y cambiar estados (`quoted`, `in_progress`, `completed`, `declined`). Enlace directo a WhatsApp del cliente.
+    - **Gestión para el Cliente:** Visualización de la cotización recibida con botones rápidos para `✅ Aceptar Cotización` o `❌ Rechazar`.
+  - **Control de Acceso y Notificaciones:** Control estricto de roles y permisos (403 Forbidden para usuarios no asignados), filtros por modelista/cliente y disparo de correos de notificación automática vía Resend.
 
 - **Rúbricas Oficiales de Jueces y Diplomas/Certificados de Concurso (`B1` / `/api/v1/contests/:id/entries/:entryId/*`):**
   - **Rúbrica Estándar de Jurado (`POST .../judge`, `#modal-judge-entry`):**
