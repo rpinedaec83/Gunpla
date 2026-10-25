@@ -22,6 +22,7 @@ import { groupBuildsRouter } from './slices/community/group-builds.slice';
 import { marketplaceRouter, commissionsRouter } from './slices/marketplace/marketplace.slice';
 import { paintsAiRouter } from './slices/paints-ai/paints-ai.slice';
 import { ogRouter } from './slices/social-og/og.slice';
+import { decalsRouter } from './slices/decals/decals.slice';
 import { openApiSpec } from './openapi/openapi-spec';
 import { initPostgres, getPostgresStats, isPostgresConfigured } from './core/postgres';
 
@@ -154,6 +155,7 @@ export function createApp() {
   app.use('/api/v1/paints/ai', paintsAiRouter);
   app.use('/api/v1/og', ogRouter);
   app.use('/api/v1/group-builds', groupBuildsRouter);
+  app.use('/api/v1/decals', decalsRouter);
   app.use('/api/v1', communityRouter);
 
   // PostgreSQL Diagnostic & Status Endpoint

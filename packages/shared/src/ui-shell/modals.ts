@@ -1814,6 +1814,124 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Modal: Custom Decals & Masking Stencils Studio (DT18) -->
+<div id="modal-decal-studio" class="custom-modal" onclick="closeDecalStudioModal(event)">
+  <div class="custom-modal-content" onclick="event.stopPropagation()" style="max-width: 960px; width: 95%; max-height: 92vh; overflow-y: auto; background: #0b1120; border: 1px solid rgba(14, 165, 233, 0.4); border-radius: 12px; padding: 1.5rem; box-shadow: 0 10px 45px rgba(0,0,0,0.8);">
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.4rem;">🏷️</span>
+          <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin: 0;">Estudio de Calcas al Agua & Enmascarado (Decal Studio)</h3>
+          <span style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.35); font-size: 0.72rem; padding: 2px 8px; border-radius: 9999px; font-weight: 700;">Vectorial 100% Escala Real</span>
+        </div>
+        <p style="font-size: 0.8rem; color: #94a3b8; margin: 0.25rem 0 0;">Generación e impresión milimétrica para papel de calca transparente, film blanco y plantillas de corte.</p>
+      </div>
+      <button type="button" class="filter-pill" onclick="closeDecalStudioModal()" style="font-size: 0.85rem; padding: 0.3rem 0.6rem;">✕</button>
+    </div>
+
+    <!-- Toolbar / Settings Controls -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.65rem; background: rgba(15, 23, 42, 0.7); padding: 0.85rem; border-radius: 8px; border: 1px solid #1e293b; margin-bottom: 1rem;">
+      <div>
+        <label style="display: block; font-size: 0.72rem; color: #94a3b8; margin-bottom: 0.25rem; font-weight: 600;">📑 Plantilla Preset</label>
+        <select id="decal-preset-select" onchange="handleDecalPresetChange(this.value)" style="width: 100%; background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 0.4rem; border-radius: 6px; font-size: 0.78rem;">
+          <option value="gunpla-efsf-caution" selected>E.F.S.F. Caution & Stencils (1/144)</option>
+          <option value="gunpla-zeon-markings">Zeon Principality Markings (1/144)</option>
+          <option value="military-tank-stencil">WWII Armor Turret Numbers (1/35)</option>
+          <option value="aviation-jet-lowvis">Fighter Jet Low-Vis Warnings (1/48)</option>
+          <option value="racing-motorsport-numbers">Motorsport Racing Roundels (1/24)</option>
+        </select>
+      </div>
+      <div>
+        <label style="display: block; font-size: 0.72rem; color: #94a3b8; margin-bottom: 0.25rem; font-weight: 600;">📏 Escala de Maqueta</label>
+        <select id="decal-scale-select" onchange="handleDecalConfigChange()" style="width: 100%; background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 0.4rem; border-radius: 6px; font-size: 0.78rem;">
+          <option value="1/144" selected>1/144 (Gunpla HG/RG)</option>
+          <option value="1/100">1/100 (Gunpla MG / Mecha)</option>
+          <option value="1/60">1/60 (Perfect Grade)</option>
+          <option value="1/35">1/35 (Militar / Tanques)</option>
+          <option value="1/48">1/48 (Aviación / Cazas)</option>
+          <option value="1/24">1/24 (Automotriz / Autos)</option>
+        </select>
+      </div>
+      <div>
+        <label style="display: block; font-size: 0.72rem; color: #94a3b8; margin-bottom: 0.25rem; font-weight: 600;">📄 Tamaño de Pliego</label>
+        <select id="decal-size-select" onchange="handleDecalConfigChange()" style="width: 100%; background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 0.4rem; border-radius: 6px; font-size: 0.78rem;">
+          <option value="A5" selected>A5 (148 × 210 mm) - Estándar</option>
+          <option value="A4">A4 (210 × 297 mm) - Pliego Completo</option>
+          <option value="A6">A6 (105 × 148 mm) - Compacto</option>
+        </select>
+      </div>
+      <div>
+        <label style="display: block; font-size: 0.72rem; color: #94a3b8; margin-bottom: 0.25rem; font-weight: 600;">💧 Tipo de Papel Calca</label>
+        <select id="decal-paper-select" onchange="handleDecalConfigChange()" style="width: 100%; background: #1e293b; border: 1px solid var(--border-color); color: #fff; padding: 0.4rem; border-radius: 6px; font-size: 0.78rem;">
+          <option value="transparent" selected>Transparente (Para carrocería clara)</option>
+          <option value="white_film">Film Blanco (Para carrocería oscura)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Quick Add Elements Bar -->
+    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center;">
+      <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">Añadir al Pliego:</span>
+      <button type="button" class="filter-pill" onclick="addDecalElementToStudio('warning_stencil')" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; border-color: rgba(239,68,68,0.4); color: #ef4444;">
+        ⚠️ Advertencia Técnica
+      </button>
+      <button type="button" class="filter-pill" onclick="addDecalElementToStudio('unit_number')" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; border-color: rgba(250,204,21,0.4); color: #facc15;">
+        🔢 Numeral Militar
+      </button>
+      <button type="button" class="filter-pill" onclick="addDecalElementToStudio('faction_emblem')" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; border-color: rgba(14,165,233,0.4); color: #38bdf8;">
+        🛡️ Insignia / Escudo
+      </button>
+      <button type="button" class="filter-pill" onclick="addDecalElementToStudio('pilot_name')" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; border-color: rgba(192,132,252,0.4); color: #c084fc;">
+        👤 Piloto / Rótulo
+      </button>
+      <button type="button" class="filter-pill" onclick="addDecalElementToStudio('kill_marks')" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; border-color: rgba(34,197,94,0.4); color: #4ade80;">
+        ⭐ Marcas de Derribo
+      </button>
+    </div>
+
+    <!-- Main Workspace Split: Preview & Item List -->
+    <div style="display: grid; grid-template-columns: 1fr 340px; gap: 1rem; align-items: start; margin-bottom: 1rem;">
+      <!-- SVG Canvas Preview Container -->
+      <div style="background: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 420px; overflow: auto; position: relative;">
+        <div style="position: absolute; top: 8px; left: 10px; font-size: 0.7rem; color: #64748b; background: rgba(15,23,42,0.8); padding: 0.15rem 0.45rem; border-radius: 4px;">
+          Vista Previa Milimétrica (SVG Vectorial)
+        </div>
+        <div id="decal-sheet-svg-viewport" style="max-width: 100%; max-height: 460px; overflow: auto; display: flex; justify-content: center; align-items: center;">
+          <!-- SVG rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Elements List & Settings Drawer -->
+      <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; max-height: 460px; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.4rem;">
+          <h4 style="font-size: 0.85rem; font-weight: 700; color: #fff; margin: 0;">Elementos en Pliego</h4>
+          <span id="decal-elements-count-badge" style="font-size: 0.72rem; color: #38bdf8; font-weight: 600;">0 items</span>
+        </div>
+        <div id="decal-elements-editor-list" style="overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 0.5rem; padding-right: 0.25rem;">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Export & Print Action Footer -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 0.85rem; flex-wrap: wrap; gap: 0.75rem;">
+      <div style="font-size: 0.78rem; color: #94a3b8;">
+        💡 <strong>Recomendación de Impresión:</strong> Usa papel de calca al agua para impresora Inkjet/Láser y selecciona <em>"Escala 100%"</em> o <em>"Tamaño Real"</em> en el cuadro de diálogo.
+      </div>
+      <div style="display: flex; gap: 0.6rem;">
+        <button type="button" id="btn-download-decal-svg" class="btn-primary" onclick="downloadDecalSvgFile()" style="font-size: 0.8rem; padding: 0.45rem 0.9rem; background: linear-gradient(135deg, #0ea5e9, #2563eb); border: none;">
+          💾 Descargar SVG
+        </button>
+        <button type="button" id="btn-print-decal-sheet" class="btn-primary" onclick="printDecalSheetDirect()" style="font-size: 0.8rem; padding: 0.45rem 0.9rem; background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: 700;">
+          🖨️ Imprimir Hoja (100%)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 `;
 }

@@ -2421,7 +2421,106 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT17 Build Cost & Consumables Estimator verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS CHECKS PASSED ===');
+    // -------------------------------------------------------------------------
+    // DT18: Custom Decals & Masking Stencils Studio
+    // -------------------------------------------------------------------------
+    console.log('\n--- Verifying DT18 Custom Decals & Masking Stencils Studio ---');
+
+    // 1. Fetch presets list
+    const presetsRes = await fetch(`${baseUrl}/api/v1/decals/presets`);
+    assert.equal(presetsRes.status, 200, 'GET /api/v1/decals/presets must return 200');
+    const presetsData = await presetsRes.json();
+    assert.ok(Array.isArray(presetsData.items), 'presets must be an array');
+    assert.equal(presetsData.total, 5, 'must have 5 presets');
+
+    // 2. Fetch presets filtered by category
+    const filteredPresetsRes = await fetch(`${baseUrl}/api/v1/decals/presets?category=gunpla-mecha`);
+    assert.equal(filteredPresetsRes.status, 200, 'GET /api/v1/decals/presets?category=gunpla-mecha must return 200');
+    const filteredPresetsData = await filteredPresetsRes.json();
+    assert.ok(filteredPresetsData.items.length >= 2, 'must return at least 2 mecha presets');
+
+    // 3. Fetch single preset by id
+    const singlePresetRes = await fetch(`${baseUrl}/api/v1/decals/presets/gunpla-efsf-caution`);
+    assert.equal(singlePresetRes.status, 200, 'GET /api/v1/decals/presets/:id must return 200');
+    const singlePreset = await singlePresetRes.json();
+    assert.equal(singlePreset.id, 'gunpla-efsf-caution');
+    assert.ok(singlePreset.elements.length > 5, 'EFSF preset must have multiple elements');
+
+    // 4. Unknown preset returns RFC 7807 404
+    const notFoundPresetRes = await fetch(`${baseUrl}/api/v1/decals/presets/non-existent-decal`);
+    assert.equal(notFoundPresetRes.status, 404, 'Unknown preset must return 404');
+    assert.ok(
+      (notFoundPresetRes.headers.get('content-type') || '').includes('application/problem+json'),
+      'Must return RFC 7807 problem details'
+    );
+
+    // 5. Render SVG via POST (JSON response)
+    const renderJsonRes = await fetch(`${baseUrl}/api/v1/decals/render-svg`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        config: {
+          title: 'Custom Decal Sheet Smoketest',
+          scale: '1/144',
+          paperSize: 'A5',
+          paperType: 'transparent',
+          marginMm: 5,
+          includeCutLines: true,
+          includeRegistrationMarks: true,
+          elements: singlePreset.elements
+        },
+        previewMode: true
+      })
+    });
+    assert.equal(renderJsonRes.status, 200, 'POST /api/v1/decals/render-svg must return 200');
+    const renderJsonData = await renderJsonRes.json();
+    assert.ok(renderJsonData.svg.includes('<svg'), 'response must contain SVG markup');
+    assert.equal(renderJsonData.widthMm, 148, 'A5 width must be 148mm');
+    assert.equal(renderJsonData.heightMm, 210, 'A5 height must be 210mm');
+    assert.equal(renderJsonData.scale, '1/144');
+    assert.equal(renderJsonData.elementCount, singlePreset.elements.length);
+
+    // 6. Render SVG via POST with Accept: image/svg+xml (Direct download)
+    const renderSvgRes = await fetch(`${baseUrl}/api/v1/decals/render-svg`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'image/svg+xml'
+      },
+      body: JSON.stringify({
+        config: {
+          title: 'Direct SVG Download',
+          scale: '1/100',
+          paperSize: 'A4',
+          paperType: 'white_film',
+          marginMm: 5,
+          includeCutLines: false,
+          includeRegistrationMarks: true,
+          elements: []
+        },
+        previewMode: false
+      })
+    });
+    assert.equal(renderSvgRes.status, 200, 'POST /render-svg with Accept: image/svg+xml must return 200');
+    assert.ok(
+      (renderSvgRes.headers.get('content-type') || '').includes('image/svg+xml'),
+      'Must return image/svg+xml content-type'
+    );
+    const rawSvgText = await renderSvgRes.text();
+    assert.ok(rawSvgText.startsWith('<svg'), 'Raw SVG text must start with <svg');
+    assert.ok(rawSvgText.includes('width="210mm"'), 'A4 raw SVG width must be 210mm');
+
+    // 7. Verify UI elements on Web Frontend
+    assert.ok(plamoWebShellHtml.includes('id="modal-decal-studio"'), 'PlamoScale must render modal-decal-studio');
+    assert.ok(plamoWebShellHtml.includes('id="btn-open-decal-studio"'), 'PlamoScale must render header decal studio button');
+    assert.ok(plamoWebShellHtml.includes('id="decal-preset-select"'), 'PlamoScale must render decal-preset-select');
+    assert.ok(plamoWebShellHtml.includes('id="decal-sheet-svg-viewport"'), 'PlamoScale must render decal-sheet-svg-viewport');
+    assert.ok(plamoWebShellHtml.includes('id="btn-download-decal-svg"'), 'PlamoScale must render SVG download button');
+    assert.ok(plamoWebShellHtml.includes('id="btn-print-decal-sheet"'), 'PlamoScale must render direct print button');
+
+    console.log('[PASS] DT18 Custom Decals & Masking Stencils Studio verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

@@ -4870,6 +4870,294 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Custom Decals & Masking Stencils Studio (DT18)
+  // ---------------------------------------------------------------------------
+  let decalCurrentConfig = null;
+  let decalAvailablePresets = [];
+
+  async function openDecalStudioModal(presetId) {
+    const modal = document.getElementById('modal-decal-studio');
+    if (!modal) return;
+    modal.classList.add('active');
+
+    if (decalAvailablePresets.length === 0) {
+      try {
+        const res = await fetch('/api/v1/decals/presets');
+        if (res.ok) {
+          const data = await res.json();
+          decalAvailablePresets = data.items || [];
+          const select = document.getElementById('decal-preset-select');
+          if (select) {
+            select.innerHTML = decalAvailablePresets.map(function(p) {
+              return '<option value="' + p.id + '">' + escapeHtml(p.name) + ' (' + p.scale + ')</option>';
+            }).join('');
+          }
+        }
+      } catch (err) {
+        console.warn('Error loading decal presets:', err);
+      }
+    }
+
+    const targetPresetId = presetId || (decalAvailablePresets[0] && decalAvailablePresets[0].id) || 'gunpla-efsf-caution';
+    await handleDecalPresetChange(targetPresetId);
+  }
+
+  function closeDecalStudioModal(e) {
+    if (!e || e.target.id === 'modal-decal-studio' || (e.target.classList && e.target.classList.contains('filter-pill'))) {
+      const modal = document.getElementById('modal-decal-studio');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  async function handleDecalPresetChange(presetId) {
+    let preset = decalAvailablePresets.find(function(p) { return p.id === presetId; });
+    if (!preset) {
+      try {
+        const res = await fetch('/api/v1/decals/presets/' + encodeURIComponent(presetId));
+        if (res.ok) {
+          preset = await res.json();
+        }
+      } catch (err) {
+        console.warn('Could not fetch preset details:', err);
+      }
+    }
+
+    if (preset) {
+      decalCurrentConfig = {
+        title: preset.name,
+        scale: preset.scale,
+        paperSize: preset.paperSize,
+        paperType: preset.paperType,
+        marginMm: 5,
+        includeCutLines: true,
+        includeRegistrationMarks: true,
+        elements: JSON.parse(JSON.stringify(preset.elements || []))
+      };
+
+      const scaleSelect = document.getElementById('decal-scale-select');
+      if (scaleSelect) scaleSelect.value = preset.scale;
+      const sizeSelect = document.getElementById('decal-size-select');
+      if (sizeSelect) sizeSelect.value = preset.paperSize;
+      const paperSelect = document.getElementById('decal-paper-select');
+      if (paperSelect) paperSelect.value = preset.paperType;
+      const presetSelect = document.getElementById('decal-preset-select');
+      if (presetSelect) presetSelect.value = preset.id;
+    }
+
+    await renderDecalStudioUI();
+  }
+
+  async function handleDecalConfigChange() {
+    if (!decalCurrentConfig) return;
+    const scaleSelect = document.getElementById('decal-scale-select');
+    const sizeSelect = document.getElementById('decal-size-select');
+    const paperSelect = document.getElementById('decal-paper-select');
+
+    if (scaleSelect) decalCurrentConfig.scale = scaleSelect.value;
+    if (sizeSelect) decalCurrentConfig.paperSize = sizeSelect.value;
+    if (paperSelect) decalCurrentConfig.paperType = paperSelect.value;
+
+    await renderDecalStudioUI();
+  }
+
+  async function renderDecalStudioUI() {
+    if (!decalCurrentConfig) return;
+
+    try {
+      const res = await fetch('/api/v1/decals/render-svg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          config: decalCurrentConfig,
+          previewMode: true
+        })
+      });
+
+      if (!res.ok) throw new Error('Error al renderizar calcas');
+      const data = await res.json();
+
+      const viewport = document.getElementById('decal-sheet-svg-viewport');
+      if (viewport) {
+        viewport.innerHTML = data.svg;
+        const svgEl = viewport.querySelector('svg');
+        if (svgEl) {
+          svgEl.style.maxWidth = '100%';
+          svgEl.style.height = 'auto';
+          svgEl.style.boxShadow = '0 8px 30px rgba(0,0,0,0.5)';
+        }
+      }
+
+      // Render Elements Editor Drawer
+      const elementsList = document.getElementById('decal-elements-editor-list');
+      const countBadge = document.getElementById('decal-elements-count-badge');
+      const elements = decalCurrentConfig.elements || [];
+
+      if (countBadge) countBadge.textContent = elements.length + ' items';
+
+      if (elementsList) {
+        if (elements.length === 0) {
+          elementsList.innerHTML = '<div style="color: #64748b; font-size: 0.78rem; padding: 1rem; text-align: center;">Pliego vacío. Añade advertencias o rótulos con los botones superiores.</div>';
+        } else {
+          elementsList.innerHTML = elements.map(function(el, idx) {
+            return '<div style="background: rgba(255,255,255,0.03); border: 1px solid #1e293b; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 0.75rem;">' +
+              '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">' +
+                '<strong style="color: #38bdf8;">#' + (idx + 1) + ' ' + escapeHtml(el.type) + '</strong>' +
+                '<button type="button" class="filter-pill" style="font-size: 0.65rem; padding: 0.1rem 0.35rem; color: #ef4444; border-color: rgba(239,68,68,0.3);" onclick="deleteDecalElementFromStudio(&quot;' + el.id + '&quot;)">🗑️</button>' +
+              '</div>' +
+              '<input type="text" value="' + escapeHtml(el.label) + '" onchange="updateDecalElementProperty(&quot;' + el.id + '&quot;, &quot;label&quot;, this.value)" style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff; font-size: 0.72rem; padding: 0.2rem 0.4rem; border-radius: 4px; margin-bottom: 0.25rem;">' +
+              '<div style="display: flex; gap: 0.3rem; align-items: center;">' +
+                '<select onchange="updateDecalElementProperty(&quot;' + el.id + '&quot;, &quot;color&quot;, this.value)" style="background: #0f172a; border: 1px solid #334155; color: #fff; font-size: 0.7rem; padding: 0.2rem; border-radius: 4px; flex: 1;">' +
+                  '<option value="white"' + (el.color === 'white' ? ' selected' : '') + '>Blanco</option>' +
+                  '<option value="red"' + (el.color === 'red' ? ' selected' : '') + '>Rojo</option>' +
+                  '<option value="yellow"' + (el.color === 'yellow' ? ' selected' : '') + '>Amarillo</option>' +
+                  '<option value="black"' + (el.color === 'black' ? ' selected' : '') + '>Negro</option>' +
+                  '<option value="gold_metallic"' + (el.color === 'gold_metallic' ? ' selected' : '') + '>Dorado</option>' +
+                  '<option value="silver_metallic"' + (el.color === 'silver_metallic' ? ' selected' : '') + '>Plata</option>' +
+                '</select>' +
+                '<span style="font-size: 0.68rem; color: #94a3b8;">X:' + el.xMm + 'mm Y:' + el.yMm + 'mm</span>' +
+              '</div>' +
+            '</div>';
+          }).join('');
+        }
+      }
+    } catch (err) {
+      console.error('Error rendering decal SVG:', err);
+    }
+  }
+
+  function addDecalElementToStudio(type) {
+    if (!decalCurrentConfig) return;
+    const elements = decalCurrentConfig.elements || [];
+    const count = elements.length + 1;
+    const newY = 15 + ((count * 9) % 160);
+    const newX = 12 + (Math.floor(count / 18) * 35);
+
+    let newEl = {
+      id: 'el-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 4),
+      type: type,
+      label: 'CAUTION ' + count,
+      color: 'white',
+      xMm: newX,
+      yMm: newY,
+      widthMm: 24,
+      heightMm: 7,
+      fontSizeMm: 1.8
+    };
+
+    if (type === 'unit_number') {
+      newEl.label = count < 10 ? '0' + count : '' + count;
+      newEl.fontSizeMm = 6.5;
+      newEl.widthMm = 14;
+      newEl.heightMm = 10;
+    } else if (type === 'faction_emblem') {
+      newEl.label = 'Insignia Escuadrón';
+      newEl.codeText = 'US-STAR';
+      newEl.widthMm = 14;
+      newEl.heightMm = 14;
+    } else if (type === 'pilot_name') {
+      newEl.label = 'PILOT NAME';
+      newEl.subtext = 'SQUADRON CODE';
+      newEl.fontSizeMm = 2.0;
+      newEl.widthMm = 28;
+      newEl.heightMm = 7;
+    } else if (type === 'kill_marks') {
+      newEl.label = 'Kill Marks';
+      newEl.count = 5;
+      newEl.color = 'yellow';
+      newEl.widthMm = 20;
+      newEl.heightMm = 6;
+    }
+
+    elements.push(newEl);
+    decalCurrentConfig.elements = elements;
+    renderDecalStudioUI();
+  }
+
+  function deleteDecalElementFromStudio(elId) {
+    if (!decalCurrentConfig) return;
+    decalCurrentConfig.elements = (decalCurrentConfig.elements || []).filter(function(e) {
+      return e.id !== elId;
+    });
+    renderDecalStudioUI();
+  }
+
+  function updateDecalElementProperty(elId, prop, value) {
+    if (!decalCurrentConfig) return;
+    const el = (decalCurrentConfig.elements || []).find(function(e) { return e.id === elId; });
+    if (el) {
+      el[prop] = value;
+      renderDecalStudioUI();
+    }
+  }
+
+  async function downloadDecalSvgFile() {
+    if (!decalCurrentConfig) return;
+    try {
+      const res = await fetch('/api/v1/decals/render-svg', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'image/svg+xml'
+        },
+        body: JSON.stringify({
+          config: decalCurrentConfig,
+          previewMode: false
+        })
+      });
+
+      if (!res.ok) throw new Error('Error al descargar SVG');
+      const svgText = await res.text();
+      const blob = new Blob([svgText], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'decal-sheet-' + (decalCurrentConfig.scale || '1-144').replace('/', '-') + '.svg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading SVG:', err);
+      alert('No se pudo descargar el archivo SVG.');
+    }
+  }
+
+  async function printDecalSheetDirect() {
+    if (!decalCurrentConfig) return;
+    try {
+      const res = await fetch('/api/v1/decals/render-svg', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'image/svg+xml'
+        },
+        body: JSON.stringify({
+          config: decalCurrentConfig,
+          previewMode: false
+        })
+      });
+
+      if (!res.ok) throw new Error('Error al preparar impresión');
+      const svgText = await res.text();
+      const printWin = window.open('', '_blank');
+      if (!printWin) {
+        alert('Por favor habilita las ventanas emergentes (popups) para imprimir.');
+        return;
+      }
+
+      printWin.document.write('<!DOCTYPE html><html><head><title>Impresión de Calcas 100%</title><style>@page { size: auto; margin: 0; } body { margin: 0; padding: 0; display: flex; justify-content: center; } svg { width: 100%; height: auto; }</style></head><body>' + svgText + '</body></html>');
+      printWin.document.close();
+      printWin.focus();
+      setTimeout(function() {
+        printWin.print();
+      }, 500);
+    } catch (err) {
+      console.error('Error printing decals:', err);
+      alert('Error al enviar calcas a la impresora.');
+    }
+  }
+
   // Modal open/close handlers
   function openAddStashModal() {
     const m = document.getElementById('modal-add-stash');

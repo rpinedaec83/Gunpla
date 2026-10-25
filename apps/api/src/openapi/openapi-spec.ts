@@ -1054,6 +1054,42 @@ export const openApiSpec = {
           '200': { description: 'Unsubscribed' }
         }
       }
+    },
+    '/api/v1/decals/presets': {
+      get: {
+        tags: ['Decals'],
+        summary: 'List curated water-slide decal and masking stencil presets',
+        parameters: [
+          { name: 'category', in: 'query', required: false, schema: { type: 'string' } },
+          { name: 'scale', in: 'query', required: false, schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': { description: 'List of decal presets' }
+        }
+      }
+    },
+    '/api/v1/decals/presets/{id}': {
+      get: {
+        tags: ['Decals'],
+        summary: 'Get details for a specific decal sheet preset',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': { description: 'Decal sheet preset retrieved' },
+          '404': { description: 'Preset not found' }
+        }
+      }
+    },
+    '/api/v1/decals/render-svg': {
+      post: {
+        tags: ['Decals'],
+        summary: 'Generate print-ready vector SVG for a custom decal sheet',
+        responses: {
+          '200': { description: 'Rendered SVG sheet' },
+          '400': { description: 'Validation error' }
+        }
+      }
     }
   }
 };

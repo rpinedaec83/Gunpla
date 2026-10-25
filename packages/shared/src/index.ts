@@ -1321,6 +1321,389 @@ export interface NotificationsListResponse {
   totalCount: number;
 }
 
+// ---------------------------------------------------------------------------
+// Custom Decals & Masking Stencils Studio (DT18)
+// ---------------------------------------------------------------------------
+
+export type DecalSheetSize = 'A4' | 'A5' | 'A6';
+export type DecalScale = '1/144' | '1/100' | '1/60' | '1/35' | '1/48' | '1/24' | 'custom';
+export type DecalItemType =
+  | 'warning_stencil'
+  | 'unit_number'
+  | 'faction_emblem'
+  | 'pilot_name'
+  | 'rank_insignia'
+  | 'kill_marks'
+  | 'checker_band'
+  | 'custom_text';
+
+export type DecalColor =
+  | 'white'
+  | 'red'
+  | 'black'
+  | 'yellow'
+  | 'gold_metallic'
+  | 'silver_metallic'
+  | 'cyan';
+
+export type DecalPaperType = 'transparent' | 'white_film';
+
+export interface DecalElement {
+  id: string;
+  type: DecalItemType;
+  label: string;
+  codeText?: string;
+  scale?: DecalScale;
+  color: DecalColor;
+  xMm: number;
+  yMm: number;
+  widthMm: number;
+  heightMm: number;
+  fontSizeMm?: number;
+  subtext?: string;
+  hazardStripes?: boolean;
+  count?: number;
+}
+
+export interface DecalSheetConfig {
+  title: string;
+  scale: DecalScale;
+  paperSize: DecalSheetSize;
+  paperType: DecalPaperType;
+  marginMm: number;
+  includeCutLines: boolean;
+  includeRegistrationMarks: boolean;
+  elements: DecalElement[];
+}
+
+export interface DecalSheetPreset {
+  id: string;
+  name: string;
+  category: ScaleCategory;
+  scale: DecalScale;
+  paperSize: DecalSheetSize;
+  paperType: DecalPaperType;
+  description: string;
+  elements: DecalElement[];
+}
+
+export interface GenerateDecalSvgRequest {
+  config: DecalSheetConfig;
+  previewMode?: boolean; // If true, renders high-contrast dark backing for transparent white decals
+}
+
+export interface GenerateDecalSvgResponse {
+  svg: string;
+  widthMm: number;
+  heightMm: number;
+  scale: DecalScale;
+  elementCount: number;
+}
+
+export const PAPER_DIMENSIONS_MM: Record<DecalSheetSize, { width: number; height: number }> = {
+  A4: { width: 210, height: 297 },
+  A5: { width: 148, height: 210 },
+  A6: { width: 105, height: 148 }
+};
+
+export const DECAL_COLOR_HEX: Record<DecalColor, string> = {
+  white: '#ffffff',
+  red: '#ef4444',
+  black: '#111827',
+  yellow: '#eab308',
+  gold_metallic: '#d97706',
+  silver_metallic: '#94a3b8',
+  cyan: '#06b6d4'
+};
+
+export const DECAL_SHEET_PRESETS: DecalSheetPreset[] = [
+  {
+    id: 'gunpla-efsf-caution',
+    name: 'E.F.S.F. Tactical Warning & Caution Set',
+    category: 'gunpla-mecha',
+    scale: '1/144',
+    paperSize: 'A5',
+    paperType: 'transparent',
+    description: 'Marcas de advertencia táctica, propulsores, esclusas de eyección e insignias de la Federación Terrestre.',
+    elements: [
+      { id: 'el-1', type: 'warning_stencil', label: 'CAUTION: HOT EXHAUST', subtext: 'KEEP 3M CLEAR', color: 'red', xMm: 12, yMm: 15, widthMm: 22, heightMm: 7, fontSizeMm: 1.8, hazardStripes: true },
+      { id: 'el-2', type: 'warning_stencil', label: 'DANGER: BEWARE OF BLAST', subtext: 'NO STEP', color: 'red', xMm: 38, yMm: 15, widthMm: 22, heightMm: 7, fontSizeMm: 1.8, hazardStripes: true },
+      { id: 'el-3', type: 'warning_stencil', label: 'EMERGENCY HATCH RELEASE', subtext: 'PRESS BUTTON PUSH LEVER', color: 'yellow', xMm: 64, yMm: 15, widthMm: 24, heightMm: 7, fontSizeMm: 1.7 },
+      { id: 'el-4', type: 'warning_stencil', label: 'MINOVSKY CRAFT INTAKE', subtext: 'RESTRICTED AREA', color: 'white', xMm: 92, yMm: 15, widthMm: 24, heightMm: 7, fontSizeMm: 1.7 },
+      { id: 'el-5', type: 'unit_number', label: '01', codeText: 'WB-01', color: 'white', xMm: 12, yMm: 27, widthMm: 14, heightMm: 10, fontSizeMm: 6.5 },
+      { id: 'el-6', type: 'unit_number', label: '02', codeText: 'WB-02', color: 'white', xMm: 29, yMm: 27, widthMm: 14, heightMm: 10, fontSizeMm: 6.5 },
+      { id: 'el-7', type: 'unit_number', label: '03', codeText: 'WB-03', color: 'red', xMm: 46, yMm: 27, widthMm: 14, heightMm: 10, fontSizeMm: 6.5 },
+      { id: 'el-8', type: 'unit_number', label: '102', codeText: 'RX-78-2', color: 'white', xMm: 64, yMm: 27, widthMm: 18, heightMm: 10, fontSizeMm: 6.0 },
+      { id: 'el-9', type: 'faction_emblem', label: 'E.F.S.F. Star Crest', codeText: 'EFSF', color: 'gold_metallic', xMm: 86, yMm: 27, widthMm: 12, heightMm: 12 },
+      { id: 'el-10', type: 'faction_emblem', label: 'White Base Pegasus', codeText: 'WB', color: 'white', xMm: 102, yMm: 27, widthMm: 14, heightMm: 12 },
+      { id: 'el-11', type: 'pilot_name', label: 'LT. AMURO RAY', subtext: 'SCV-70 WHITE BASE', color: 'white', xMm: 12, yMm: 42, widthMm: 28, heightMm: 7, fontSizeMm: 2.0 },
+      { id: 'el-12', type: 'pilot_name', label: 'ENS. SAYLA MASS', subtext: 'CORE BOOSTER-01', color: 'yellow', xMm: 44, yMm: 42, widthMm: 28, heightMm: 7, fontSizeMm: 2.0 },
+      { id: 'el-13', type: 'kill_marks', label: 'Victory Stars', count: 8, color: 'yellow', xMm: 76, yMm: 42, widthMm: 24, heightMm: 6 },
+      { id: 'el-14', type: 'checker_band', label: 'Hazard Stripe Band', color: 'yellow', xMm: 12, yMm: 53, widthMm: 60, heightMm: 4 }
+    ]
+  },
+  {
+    id: 'gunpla-zeon-markings',
+    name: 'Principality of Zeon Mobile Suit Caution Stencils',
+    category: 'gunpla-mecha',
+    scale: '1/144',
+    paperSize: 'A5',
+    paperType: 'transparent',
+    description: 'Marcas imperiales del Principado de Zeon, advertencias en alemán/inglés de sobrecalentamiento y numerales.',
+    elements: [
+      { id: 'ze-1', type: 'warning_stencil', label: 'ACHTUNG: THERMAL OUTLET', subtext: 'HIGH TEMPERATURE', color: 'red', xMm: 12, yMm: 15, widthMm: 24, heightMm: 7, fontSizeMm: 1.8, hazardStripes: true },
+      { id: 'ze-2', type: 'warning_stencil', label: 'MONOEYE SENSOR HOUSING', subtext: 'DO NOT TOUCH LENS', color: 'yellow', xMm: 40, yMm: 15, widthMm: 24, heightMm: 7, fontSizeMm: 1.7 },
+      { id: 'ze-3', type: 'warning_stencil', label: 'COCKPIT ENTRY BEACON', subtext: 'ZIONIC HEAVY INDUSTRIES', color: 'white', xMm: 68, yMm: 15, widthMm: 26, heightMm: 7, fontSizeMm: 1.7 },
+      { id: 'ze-4', type: 'unit_number', label: '06', codeText: 'MS-06', color: 'white', xMm: 12, yMm: 27, widthMm: 14, heightMm: 10, fontSizeMm: 6.5 },
+      { id: 'ze-5', type: 'unit_number', label: 'S-01', codeText: 'RED COMET', color: 'yellow', xMm: 29, yMm: 27, widthMm: 16, heightMm: 10, fontSizeMm: 6.0 },
+      { id: 'ze-6', type: 'unit_number', label: '3S', codeText: 'BLACK TRI-STARS', color: 'white', xMm: 48, yMm: 27, widthMm: 14, heightMm: 10, fontSizeMm: 6.5 },
+      { id: 'ze-7', type: 'faction_emblem', label: 'Zeon Eagle Crest', codeText: 'ZEON', color: 'gold_metallic', xMm: 66, yMm: 27, widthMm: 14, heightMm: 14 },
+      { id: 'ze-8', type: 'pilot_name', label: 'MAJ. CHAR AZNABLE', subtext: 'ZEON SPACE ATTACK FORCE', color: 'yellow', xMm: 12, yMm: 44, widthMm: 32, heightMm: 7, fontSizeMm: 2.0 },
+      { id: 'ze-9', type: 'kill_marks', label: 'Battleship Kills', count: 5, color: 'white', xMm: 48, yMm: 44, widthMm: 22, heightMm: 6 }
+    ]
+  },
+  {
+    id: 'military-tank-stencil',
+    name: 'WWII Military Armor Turret Numbers & Allied Star Stencils',
+    category: 'military',
+    scale: '1/35',
+    paperSize: 'A5',
+    paperType: 'white_film',
+    description: 'Numerales de torreta blindada, estrellas de invasión aliadas, presiones de neumáticos y códigos de división.',
+    elements: [
+      { id: 'mil-1', type: 'faction_emblem', label: 'Allied Invasion Star', codeText: 'US-STAR', color: 'white', xMm: 12, yMm: 15, widthMm: 18, heightMm: 18 },
+      { id: 'mil-2', type: 'faction_emblem', label: 'Circled Star', codeText: 'ALLIED', color: 'white', xMm: 34, yMm: 15, widthMm: 18, heightMm: 18 },
+      { id: 'mil-3', type: 'unit_number', label: '312', codeText: 'TIGER-312', color: 'white', xMm: 56, yMm: 15, widthMm: 18, heightMm: 12, fontSizeMm: 8.0 },
+      { id: 'mil-4', type: 'unit_number', label: 'B-14', codeText: 'SHERMAN-B14', color: 'white', xMm: 78, yMm: 15, widthMm: 18, heightMm: 12, fontSizeMm: 8.0 },
+      { id: 'mil-5', type: 'warning_stencil', label: 'AMMO STORAGE: HIGH EXPLOSIVES', subtext: 'HANDLE WITH EXTREME CARE', color: 'yellow', xMm: 12, yMm: 38, widthMm: 32, heightMm: 7, fontSizeMm: 1.8 },
+      { id: 'mil-6', type: 'warning_stencil', label: 'TIRE PRESSURE 35 PSI', subtext: 'MAINTENANCE CHECK DAILY', color: 'white', xMm: 48, yMm: 38, widthMm: 26, heightMm: 7, fontSizeMm: 1.8 },
+      { id: 'mil-7', type: 'custom_text', label: 'U.S. ARMY 3011492-S', color: 'white', xMm: 12, yMm: 49, widthMm: 36, heightMm: 6, fontSizeMm: 3.2 }
+    ]
+  },
+  {
+    id: 'aviation-jet-lowvis',
+    name: 'Modern Tactical Fighter Aircraft Low-Vis Warnings',
+    category: 'aviation',
+    scale: '1/48',
+    paperSize: 'A5',
+    paperType: 'transparent',
+    description: 'Advertencias de baja visibilidad para tomas de aire, asientos de eyección, flechas de rescate y numerales tácticos.',
+    elements: [
+      { id: 'av-1', type: 'warning_stencil', label: 'DANGER: JET INTAKE', subtext: 'KEEP 25FT CLEAR AT MIL POWER', color: 'black', xMm: 12, yMm: 15, widthMm: 26, heightMm: 8, fontSizeMm: 1.9, hazardStripes: true },
+      { id: 'av-2', type: 'warning_stencil', label: 'DANGER: EJECTION SEAT', subtext: 'EXPLOSIVE CHARGE ARMED', color: 'red', xMm: 42, yMm: 15, widthMm: 24, heightMm: 8, fontSizeMm: 1.8 },
+      { id: 'av-3', type: 'warning_stencil', label: 'RESCUE -> PUSH BUTTON', subtext: 'CANOPY RELEASE', color: 'black', xMm: 70, yMm: 15, widthMm: 22, heightMm: 8, fontSizeMm: 1.8 },
+      { id: 'av-4', type: 'unit_number', label: '007', codeText: 'MODEX-007', color: 'black', xMm: 12, yMm: 28, widthMm: 16, heightMm: 10, fontSizeMm: 7.0 },
+      { id: 'av-5', type: 'unit_number', label: 'AF-86', codeText: 'TAIL-86', color: 'black', xMm: 32, yMm: 28, widthMm: 18, heightMm: 10, fontSizeMm: 6.5 },
+      { id: 'av-6', type: 'pilot_name', label: 'CAPT. M. MAVERICK', subtext: 'VF-1 FIGHTING FALCONS', color: 'black', xMm: 54, yMm: 28, widthMm: 28, heightMm: 7, fontSizeMm: 2.0 },
+      { id: 'av-7', type: 'kill_marks', label: 'MiG Silhouettes', count: 4, color: 'black', xMm: 86, yMm: 28, widthMm: 18, heightMm: 6 }
+    ]
+  },
+  {
+    id: 'racing-motorsport-numbers',
+    name: 'Motorsport Racing Car Roundels & Sponsor Decals',
+    category: 'automotive',
+    scale: '1/24',
+    paperSize: 'A5',
+    paperType: 'white_film',
+    description: 'Dorsales redondos con numeros de carrera, flechas de gancho de remolque, insignias de corte electrico y sponsors.',
+    elements: [
+      { id: 'rc-1', type: 'unit_number', label: '23', codeText: 'NISMO-23', color: 'black', xMm: 12, yMm: 15, widthMm: 22, heightMm: 22, fontSizeMm: 12.0 },
+      { id: 'rc-2', type: 'unit_number', label: '12', codeText: 'CALSONIC-12', color: 'white', xMm: 38, yMm: 15, widthMm: 22, heightMm: 22, fontSizeMm: 12.0 },
+      { id: 'rc-3', type: 'warning_stencil', label: 'TOW HOOK ->', color: 'red', xMm: 64, yMm: 15, widthMm: 18, heightMm: 6, fontSizeMm: 2.5 },
+      { id: 'rc-4', type: 'warning_stencil', label: 'ELEC CUT-OFF', color: 'red', xMm: 86, yMm: 15, widthMm: 18, heightMm: 6, fontSizeMm: 2.2 },
+      { id: 'rc-5', type: 'custom_text', label: 'TURBO INTERCOOLER 4WD', color: 'red', xMm: 12, yMm: 42, widthMm: 38, heightMm: 6, fontSizeMm: 3.5 },
+      { id: 'rc-6', type: 'pilot_name', label: 'K. TSUCHIYA / DRIFT KING', color: 'black', xMm: 54, yMm: 42, widthMm: 32, heightMm: 6, fontSizeMm: 2.2 }
+    ]
+  }
+];
+
+export function generateDecalSheetSvg(config: DecalSheetConfig, previewMode: boolean = false): string {
+  const paper = PAPER_DIMENSIONS_MM[config.paperSize] || PAPER_DIMENSIONS_MM.A5;
+  const w = paper.width;
+  const h = paper.height;
+
+  // Background style: dark contrast for transparent paper in preview mode, or clean white/transparent for printing
+  const bgFill = previewMode
+    ? (config.paperType === 'transparent' ? '#0f172a' : '#f8fafc')
+    : (config.paperType === 'white_film' ? '#ffffff' : 'none');
+
+  const bgRect = bgFill !== 'none'
+    ? `<rect width="${w}" height="${h}" fill="${bgFill}" />`
+    : '';
+
+  // Registration crosshairs in 4 corners
+  let regMarks = '';
+  if (config.includeRegistrationMarks) {
+    const regCoords = [
+      { x: 6, y: 6 },
+      { x: w - 6, y: 6 },
+      { x: 6, y: h - 6 },
+      { x: w - 6, y: h - 6 }
+    ];
+    regMarks = regCoords
+      .map(
+        (c) => `<g stroke="${previewMode ? '#475569' : '#000000'}" stroke-width="0.15" fill="none">
+          <circle cx="${c.x}" cy="${c.y}" r="2.2" />
+          <line x1="${c.x - 3.5}" y1="${c.y}" x2="${c.x + 3.5}" y2="${c.y}" />
+          <line x1="${c.x}" y1="${c.y - 3.5}" x2="${c.x}" y2="${c.y + 3.5}" />
+        </g>`
+      )
+      .join('\n');
+  }
+
+  // Margin boundary cut guide
+  const m = config.marginMm || 5;
+  const borderGuide = `<rect x="${m}" y="${m}" width="${w - m * 2}" height="${h - m * 2}" fill="none" stroke="${previewMode ? '#334155' : '#cbd5e1'}" stroke-width="0.15" stroke-dasharray="1.5,1.5" />`;
+
+  // Header info line
+  const titleText = escapeXml(config.title || 'Custom Decal Sheet');
+  const scaleText = escapeXml(config.scale || '1/144');
+  const infoHeader = `<g fill="${previewMode ? '#94a3b8' : '#000000'}" font-family="monospace, sans-serif" font-size="2.2" font-weight="bold">
+    <text x="${m + 2}" y="${h - m - 2}">PLAMOSCALE DECAL STUDIO • ${titleText} • SCALE ${scaleText} • 100% SCALE (DO NOT FIT TO PAGE)</text>
+  </g>`;
+
+  // Elements rendering
+  const elementsSvg = (config.elements || [])
+    .map((el) => {
+      const hex = DECAL_COLOR_HEX[el.color] || '#ffffff';
+      const x = el.xMm;
+      const y = el.yMm;
+      const ew = el.widthMm;
+      const eh = el.heightMm;
+
+      let cutLine = '';
+      if (config.includeCutLines) {
+        cutLine = `<rect x="${x - 0.6}" y="${y - 0.6}" width="${ew + 1.2}" height="${eh + 1.2}" fill="none" stroke="${previewMode ? 'rgba(56,189,248,0.35)' : '#cbd5e1'}" stroke-width="0.08" stroke-dasharray="0.6,0.6" rx="0.3" />`;
+      }
+
+      let contentSvg = '';
+
+      if (el.type === 'warning_stencil') {
+        const fs = el.fontSizeMm || 1.8;
+        const subFs = Math.max(0.9, fs * 0.65);
+        let stripes = '';
+        if (el.hazardStripes) {
+          stripes = `<rect x="${x}" y="${y}" width="${ew}" height="1.2" fill="${hex}" opacity="0.9" />
+          <line x1="${x + 2}" y1="${y}" x2="${x}" y2="${y + 1.2}" stroke="${previewMode ? '#0f172a' : '#ffffff'}" stroke-width="0.5" />
+          <line x1="${x + 5}" y1="${y}" x2="${x + 3}" y2="${y + 1.2}" stroke="${previewMode ? '#0f172a' : '#ffffff'}" stroke-width="0.5" />
+          <line x1="${x + 8}" y1="${y}" x2="${x + 6}" y2="${y + 1.2}" stroke="${previewMode ? '#0f172a' : '#ffffff'}" stroke-width="0.5" />
+          <line x1="${x + 11}" y1="${y}" x2="${x + 9}" y2="${y + 1.2}" stroke="${previewMode ? '#0f172a' : '#ffffff'}" stroke-width="0.5" />`;
+        }
+
+        contentSvg = `<g>
+          <rect x="${x}" y="${y}" width="${ew}" height="${eh}" fill="none" stroke="${hex}" stroke-width="0.22" rx="0.4" />
+          ${stripes}
+          <text x="${x + ew / 2}" y="${y + (el.hazardStripes ? 3.8 : 3.0)}" fill="${hex}" font-family="monospace, sans-serif" font-size="${fs}" font-weight="900" text-anchor="middle">${escapeXml(el.label)}</text>
+          ${el.subtext ? `<text x="${x + ew / 2}" y="${y + eh - 1.2}" fill="${hex}" font-family="monospace, sans-serif" font-size="${subFs}" font-weight="bold" letter-spacing="0.1" text-anchor="middle">${escapeXml(el.subtext)}</text>` : ''}
+        </g>`;
+      } else if (el.type === 'unit_number') {
+        const fs = el.fontSizeMm || 6.5;
+        contentSvg = `<g>
+          <text x="${x + ew / 2}" y="${y + eh * 0.8}" fill="${hex}" font-family="monospace, sans-serif" font-size="${fs}" font-weight="900" text-anchor="middle" letter-spacing="0.3">${escapeXml(el.label)}</text>
+        </g>`;
+      } else if (el.type === 'faction_emblem') {
+        const cx = x + ew / 2;
+        const cy = y + eh / 2;
+        const r = Math.min(ew, eh) * 0.45;
+        if (el.codeText === 'US-STAR' || el.codeText === 'ALLIED') {
+          // 5-point star inside optional circle
+          const points = [
+            [cx, cy - r],
+            [cx + r * 0.22, cy - r * 0.3],
+            [cx + r * 0.95, cy - r * 0.3],
+            [cx + r * 0.35, cy + r * 0.15],
+            [cx + r * 0.58, cy + r * 0.85],
+            [cx, cy + r * 0.42],
+            [cx - r * 0.58, cy + r * 0.85],
+            [cx - r * 0.35, cy + r * 0.15],
+            [cx - r * 0.95, cy - r * 0.3],
+            [cx - r * 0.22, cy - r * 0.3]
+          ].map(p => p.join(',')).join(' ');
+
+          contentSvg = `<g fill="${hex}">
+            <circle cx="${cx}" cy="${cy}" r="${r * 1.1}" fill="none" stroke="${hex}" stroke-width="0.3" />
+            <polygon points="${points}" fill="${hex}" />
+          </g>`;
+        } else if (el.codeText === 'ZEON') {
+          // Stylized Zeon crest
+          contentSvg = `<g fill="${hex}" stroke="${hex}">
+            <path d="M ${cx} ${cy - r} L ${cx + r * 0.7} ${cy - r * 0.4} L ${cx + r * 0.5} ${cy + r * 0.5} L ${cx} ${cy + r * 0.85} L ${cx - r * 0.5} ${cy + r * 0.5} L ${cx - r * 0.7} ${cy - r * 0.4} Z" fill="none" stroke-width="0.35" />
+            <polygon points="${cx},${cy - r * 0.5} ${cx + r * 0.3},${cy + r * 0.2} ${cx - r * 0.3},${cy + r * 0.2}" />
+            <line x1="${cx - r * 0.6}" y1="${cy - r * 0.1}" x2="${cx + r * 0.6}" y2="${cy - r * 0.1}" stroke-width="0.35" />
+          </g>`;
+        } else {
+          // Default EFSF / Star Shield
+          contentSvg = `<g fill="${hex}">
+            <polygon points="${cx},${cy - r} ${cx + r * 0.7},${cy - r * 0.3} ${cx + r * 0.5},${cy + r * 0.6} ${cx},${cy + r} ${cx - r * 0.5},${cy + r * 0.6} ${cx - r * 0.7},${cy - r * 0.3}" fill="none" stroke="${hex}" stroke-width="0.35" />
+            <polygon points="${cx},${cy - r * 0.7} ${cx + r * 0.2},${cy - r * 0.2} ${cx + r * 0.7},${cy - r * 0.2} ${cx + r * 0.3},${cy + r * 0.1} ${cx + r * 0.45},${cy + r * 0.6} ${cx},${cy + r * 0.3} ${cx - r * 0.45},${cy + r * 0.6} ${cx - r * 0.3},${cy + r * 0.1} ${cx - r * 0.7},${cy - r * 0.2} ${cx - r * 0.2},${cy - r * 0.2}" />
+          </g>`;
+        }
+      } else if (el.type === 'pilot_name') {
+        const fs = el.fontSizeMm || 2.0;
+        contentSvg = `<g>
+          <rect x="${x}" y="${y}" width="${ew}" height="${eh}" fill="none" stroke="${hex}" stroke-width="0.18" />
+          <text x="${x + ew / 2}" y="${y + fs * 1.3}" fill="${hex}" font-family="monospace, sans-serif" font-size="${fs}" font-weight="bold" text-anchor="middle">${escapeXml(el.label)}</text>
+          ${el.subtext ? `<text x="${x + ew / 2}" y="${y + eh - 1.0}" fill="${hex}" font-family="monospace, sans-serif" font-size="${fs * 0.6}" text-anchor="middle" letter-spacing="0.1">${escapeXml(el.subtext)}</text>` : ''}
+        </g>`;
+      } else if (el.type === 'kill_marks') {
+        const count = Math.min(15, el.count || 5);
+        const starSpacing = ew / (count + 1);
+        let stars = '';
+        for (let i = 0; i < count; i++) {
+          const sx = x + starSpacing * (i + 1);
+          const sy = y + eh / 2;
+          stars += `<polygon points="${sx},${sy - 1.6} ${sx + 0.4},${sy - 0.5} ${sx + 1.6},${sy - 0.5} ${sx + 0.6},${sy + 0.2} ${sx + 1.0},${sy + 1.4} ${sx},${sy + 0.6} ${sx - 1.0},${sy + 1.4} ${sx - 0.6},${sy + 0.2} ${sx - 1.6},${sy - 0.5} ${sx - 0.4},${sy - 0.5}" fill="${hex}" />`;
+        }
+        contentSvg = `<g>${stars}</g>`;
+      } else if (el.type === 'checker_band') {
+        const blocks = 10;
+        const blockW = ew / blocks;
+        let bandSvg = '';
+        for (let i = 0; i < blocks; i++) {
+          if (i % 2 === 0) {
+            bandSvg += `<rect x="${x + i * blockW}" y="${y}" width="${blockW}" height="${eh}" fill="${hex}" />`;
+          } else {
+            bandSvg += `<rect x="${x + i * blockW}" y="${y}" width="${blockW}" height="${eh}" fill="${previewMode ? '#1e293b' : '#000000'}" />`;
+          }
+        }
+        contentSvg = `<g>${bandSvg}</g>`;
+      } else {
+        // custom_text
+        const fs = el.fontSizeMm || 3.0;
+        contentSvg = `<g>
+          <text x="${x + ew / 2}" y="${y + eh * 0.75}" fill="${hex}" font-family="monospace, sans-serif" font-size="${fs}" font-weight="900" text-anchor="middle">${escapeXml(el.label)}</text>
+        </g>`;
+      }
+
+      return `<g id="${el.id}">
+        ${cutLine}
+        ${contentSvg}
+      </g>`;
+    })
+    .join('\n');
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}mm" height="${h}mm" viewBox="0 0 ${w} ${h}" style="text-rendering: geometricPrecision; shape-rendering: geometricPrecision;">
+  ${bgRect}
+  ${borderGuide}
+  ${regMarks}
+  ${infoHeader}
+  <g id="decal-elements">
+    ${elementsSvg}
+  </g>
+</svg>`;
+}
+
+function escapeXml(unsafe: string): string {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+
 export * from './ui-shell/app-shell';
 export * from './ui-shell/views';
 export * from './ui-shell/modals';

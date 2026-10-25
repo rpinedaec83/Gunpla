@@ -4,12 +4,47 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer & Build Cost Estimator Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + 4 Technical Debt resolutions verified via `npm test` (103 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt17-build-cost-estimator` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator & Decal Studio Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + 4 Technical Debt resolutions verified via `npm test` (116 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt18-decal-studio` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Estudio y Generador de Calcas al Agua y Pistas de Enmascarado (Custom Decals & Masking Stencils Studio):**
+  - **Motor Vectorial SVG con Precisión Milimétrica al 100% de Escala:**
+    - Lógica algorítmica pura en `@gunpla/shared` (`generateDecalSheetSvg`) que produce hojas SVG vectoriales limpias con dimensiones milimétricas exactas (`width="...mm"`, `height="...mm"`, `viewBox="0 0 W H"`) para impresión 1:1 sin distorsión ni reescalado forzado en papeles estándar de modelismo:
+      - Tamaños de hoja admitidos: `A4` (210 x 297 mm), `A5` (148 x 210 mm) y `A6` (105 x 148 mm).
+      - Tipos de papel de calca: Transparente (`transparent`) y Película Blanca opaca (`white_film`). En modo de previsualización web (`previewMode: true`), las calcas blancas sobre papel transparente se proyectan sobre un fondo pizarra oscuro (`#0f172a`) de alto contraste, mientras que en la salida de impresión real se omite el fondo para respetar la transparencia del acetato.
+      - Escalas de modelismo soportadas: `1/144` (Gunpla HG/RG), `1/100` (MG), `1/60` (PG), `1/35` (Blindados Militares), `1/48` (Aviación), `1/24` (Automotriz) y personalizadas.
+    - Componentes vectoriales milimétricos:
+      - Marcas de registro en 4 esquinas (cruces de colimación y círculos de 2.2mm para alineación precisa de doble pasada o corte).
+      - Guías perimetrales de corte y líneas segmentadas individuales para recorte seguro con bisturí o plotter de corte.
+      - Stencils tácticos de advertencia (*Warning/Caution Stencils*) con franjas diagonales de peligro, iconos y textos en micropuntaje tipográfico (1.5mm - 2.5mm).
+      - Numerales tácticos y códigos modex de unidad con compensación de interletreado.
+      - Placas de piloto con nombre, rango y unidad.
+      - Marcas de victoria (*Kill Marks*) con barras o estrellas acumuladas.
+      - Emblemas y heráldica de facción vectorizados proceduralmente: Estrella de Invasión Aliada / USAF, Escudo E.F.S.F. y Blasón del Principado de Zeon.
+  - **5 Preajustes Temáticos Curados:**
+    - `gunpla-efsf-caution`: Set táctico de advertencias de escape, escotillas de emergencia y numerales White Base para Gunpla 1/144.
+    - `gunpla-zeon-markings`: Marcas imperiales de Zeon, alertas térmicas en alemán, visor monoojo y numerales para MS-06 / Char Aznable.
+    - `military-tank-stencil`: Numerales de torreta blindada WWII, estrellas aliadas de invasión y avisos de almacenamiento de munición a escala 1/35.
+    - `aviation-jet-lowvis`: Advertencias de baja visibilidad para tomas de turbina (*Jet Intake*), asientos eyectables y numerales modex a escala 1/48.
+    - `racing-motorsport-numbers`: Dorsales redondos de competición, flechas de gancho de remolque e insignias de corte de corriente a escala 1/24.
+  - **Endpoints Especializados de Calcas:**
+    - `GET /api/v1/decals/presets`: Catálogo completo de preajustes con filtros opcionales por categoría (`gunpla-mecha`, `military`, `aviation`, `automotive`) y escala.
+    - `GET /api/v1/decals/presets/:id`: Detalle y lista de elementos vectoriales de un preajuste con manejo de errores 404 RFC 7807.
+    - `POST /api/v1/decals/render-svg`: Renderizador de hoja completa. Soporta retorno estructurado JSON o descarga directa del archivo con cabecera `Accept: image/svg+xml`.
+  - **Estudio Web Shell Interactivo (PlamoScale & GunplaJunkies):**
+    - Modal interactivo `#modal-decal-studio` con selector de plantillas predefinidas, conmutador de tamaño de papel (A4/A5/A6), tipo de papel y escala.
+    - Viewport interactivo `#decal-sheet-svg-viewport` que renderiza el SVG dinámico en tiempo real ante cualquier modificación de elementos.
+    - Editor rápido de elementos con botones de adición inmediata (`+ Advertencia`, `+ Numeral`, `+ Piloto`, `+ Estrella`, `+ Zeon`, `+ Franja`) y campos de edición reactiva de posición, dimensiones y color.
+    - Acciones de exportación: Descarga instantánea de archivo vectorial `.svg` (`💾 Descargar SVG`) e impresión directa a escala 100% en hoja limpia sin marcos de página (`🖨️ Imprimir Hoja (100%)`).
+    - Acceso rápido `🏷️ Decal Studio` en la barra de herramientas de Mi Taller en la cabecera del Web Shell.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/decal-studio.test.mjs` (13 pruebas aisladas cubriendo constantes de papel, integridad de plantillas, renderizado milimétrico, marcas de registro, contraste de previsualización y todos los tipos de elementos). Total unit tests: 116 passed.
+    - Smoketest automatizado en `scripts/smoketest.mjs` validando `GET /presets`, filtrado, `GET /presets/:id`, 404 RFC 7807, `POST /render-svg` (JSON y raw SVG) y elementos del DOM en ambos portales.
+    - Despliegue en vivo en el clúster Proxmox LXC 190 (`http://192.168.1.190:8080`, `http://192.168.1.190:3000`, `http://192.168.1.190:3001`).
 
 - **Control de Costos, Consumibles y Presupuesto de Proyectos en "Mi Taller" (Build Cost & Consumables Estimator):**
   - **Lógica de Estimación Financiera y Agregación Contable:**

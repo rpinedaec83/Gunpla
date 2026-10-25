@@ -610,3 +610,31 @@ Decisions made:
 Lessons learned:
 - Providing an instant suggested commission formula (`materials * 1.25 + laborHours * rate`) gives scale modelers and commission builders immediate clarity when quoting custom build jobs without spreadsheets.
 Usage: Moderate -- self-estimated
+
+### DT18 -- Custom Decals & Masking Stencils Studio | eMOE: 5 CU | aMOE: 5 CU
+What was done:
+- Designed decal data models and pure SVG generation engine in `packages/shared/src/index.ts`:
+  - `DecalSheetSize` (`A4`, `A5`, `A6`), `DecalScale` (`1/144`, `1/100`, `1/60`, `1/35`, `1/48`, `1/24`, `custom`), `DecalPaperType` (`transparent`, `white_film`), `DecalColor` (`white`, `red`, `black`, `yellow`, `gold_metallic`, `silver_metallic`, `cyan`), `DecalElement`, `DecalSheetConfig`, `DecalSheetPreset`, `GenerateDecalSvgRequest`, `GenerateDecalSvgResponse`.
+  - Defined physical millimeter dimensions in `PAPER_DIMENSIONS_MM` (A4: 210x297mm, A5: 148x210mm, A6: 105x148mm) and `DECAL_COLOR_HEX`.
+  - Authored pure vector generator `generateDecalSheetSvg` with millimeter precision (`width="...mm"`, `height="...mm"`, `viewBox="0 0 W H"`), 4-corner registration crosshairs, peripheral cut guides, hazard stripes, unit numbers, pilot nameplates, kill marks, and faction emblems (Star, Zeon crest, Shield).
+  - Included 5 curated decal presets: `gunpla-efsf-caution`, `gunpla-zeon-markings`, `military-tank-stencil`, `aviation-jet-lowvis`, and `racing-motorsport-numbers`.
+- Authored contract-first OpenAPI 3.1 specification (`docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`):
+  - `GET /api/v1/decals/presets`: List presets with category and scale filters.
+  - `GET /api/v1/decals/presets/{id}`: Preset details by ID with RFC 7807 404.
+  - `POST /api/v1/decals/render-svg`: Render decal sheet to structured JSON or direct raw SVG download via `Accept: image/svg+xml`.
+- Implemented backend slice `apps/api/src/slices/decals/decals.slice.ts` and mounted in `apps/api/src/server.ts` at `/api/v1/decals`.
+- Implemented Web UI shell in `packages/shared/src/ui-shell/`:
+  - In `modals.ts`: Authored `#modal-decal-studio` featuring sheet preset selector, paper size/type/scale controls, SVG preview viewport `#decal-sheet-svg-viewport`, quick-add buttons (`+ Advertencia`, `+ Numeral`, `+ Piloto`, `+ Estrella`, `+ Zeon`, `+ Franja`), element drawer, download SVG button (`#btn-download-decal-svg`), and direct 100% scale print button (`#btn-print-decal-sheet`).
+  - In `views.ts`: Added `🏷️ Decal Studio` quick action in Workbench header.
+  - In `app-shell.ts`: Added `openDecalStudioModal`, `closeDecalStudioModal`, preset selection handler, config modification handler, UI renderers, element add/delete/update functions, SVG file downloader, and direct printing function.
+- Authored isolated unit test suite `tests/unit/decal-studio.test.mjs` (13 test cases covering paper dimensions, presets data integrity, color mapping, SVG millimeter viewBox, registration marks, cut lines, previewMode dark backdrop contrast, and all element types). Total unit tests: 116 passed in 410ms.
+- Extended end-to-end regression smoketest in `scripts/smoketest.mjs` validating presets listing, filtering, single preset lookup, 404 RFC 7807 problem details, POST render-svg JSON, POST render-svg raw SVG download, and web shell UI controls.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190:8080`, `:3000`, `:3001`).
+Issues hit:
+- In `decals.slice.ts`, `PAPER_DIMENSIONS_MM[config.paperSize]` required an explicit type cast `config.paperSize as DecalSheetSize`.
+- In `generateDecalSheetSvg`, white decals on transparent paper were invisible on standard light preview viewports; implemented `previewMode: true` displaying a `#0f172a` slate contrast backdrop while preserving `#ffffff` or clean transparent background in print mode.
+Decisions made:
+- Generating SVG with true CSS/SVG millimeter units (`mm`) guarantees 1:1 physical printing scale regardless of monitor DPI, preventing the classic problem where printed scale decals are accidentally shrunk or stretched by printer drivers.
+Lessons learned:
+- Providing pre-calculated scale stencils for Gunpla (1/144, 1/100), military armor (1/35), aircraft (1/48), and racing cars (1/24) gives scale modelers instant utility out-of-the-box without requiring complex desktop vector illustration software.
+Usage: Moderate -- self-estimated
