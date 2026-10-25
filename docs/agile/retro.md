@@ -245,3 +245,35 @@ Decisions made:
 Lessons learned:
 - Verifying the outbox endpoint directly in the regression harness provides guaranteed end-to-end proof that business triggers fire without requiring external inbox polling in test runners.
 Usage: Moderate -- self-estimated
+
+### TECH-DEBT -- Comprehensive Technical Debt Remediation & Production Hardening | eMOE: 5 CU | aMOE: 5 CU
+What was done:
+- Audited and completely resolved the 4 core technical debt items across database, security, frontend architecture, and automated testing:
+  1. Base de Datos y Sync Optimizada:
+     - Integrated `contests`, `shops`, and `commissionBuilders` into `PlatformDatabaseState`, removing static fallback dependencies from application routers.
+     - Implemented `triggerPostgresSync()` with concurrency mutex lock (`isSyncing`) and queued state (`pendingStateToSync`) to prevent parallel O(N) database lockups during concurrent write bursts.
+  2. Seguridad y Hardening en Produccion:
+     - Implemented production guard warning when `NODE_ENV === 'production'` and `JWT_SECRET` is unset or matches default developer secret.
+     - Implemented zero-dependency sliding window rate limiter middleware (`createRateLimiter`) returning RFC 7807 429 Problem Details (`rate-limit-exceeded`) with standard `X-RateLimit-*` headers. Mounted on `/api/v1/auth` (200 req/15min) and `/api/v1/media/upload` (100 req/10min).
+     - Hardened CORS origins using dynamic regular expression matching official domains (`plamoscale.com`, `gunplajunkies.com`), white-label subdomains, and development localhost.
+  3. Arquitectura Frontend (Modularizacion de UI Shell):
+     - Extracted `packages/shared/src/ui-shell/views.ts` (842 lines) and `packages/shared/src/ui-shell/modals.ts` (1,216 lines) from `app-shell.ts`.
+     - Reduced `app-shell.ts` by 2,000 lines (from 6,217 to 4,217 lines), improving maintainability and readability.
+  4. Suite de Pruebas Unitarias Aisladas (Node.js Native Test Runner):
+     - Created 4 dedicated unit test suites under `tests/unit/` using `node:test` and `node:assert/strict` covering:
+       - `rate-limiter.test.mjs`: sliding window tracking, remaining headers, RFC 7807 429 rejection, bypass flags.
+       - `scalemates-parser.test.mjs`: URL parsing across Bandai RG, Tamiya military and aviation, fallback category scaling, error cases.
+       - `age-gate.test.mjs`: Ley N 29733 age verification for adults, adolescent minors, and underage children.
+       - `judge-rubric.test.mjs`: 4-criteria score validation, bounds checking, and average metric calculation.
+     - Updated `package.json` with `"test:unit": "node --test tests/unit/**/*.test.mjs"` and configured `"test": "npm run test:unit && npm run smoketest"`.
+- Verified all 20 unit tests and 100% of the E2E smoketest assertions pass with zero regressions.
+- Synchronized code to Proxmox LXC 190 (`192.168.1.190`), rebuilt containers (`gunpla-api`, `plamoscale-web`, `gunplajunkies-web`), and verified live 200 responses.
+- Pushed all atomic commits to remote branch `feature/dt9-google-oauth-sso`.
+Issues hit:
+- Multi-word brands in Scalemates parser required sorting `KNOWN_BRANDS` by descending key length to prevent `bandai` from matching before `bandai-spirits`.
+- Extraction of views and modals into TypeScript template literal modules required strict scope typing without runtime template expression escaping.
+Decisions made:
+- Used Node.js native test runner (`node:test`) instead of adding Jest/Vitest dependencies to keep the monorepo lightweight, fast (111ms for all unit tests), and zero-dependency.
+Lessons learned:
+- Modularizing the frontend HTML templates into separate `views` and `modals` modules drastically improves IDE performance and eliminates cognitive load when modifying specific user flows.
+Usage: Moderate -- self-estimated

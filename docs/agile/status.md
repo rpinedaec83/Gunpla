@@ -4,12 +4,26 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3 & PWA Verified)**
-- Overall state: Green -- DT1 through DT10 + B1 (Rubricas & Diplomas) + B2 (Comisiones Interactivas) + B3 (White-Label) + PWA (Modo Offline) verified via `npm run smoketest`.
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA & Tech Debt Hardening Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + 4 Technical Debt resolutions (Dynamic DB Sync, Security Hardening, Frontend Modularization, Native Unit Test Suite) verified via `npm test` and live LXC 190 deployment.
 - Current branch or release line: `feature/dt9-google-oauth-sso` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Saneamiento Integral de Deuda Tecnica y Suite de Pruebas Unitarias:**
+  - **Base de Datos y Sincronizacion Optimizada:**
+    - Estado global `PlatformDatabaseState` incluye colecciones dinamicas de `contests`, `shops` y `commissionBuilders`, eliminando datos estaticos quemados.
+    - Sincronizacion a PostgreSQL 16 con mecanismo anti-concurrencia y cola debounceada `pendingStateToSync` para evitar barridos O(N) concurrentes.
+  - **Seguridad y Hardening en Produccion:**
+    - Restriccion de CORS mediante patron regex que valida dominios oficiales (`plamoscale.com`, `gunplajunkies.com`), subdominios white-label y localhost.
+    - Middleware de Rate Limiting con ventana deslizante para `/api/v1/auth` y `/api/v1/media/upload` con cabeceras RFC 7807 (`rate-limit-exceeded`).
+    - Guard de advertencia en produccion si `JWT_SECRET` no esta configurado explicitamente.
+  - **Modularizacion de Arquitectura Frontend (`packages/shared/src/ui-shell/`):**
+    - Reduccion de `app-shell.ts` en 2,000 lineas mediante la extraccion de `views.ts` (842 lineas) y `modals.ts` (1,216 lineas).
+  - **Suite de Pruebas Unitarias Aisladas (`tests/unit/*.test.mjs`):**
+    - 20 pruebas unitarias con el runner nativo de Node.js (`node --test`) para rate limiting, age gate (Ley N 29733), parser de Scalemates y metricas de rubricas de jurados.
+    - Integrado en `npm test` (`npm run test:unit && npm run smoketest`).
 
 - **Notificaciones Automaticas por Email en Tiempo Real (Resend) & Consultas en el Bazar (DT10 / /api/v1/marketplace/listings/:id/inquiries):**
   - **Disparo Automatico Transaccional en Tiempo Real:**
