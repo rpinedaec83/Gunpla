@@ -102,10 +102,58 @@ const CONVERSION_DATABASE: ConversionEntry[] = [
     tamiya: { code: 'XF-63', name: 'German Grey', hex: '#374151', finish: 'flat/matte', line: 'Acrylic XF' },
     vallejo: { code: '70.995', name: 'German Grey', hex: '#2F3947', finish: 'flat/matte', line: 'Model Color' },
     montanaColors: { code: 'RV-7016', name: 'Gris Antracita / Industrial Grey', hex: '#374151', finish: 'flat/matte', line: 'MTN 94 (Baja Presión)', recommendedCap: 'Pocket Cap' }
+  },
+  {
+    mrColor: { code: 'C3', name: 'Red Amber / Orange', hex: '#EA580C', finish: 'gloss' },
+    tamiya: { code: 'X-6', name: 'Orange', hex: '#F97316', finish: 'gloss', line: 'Acrylic X' },
+    vallejo: { code: '70.956', name: 'Clear Orange', hex: '#FB923C', finish: 'flat/matte', line: 'Model Color' },
+    montanaColors: { code: 'RV-2004', name: 'Naranja Puro / Pure Orange', hex: '#FF6F00', finish: 'flat/matte', line: 'MTN 94 (Baja Presión)', recommendedCap: 'Pocket Cap' }
+  },
+  {
+    mrColor: { code: 'C6', name: 'Green', hex: '#16A34A', finish: 'gloss' },
+    tamiya: { code: 'X-5', name: 'Green', hex: '#15803D', finish: 'gloss', line: 'Acrylic X' },
+    vallejo: { code: '70.954', name: 'Yellow Green', hex: '#22C55E', finish: 'flat/matte', line: 'Model Color' },
+    montanaColors: { code: 'RV-6005', name: 'Verde Pino / Pine Green', hex: '#1E392A', finish: 'flat/matte', line: 'MTN 94 (Baja Presión)', recommendedCap: 'Pocket Cap' }
+  },
+  {
+    mrColor: { code: 'C9', name: 'Gold', hex: '#EAB308', finish: 'metallic' },
+    tamiya: { code: 'X-12', name: 'Gold Leaf', hex: '#CA8A04', finish: 'metallic', line: 'Acrylic X' },
+    vallejo: { code: '77.725', name: 'Gold', hex: '#EAB308', finish: 'metallic', line: 'Metal Color' },
+    montanaColors: { code: 'PRO-Gold', name: 'Oro / Gold Spray', hex: '#D4AF37', finish: 'metallic', line: 'MTN PRO Pintura Metálica', recommendedCap: 'Pocket Cap' }
+  },
+  {
+    mrColor: { code: 'C30', name: 'Flat Base / Light Gray', hex: '#94A3B8', finish: 'flat/matte' },
+    tamiya: { code: 'XF-19', name: 'Sky Grey', hex: '#94A3B8', finish: 'flat/matte', line: 'Acrylic XF' },
+    vallejo: { code: '70.990', name: 'Light Grey', hex: '#A1A1AA', finish: 'flat/matte', line: 'Model Color' },
+    montanaColors: { code: 'RV-7040', name: 'Gris Perla / Pearl Grey', hex: '#9CA3AF', finish: 'flat/matte', line: 'MTN 94 (Baja Presión)', recommendedCap: 'Pocket Cap' }
+  },
+  {
+    mrColor: { code: 'C44', name: 'Tan / Flesh', hex: '#D97706', finish: 'semi-gloss' },
+    tamiya: { code: 'XF-64', name: 'Red Brown', hex: '#78350F', finish: 'flat/matte', line: 'Acrylic XF' },
+    vallejo: { code: '70.984', name: 'Flat Brown', hex: '#713F12', finish: 'flat/matte', line: 'Model Color' },
+    montanaColors: { code: 'RV-8017', name: 'Marrón Chocolate / Dark Brown', hex: '#451A03', finish: 'flat/matte', line: 'MTN 94 (Baja Presión)', recommendedCap: 'Skinny Universal Cap' }
+  },
+  {
+    mrColor: { code: 'C68', name: 'Purple', hex: '#7E22CE', finish: 'gloss' },
+    tamiya: { code: 'X-16', name: 'Purple', hex: '#6B21A8', finish: 'gloss', line: 'Acrylic X' },
+    vallejo: { code: '70.960', name: 'Violet', hex: '#7C3AED', finish: 'flat/matte', line: 'Model Color' },
+    montanaColors: { code: 'RV-4008', name: 'Violeta / Deep Violet', hex: '#581C87', finish: 'flat/matte', line: 'MTN 94 (Baja Presión)', recommendedCap: 'Pocket Cap' }
+  },
+  {
+    mrColor: { code: 'C80', name: 'Cobalt Blue', hex: '#0284C7', finish: 'gloss' },
+    tamiya: { code: 'X-14', name: 'Sky Blue', hex: '#38BDF8', finish: 'gloss', line: 'Acrylic X' },
+    vallejo: { code: '70.961', name: 'Sky Blue', hex: '#0EA5E9', finish: 'flat/matte', line: 'Model Color' },
+    montanaColors: { code: 'RV-5015', name: 'Azul Celeste / Cyan', hex: '#0284C7', finish: 'flat/matte', line: 'MTN 94 (Baja Presión)', recommendedCap: 'Skinny Universal Cap' }
+  },
+  {
+    mrColor: { code: 'C109', name: 'Character Yellow', hex: '#FACC15', finish: 'semi-gloss' },
+    tamiya: { code: 'XF-7', name: 'Flat Red', hex: '#EF4444', finish: 'flat/matte', line: 'Acrylic XF' },
+    vallejo: { code: '70.908', name: 'Carmine Red', hex: '#DC2626', finish: 'flat/matte', line: 'Model Color' },
+    montanaColors: { code: 'RV-3000', name: 'Rojo Fuego / Fire Red', hex: '#B91C1C', finish: 'flat/matte', line: 'MTN 94 (Baja Presión)', recommendedCap: 'Pocket Cap' }
   }
 ];
 
-function getMediumGuide(brand: string, type: string, medium?: PaintMedium) {
+export function getMediumGuide(brand: string, type: string, medium?: PaintMedium) {
   const norm = (brand + ' ' + type + ' ' + (medium || '')).toLowerCase();
   if (norm.includes('montana') || norm.includes('spray') || norm.includes('graffiti') || medium === 'montana_colors') {
     return {
@@ -151,6 +199,7 @@ function getMediumGuide(brand: string, type: string, medium?: PaintMedium) {
 }
 
 function tryExtractUserId(req: Request): string | null {
+  if ((req as any).user?.id) return (req as any).user.id;
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
   try {
@@ -162,27 +211,23 @@ function tryExtractUserId(req: Request): string | null {
   }
 }
 
-// ---------------------------------------------------------------------------
-// 1. POST /api/v1/paints/ai/convert
-// ---------------------------------------------------------------------------
-paintsAiRouter.post('/convert', (req: Request, res: Response) => {
-  const { sourceBrand, sourceCode, targetMedium } = req.body as PaintConversionRequest;
-
-  if (!sourceCode || typeof sourceCode !== 'string') {
-    return sendProblem(
-      req,
-      res,
-      400,
-      'Código de Pintura Requerido',
-      'Debes proporcionar un código de pintura (ej. "XF-1", "C108", "70.950" o "RV-242").',
-      'validation-error'
-    );
-  }
-
+/**
+ * Core Paint Equivalences Matcher across 4 chemical mediums:
+ * 1. Lacquer (Mr. Color)
+ * 2. Acrylic (Tamiya)
+ * 3. Polyurethane (Vallejo)
+ * 4. Spray Graffiti / Water Based (Montana Colors)
+ */
+export function findPaintEquivalences(
+  sourceCode: string,
+  sourceBrand?: string,
+  targetMedium?: PaintMedium,
+  userRack: any[] = [],
+  dbPaints: any[] = []
+): PaintConversionResult | null {
   const cleanCode = sourceCode.trim().toUpperCase().replace(/\s+/g, '');
   const cleanBrand = (sourceBrand || '').trim().toLowerCase();
 
-  // Find in conversion database
   const entry = CONVERSION_DATABASE.find(e => {
     const mcMatch = e.mrColor.code.toUpperCase().replace(/\s+/g, '') === cleanCode;
     const tamMatch = e.tamiya.code.toUpperCase().replace(/\s+/g, '') === cleanCode;
@@ -191,12 +236,8 @@ paintsAiRouter.post('/convert', (req: Request, res: Response) => {
     return mcMatch || tamMatch || valMatch || mtnMatch;
   });
 
-  const db = getDb();
-  const userId = tryExtractUserId(req);
-  const userRack = userId ? db.paintRackItems.filter(p => p.userId === userId) : [];
-
   function checkRack(brand: string, code: string): { ownedInRack: boolean; rackQuantity?: number } {
-    const matchingPaint = db.paints.find(p => 
+    const matchingPaint = dbPaints.find(p => 
       p.code.toUpperCase().replace(/\s+/g, '') === code.toUpperCase().replace(/\s+/g, '') &&
       p.brand.toLowerCase().includes(brand.toLowerCase().split(' ')[0])
     );
@@ -207,7 +248,7 @@ paintsAiRouter.post('/convert', (req: Request, res: Response) => {
   }
 
   if (entry) {
-    let matches: PaintConversionMatch[] = [
+    const matches: PaintConversionMatch[] = [
       {
         brand: 'Mr. Hobby',
         line: 'Mr. Color',
@@ -254,7 +295,6 @@ paintsAiRouter.post('/convert', (req: Request, res: Response) => {
       }
     ];
 
-    // If targetMedium is specified, prioritize that match first
     if (targetMedium) {
       matches.sort((a, b) => {
         const aMatch = (targetMedium === 'montana_colors' && a.brand === 'Montana Colors') ||
@@ -294,22 +334,20 @@ paintsAiRouter.post('/convert', (req: Request, res: Response) => {
       targetMedium
     );
 
-    const result: PaintConversionResult = {
+    return {
       source,
       matches,
       airbrushGuide: guide
     };
-
-    return res.json(result);
   }
 
-  // Fallback: search in catalog by partial code or name
-  const catalogPaint = db.paints.find(p => p.code.toUpperCase().includes(cleanCode) || p.name.toLowerCase().includes(cleanCode.toLowerCase()));
+  // Fallback: search in dbPaints
+  const catalogPaint = dbPaints.find(p => p.code.toUpperCase().includes(cleanCode) || p.name.toLowerCase().includes(cleanCode.toLowerCase()));
   if (catalogPaint) {
     const guide = getMediumGuide(catalogPaint.brand, catalogPaint.type, targetMedium);
     const rackCheck = checkRack(catalogPaint.brand, catalogPaint.code);
 
-    const result: PaintConversionResult = {
+    return {
       source: {
         brand: catalogPaint.brand,
         code: catalogPaint.code,
@@ -332,18 +370,45 @@ paintsAiRouter.post('/convert', (req: Request, res: Response) => {
       ],
       airbrushGuide: guide
     };
-    return res.json(result);
   }
 
-  // Not found in database
-  return sendProblem(
-    req,
-    res,
-    404,
-    'Equivalencia No Encontrada',
-    `No se encontró una equivalencia directa para la pintura "${sourceCode}". Prueba con códigos estándar como XF-1, C108, C110, XF-56, 70.950 o RV-242.`,
-    'not-found'
-  );
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// 1. POST /api/v1/paints/ai/convert
+// ---------------------------------------------------------------------------
+paintsAiRouter.post('/convert', (req: Request, res: Response) => {
+  const { sourceBrand, sourceCode, targetMedium } = req.body as PaintConversionRequest;
+
+  if (!sourceCode || typeof sourceCode !== 'string') {
+    return sendProblem(
+      req,
+      res,
+      400,
+      'Código de Pintura Requerido',
+      'Debes proporcionar un código de pintura (ej. "XF-1", "C108", "70.950" o "RV-242").',
+      'validation-error'
+    );
+  }
+
+  const db = getDb();
+  const userId = tryExtractUserId(req);
+  const userRack = userId ? db.paintRackItems.filter(p => p.userId === userId) : [];
+
+  const result = findPaintEquivalences(sourceCode, sourceBrand, targetMedium, userRack, db.paints);
+  if (!result) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Equivalencia No Encontrada',
+      `No se encontró una equivalencia directa para la pintura "${sourceCode}". Prueba con códigos estándar como XF-1, C108, C110, XF-56, 70.950 o RV-242.`,
+      'not-found'
+    );
+  }
+
+  return res.json(result);
 });
 
 // ---------------------------------------------------------------------------

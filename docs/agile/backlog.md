@@ -4,11 +4,14 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
-- **AI Paint Rack Equivalences Assistant:** Intelligent cross-brand paint matching assistant based on colors already owned in the builder's rack.
 - **Contest Community Voting Badges & Public Hall of Fame:** Public showcase and permanent trophy showcase for contest winners across community tenants.
 - **Direct WhatsApp Community Feed & Build Inquiries:** Direct contact channels between builders and collectors on showcased models.
 
 ## Completed Candidates & Parking Lot Items
+
+### PAINT-EQUIVALENCES -- AI Paint Rack Equivalences Assistant & Mixer (COMPLETED)
+- Goal: Intelligent cross-brand paint matching assistant across 4 chemical families (Mr. Color Lacquer, Tamiya Acrylic, Vallejo Polyurethane, Montana Colors Spray) highlighting paints already owned in the builder's rack.
+- Delivered: Endpoints `GET /api/v1/workbench/paints/:id/equivalences`, `POST /api/v1/paints/ai/convert`, and `POST /api/v1/paints/ai/recipe`; 20 calibrated cross-medium formulas; user rack detection (`ownedInRack: true`, rack quantity); modal `#modal-paint-equivalences` with code search and mecha recipe mixer; `🔄 Equivalencias` button on every rack card; toolbar with `#wb-paints-count-badge`; comprehensive aerography guides; unit tests (`tests/unit/paint-equivalences.test.mjs`); and verified live deployment on LXC 190.
 
 ### STOCK-ALERTS -- Trusted Shops Stock Alerts Linked to Stash Wishlist (COMPLETED)
 - Goal: Connect user wishlist in personal stash with verified partner hobby shops (`Trusted Shops`) to notify of inventory arrivals and deals in real-time.

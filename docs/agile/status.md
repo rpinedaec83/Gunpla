@@ -4,12 +4,29 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening & Stock Alerts Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + 4 Technical Debt resolutions (Dynamic DB Sync, Security Hardening, Frontend Modularization, Native Unit Test Suite) verified via `npm test` (25 unit tests + full integration suite) and live LXC 190 deployment.
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts & AI Paint Equivalences Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + 4 Technical Debt resolutions (Dynamic DB Sync, Security Hardening, Frontend Modularization, Native Unit Test Suite) verified via `npm test` (31 unit tests + full integration suite) and live LXC 190 deployment.
 - Current branch or release line: `feature/dt9-google-oauth-sso` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Asistente de Equivalencias en Rack de Pinturas & Mezclador IA (Paint Rack Equivalences):**
+  - **Motor Determinista de 4 Familias Químicas (`findPaintEquivalences`):**
+    - Conversión cruzada integral entre **Laca** (Mr. Color / Gaia Notes), **Acrílico** (Tamiya X/XF), **Poliuretano** (Vallejo Mecha/Model Color) y **Sprays de Graffiti / Base Agua** (Montana Colors MTN 94 / Water Based / PRO).
+    - Base de datos experta con 20 fórmulas calibradas de tonos modelistas e históricos (negros, blancos, metálicos, primarios anime, camuflajes militares, grises e inner frame).
+    - Detección en tiempo real de posesión en el taller (`ownedInRack: true`, cantidad de frascos) cruzando el inventario personal del modelista autenticado.
+  - **Endpoints Especializados de Taller:**
+    - `GET /api/v1/workbench/paints/:id/equivalences`: Consulta directa de equivalencias para un frasco del Paint Rack del usuario con parámetro opcional `targetMedium`.
+    - `POST /api/v1/paints/ai/convert`: Conversión abierta por código o nombre con soporte para usuarios autenticados e invitados.
+    - `POST /api/v1/paints/ai/recipe`: Formulación de mezclas y proporciones por porcentaje según el tono/mecha deseado, marcando componentes ya disponibles en el taller.
+  - **Integración UI Completa en Workbench:**
+    - Toolbar dedicado en `#wb-subtab-paints` con contador dinámico `#wb-paints-count-badge` y botón destacado `🧪 Asistente de Equivalencias IA`.
+    - Botón `🔄 Equivalencias` en cada tarjeta de pintura del rack para consulta inmediata.
+    - Modal interactivo `#modal-paint-equivalences` con pestañas de búsqueda por código y mezclador por color/mecha, chips de acceso rápido a frascos en posesión, badges `✅ En tu Rack`, botones `+ Añadir a Mi Rack` y guía técnica de aerografía (dilución, PSI, boquillas y consejos pro).
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/paint-equivalences.test.mjs` (6 casos de prueba aislados).
+    - Verificación end-to-end en `scripts/smoketest.mjs` (31 pruebas unitarias + smoketest general 100% verde).
 
 - **Alertas de Stock en Tiendas de Confianza vinculadas a la Wishlist del Stash (Stock Alerts):**
   - **Cruce Automático de Inventario & Wishlist:**

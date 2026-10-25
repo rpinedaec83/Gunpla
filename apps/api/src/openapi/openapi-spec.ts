@@ -313,6 +313,21 @@ export const openApiSpec = {
         }
       }
     },
+    '/api/v1/workbench/paints/{id}/equivalences': {
+      get: {
+        tags: ['Workbench', 'Paints AI'],
+        summary: 'Get AI cross-brand equivalences across 4 chemical families for a rack paint',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'targetMedium', in: 'query', schema: { type: 'string', enum: ['lacquer', 'acrylic', 'polyurethane', 'montana_colors'] } }
+        ],
+        responses: {
+          '200': { description: 'Cross-brand equivalences with rack ownership indicators' },
+          '404': { description: 'Paint not found' }
+        }
+      }
+    },
     '/api/v1/builds': {
       get: {
         tags: ['Build Logs'],

@@ -320,6 +320,95 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Workbench Modal: AI Paint Equivalences & Recipe Assistant -->
+<div id="modal-paint-equivalences" class="custom-modal" onclick="closePaintEquivalencesModal(event)">
+  <div class="auth-box" style="max-width: 820px; width: 95%; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closePaintEquivalencesModal()">&times;</span>
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+      <span style="font-size: 1.4rem;">🧪</span>
+      <h3 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin: 0;">Asistente de Equivalencias en Rack & Mezclador IA</h3>
+    </div>
+    <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1rem;">
+      Encuentra pinturas equivalentes entre Laca (Mr. Color), Acrílico (Tamiya), Poliuretano (Vallejo) y Sprays (Montana Colors), priorizando las que ya tienes en tu taller.
+    </p>
+
+    <!-- Sub-tabs in modal -->
+    <div style="display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+      <button id="btn-equiv-tab-search" class="filter-pill active" onclick="switchEquivTab('search')">
+        🔍 Equivalencias por Código
+      </button>
+      <button id="btn-equiv-tab-recipe" class="filter-pill" onclick="switchEquivTab('recipe')">
+        ✨ Mezclador IA por Color / Mecha
+      </button>
+    </div>
+
+    <!-- Section 1: Equivalences Search -->
+    <div id="equiv-tab-search-content">
+      <form onsubmit="handleSearchEquivalences(event)" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 0.75rem; align-items: flex-end;">
+          <div class="auth-input-group" style="margin-bottom: 0;">
+            <label class="auth-label">Código o Nombre de Pintura</label>
+            <input type="text" id="equiv-code-input" class="auth-input" placeholder="ej. XF-1, C108, C110, 70.950, RV-242" required>
+          </div>
+          <div class="auth-input-group" style="margin-bottom: 0;">
+            <label class="auth-label">Filtrar Medio Químico</label>
+            <select id="equiv-medium-select" class="auth-input">
+              <option value="">Todas las Químicas</option>
+              <option value="lacquer">Laca (Mr. Color / Gaia)</option>
+              <option value="acrylic">Acrílico (Tamiya X/XF)</option>
+              <option value="polyurethane">Poliuretano (Vallejo)</option>
+              <option value="montana_colors">Spray (Montana Colors)</option>
+            </select>
+          </div>
+          <button type="submit" id="equiv-search-btn" class="btn-primary" style="padding: 0.65rem 1.15rem; height: 42px;">
+            🔍 Buscar
+          </button>
+        </div>
+
+        <!-- Quick selection from current rack -->
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <span style="font-size: 0.72rem; color: #64748b;">De tu Rack:</span>
+          <div id="equiv-quick-rack-chips" style="display: flex; gap: 0.35rem; flex-wrap: wrap;"></div>
+        </div>
+      </form>
+
+      <!-- Results Container -->
+      <div id="equiv-results-container" style="display: none;">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+
+    <!-- Section 2: AI Recipe Mixer -->
+    <div id="equiv-tab-recipe-content" style="display: none;">
+      <form onsubmit="handleGenerateAiRecipe(event)" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 0.75rem; align-items: flex-end;">
+          <div class="auth-input-group" style="margin-bottom: 0;">
+            <label class="auth-label">Tono o Parte a Pintar</label>
+            <input type="text" id="recipe-query-input" class="auth-input" placeholder="ej. Verde Zaku II, Azul Titan Gundam, Rojo Cometa Char, Barbatos Inner Frame" required>
+          </div>
+          <div class="auth-input-group" style="margin-bottom: 0;">
+            <label class="auth-label">Medio Químico Preferido</label>
+            <select id="recipe-medium-select" class="auth-input">
+              <option value="lacquer">Laca (Mr. Color)</option>
+              <option value="acrylic">Acrílico (Tamiya)</option>
+              <option value="polyurethane">Poliuretano (Vallejo)</option>
+              <option value="montana_colors">Spray (Montana Colors)</option>
+            </select>
+          </div>
+          <button type="submit" id="recipe-generate-btn" class="btn-primary" style="padding: 0.65rem 1.15rem; height: 42px;">
+            ✨ Mezclar
+          </button>
+        </div>
+      </form>
+
+      <!-- Recipe Results Container -->
+      <div id="recipe-results-container" style="display: none;">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Contest / Exhibition Spec Card Modal -->
 <div id="modal-spec-card" class="custom-modal" onclick="closeSpecCardModal(event)">
   <div class="auth-box" style="max-width: 960px; width: 95%; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">

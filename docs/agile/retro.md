@@ -297,3 +297,28 @@ Decisions made:
 Lessons learned:
 - Normalizing kit titles by stripping common scale tokens (`1/144`, `1/100`, `1/72`, `1/35`) enables robust fuzzy matching even when users register kits manually without an official catalog reference.
 Usage: Moderate -- self-estimated
+
+### PAINT-EQUIVALENCES -- AI Paint Rack Equivalences Assistant & Mixer | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Expanded the expert 4-way chemical conversion matrix (`CONVERSION_DATABASE`) from 12 to 20 calibrated paint mappings across Mr. Color (Lacquer), Tamiya (Acrylic), Vallejo (Polyurethane), and Montana Colors (Spray Graffiti & Water Based).
+- Implemented `findPaintEquivalences()` with real-time detection of rack ownership (`ownedInRack: true` and `rackQuantity`) by intersecting against the authenticated user's inventory.
+- Added endpoint `GET /api/v1/workbench/paints/:id/equivalences` in `workbench.slice.ts` with optional `targetMedium` priority filter.
+- Documented endpoint in OpenAPI 3.1 specification (`apps/api/src/openapi/openapi-spec.ts`).
+- Created UI components:
+  - Paint Rack toolbar with `#wb-paints-count-badge` and action button `🧪 Asistente de Equivalencias IA`.
+  - Added `🔄 Equivalencias` action button directly on every paint card in the user's rack.
+  - Interactive modal `#modal-paint-equivalences` featuring:
+    - Code search and rack chips for 1-click equivalence lookup.
+    - 4-way chemical family grid showing color swatches, finishes, ownership badges, and direct `+ Añadir a Mi Rack` buttons.
+    - Tailored aerography guides with recommended dilution ratios, PSI, drying times, and pro modeling tips.
+    - Dedicated AI recipe mixer tab for formulating custom colors and inspecting component availability in the builder's rack.
+- Authored isolated unit test suite `tests/unit/paint-equivalences.test.mjs` (6 test cases).
+- Extended end-to-end regression smoketest in `scripts/smoketest.mjs` with full coverage.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190`) with live curl assertions on API and web frontends.
+Issues hit:
+- None; the modularization of `views.ts` and `modals.ts` made adding the new toolbar and modal seamless without frontend regression.
+Decisions made:
+- Supported both direct rack item lookup (`/api/v1/workbench/paints/:id/equivalences`) and open cross-medium conversion (`/api/v1/paints/ai/convert`), both identifying the authenticated user's rack contents.
+Lessons learned:
+- Providing quick-select chips populated with the builder's actual inventory eliminates manual code typing and boosts adoption of equivalent formulas.
+Usage: Moderate -- self-estimated

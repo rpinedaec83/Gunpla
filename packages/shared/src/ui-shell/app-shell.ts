@@ -2910,6 +2910,345 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     }
   }
 
+  // --- AI Paint Equivalences & Recipe Assistant Engine ---
+  function openPaintEquivalencesModal(sourceCode, sourceBrand) {
+    const m = document.getElementById('modal-paint-equivalences');
+    if (!m) return;
+    m.classList.add('active');
+
+    // Populate quick rack chips from window.__WB_PAINTS
+    const chipsContainer = document.getElementById('equiv-quick-rack-chips');
+    if (chipsContainer) {
+      const paints = window.__WB_PAINTS || [];
+      if (paints.length === 0) {
+        chipsContainer.innerHTML = '<span style="font-size: 0.72rem; color: #94a3b8; font-style: italic;">No tienes pinturas en tu rack aún</span>';
+      } else {
+        chipsContainer.innerHTML = paints.slice(0, 8).map(item => {
+          const p = item.paint || {};
+          const code = p.code || '';
+          const brand = p.brand || '';
+          return '<button type="button" class="filter-pill" style="font-size: 0.72rem; padding: 0.15rem 0.5rem;" onclick="setEquivCode(&quot;' + code + '&quot;, &quot;' + brand + '&quot;)">' + (brand ? brand + ' ' : '') + code + '</button>';
+        }).join('');
+      }
+    }
+
+    if (sourceCode) {
+      const codeInput = document.getElementById('equiv-code-input');
+      if (codeInput) codeInput.value = sourceCode;
+      executePaintEquivalenceSearch(sourceCode, sourceBrand);
+    }
+  }
+
+  function setEquivCode(code, brand) {
+    const codeInput = document.getElementById('equiv-code-input');
+    if (codeInput) codeInput.value = code;
+    executePaintEquivalenceSearch(code, brand);
+  }
+
+  function closePaintEquivalencesModal(e) {
+    if (!e || e.target.id === 'modal-paint-equivalences' || e.target.classList.contains('auth-close')) {
+      const m = document.getElementById('modal-paint-equivalences');
+      if (m) m.classList.remove('active');
+    }
+  }
+
+  function switchEquivTab(tab) {
+    const btnSearch = document.getElementById('btn-equiv-tab-search');
+    const btnRecipe = document.getElementById('btn-equiv-tab-recipe');
+    const contentSearch = document.getElementById('equiv-tab-search-content');
+    const contentRecipe = document.getElementById('equiv-tab-recipe-content');
+
+    if (tab === 'search') {
+      if (btnSearch) btnSearch.classList.add('active');
+      if (btnRecipe) btnRecipe.classList.remove('active');
+      if (contentSearch) contentSearch.style.display = 'block';
+      if (contentRecipe) contentRecipe.style.display = 'none';
+    } else {
+      if (btnRecipe) btnRecipe.classList.add('active');
+      if (btnSearch) btnSearch.classList.remove('active');
+      if (contentRecipe) contentRecipe.style.display = 'block';
+      if (contentSearch) contentSearch.style.display = 'none';
+    }
+  }
+
+  async function handleSearchEquivalences(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const code = document.getElementById('equiv-code-input').value.trim();
+    const medium = document.getElementById('equiv-medium-select').value;
+    if (!code) return;
+    executePaintEquivalenceSearch(code, undefined, medium);
+  }
+
+  async function executePaintEquivalenceSearch(sourceCode, sourceBrand, targetMedium) {
+    const resultsContainer = document.getElementById('equiv-results-container');
+    const searchBtn = document.getElementById('equiv-search-btn');
+    if (!resultsContainer) return;
+
+    if (searchBtn) {
+      searchBtn.disabled = true;
+      searchBtn.textContent = '⏳ Buscando...';
+    }
+
+    resultsContainer.style.display = 'block';
+    resultsContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #94a3b8;">Consultando motor de equivalencias químicas...</div>';
+
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    try {
+      const res = await fetch(apiBase + '/api/v1/paints/ai/convert', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': currentToken ? 'Bearer ' + currentToken : '',
+          'X-Tenant-Slug': '${config.tenantSlug}'
+        },
+        body: JSON.stringify({
+          sourceCode,
+          sourceBrand,
+          targetMedium: targetMedium || undefined
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        resultsContainer.innerHTML = 
+          '<div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 1.25rem; color: #f87171; font-size: 0.85rem;">' +
+            '<strong>⚠️ ' + (err.title || 'Equivalencia no encontrada') + '</strong>' +
+            '<p style="margin: 0.4rem 0 0 0; color: #cbd5e1;">' + (err.detail || 'Prueba buscando con códigos estándar como XF-1, C108, 70.950 o RV-242.') + '</p>' +
+          '</div>';
+        return;
+      }
+
+      const data = await res.json();
+      renderEquivalencesResults(data);
+    } catch (err) {
+      resultsContainer.innerHTML = '<div style="color: #f87171; padding: 1rem;">Error de conexión con el servidor.</div>';
+    } finally {
+      if (searchBtn) {
+        searchBtn.disabled = false;
+        searchBtn.textContent = '🔍 Buscar';
+      }
+    }
+  }
+
+  function renderEquivalencesResults(data) {
+    const resultsContainer = document.getElementById('equiv-results-container');
+    if (!resultsContainer) return;
+
+    const source = data.source || {};
+    const matches = data.matches || [];
+    const guide = data.airbrushGuide || {};
+
+    let matchesHtml = matches.map(m => {
+      const hex = m.hexColor || '#94a3b8';
+      const isOwned = m.ownedInRack;
+      const rackQty = m.rackQuantity || 0;
+
+      let rackBadge = '';
+      let actionBtn = '';
+
+      if (isOwned) {
+        rackBadge = '<span style="background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.35); font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 9999px; font-weight: 700;">✅ En tu Rack (' + rackQty + ' frascos)</span>';
+      } else {
+        rackBadge = '<span style="background: rgba(148,163,184,0.1); color: #94a3b8; font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 9999px;">No está en tu Rack</span>';
+        actionBtn = 
+          '<button class="filter-pill" style="font-size: 0.72rem; padding: 0.25rem 0.55rem; background: rgba(56,189,248,0.15); color: #38bdf8; border-color: rgba(56,189,248,0.3);" onclick="addPaintCodeToRack(&quot;' + m.code + '&quot;, &quot;' + m.brand + '&quot;)">+ Añadir a Mi Rack</button>';
+      }
+
+      let typeLabel = 'Pintura';
+      if (m.type === 'lacquer') typeLabel = '🧪 Laca (Mr. Color)';
+      else if (m.type === 'acrylic') typeLabel = '💧 Acrílico (Tamiya)';
+      else if (m.type === 'polyurethane') typeLabel = '🛡️ Poliuretano (Vallejo)';
+      else if (m.type === 'spray_graffiti') typeLabel = '🎨 Spray (Montana Colors)';
+
+      return '<div style="background: rgba(255,255,255,0.03); border: 1px solid ' + (isOwned ? 'rgba(34,197,94,0.4)' : 'var(--border-color)') + '; border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem;">' +
+        '<div>' +
+          '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">' +
+            '<span style="font-size: 0.72rem; color: #38bdf8; font-weight: 600; text-transform: uppercase;">' + typeLabel + '</span>' +
+            rackBadge +
+          '</div>' +
+          '<div style="display: flex; align-items: center; gap: 0.75rem;">' +
+            '<div style="width: 36px; height: 36px; border-radius: 50%; background: ' + hex + '; border: 2px solid rgba(255,255,255,0.25); flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.4);"></div>' +
+            '<div style="overflow: hidden;">' +
+              '<div style="font-size: 0.95rem; font-weight: 700; color: #fff;">' + m.brand + ' ' + m.code + '</div>' +
+              '<div style="font-size: 0.8rem; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + m.name + '</div>' +
+              (m.line ? '<div style="font-size: 0.72rem; color: #94a3b8;">Línea: ' + m.line + ' (' + m.finish + ')</div>' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.6rem; margin-top: 0.25rem;">' +
+          '<span style="font-size: 0.72rem; color: #64748b;">HEX: ' + hex + '</span>' +
+          actionBtn +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    let guideHtml = '';
+    if (guide && guide.mediumTitle) {
+      guideHtml = 
+        '<div style="background: rgba(56,189,248,0.05); border: 1px solid rgba(56,189,248,0.2); border-radius: 8px; padding: 1.15rem; margin-top: 1.25rem;">' +
+          '<div style="font-size: 0.88rem; font-weight: 700; color: #38bdf8; margin-bottom: 0.5rem;">📖 Guía de Aplicación & Aerografía: ' + guide.mediumTitle + '</div>' +
+          '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; font-size: 0.8rem; margin-bottom: 0.75rem;">' +
+            '<div><strong style="color: #cbd5e1;">Diluyente (Thinner):</strong><div style="color: #94a3b8;">' + (guide.recommendedThinner || 'Estándar') + '</div></div>' +
+            '<div><strong style="color: #cbd5e1;">Proporción (Ratio):</strong><div style="color: #94a3b8;">' + (guide.thinningRatio || 'Directo') + '</div></div>' +
+            '<div><strong style="color: #cbd5e1;">Presión / Boquilla:</strong><div style="color: #94a3b8;">' + (guide.recommendedPSI || '15-20 PSI') + '</div></div>' +
+            '<div><strong style="color: #cbd5e1;">Secado & Curado:</strong><div style="color: #94a3b8;">' + (guide.dryingTime || '20 min') + '</div></div>' +
+          '</div>' +
+          (guide.proTips ? '<div style="font-size: 0.78rem; color: #cbd5e1; border-top: 1px dashed rgba(56,189,248,0.2); padding-top: 0.5rem;">💡 <strong>Consejo Pro:</strong> ' + guide.proTips + '</div>' : '') +
+        '</div>';
+    }
+
+    resultsContainer.innerHTML = 
+      '<div style="border-top: 1px solid var(--border-color); padding-top: 1rem;">' +
+        '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">' +
+          '<div style="display: flex; align-items: center; gap: 0.6rem;">' +
+            '<span style="font-size: 0.85rem; color: #94a3b8;">Origen buscado:</span>' +
+            '<span style="background: rgba(255,255,255,0.06); padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 700; color: #fff;">' + (source.brand || '') + ' ' + (source.code || '') + ' (' + (source.name || '') + ')</span>' +
+          '</div>' +
+          '<span style="font-size: 0.78rem; color: #4ade80;">' + matches.length + ' fórmulas encontradas</span>' +
+        '</div>' +
+        '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.85rem;">' +
+          matchesHtml +
+        '</div>' +
+        guideHtml +
+      '</div>';
+  }
+
+  async function addPaintCodeToRack(code, brand) {
+    if (!currentToken) {
+      alert('Debes iniciar sesión para agregar pinturas a tu Rack.');
+      return;
+    }
+
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    try {
+      const catRes = await fetch(apiBase + '/api/v1/catalog/paints?search=' + encodeURIComponent(code));
+      if (!catRes.ok) throw new Error('Error al consultar catálogo');
+      const catData = await catRes.json();
+      const match = (catData.items || []).find(p => p.code.toUpperCase() === code.toUpperCase() && (!brand || p.brand.toLowerCase().includes(brand.toLowerCase().split(' ')[0])));
+      
+      if (!match) {
+        alert('La pintura ' + brand + ' ' + code + ' no está en el catálogo maestro aún. Puedes registrarla desde "+ Registrar Pintura".');
+        return;
+      }
+
+      const addRes = await fetch(apiBase + '/api/v1/workbench/paints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': '${config.tenantSlug}'
+        },
+        body: JSON.stringify({
+          paintId: match.id,
+          status: 'owned',
+          quantity: 1
+        })
+      });
+
+      if (addRes.ok) {
+        alert('✅ ¡Pintura ' + match.brand + ' ' + match.code + ' agregada a tu Rack!');
+        loadWorkbenchData();
+        const codeInput = document.getElementById('equiv-code-input');
+        if (codeInput && codeInput.value) {
+          executePaintEquivalenceSearch(codeInput.value);
+        }
+      }
+    } catch (err) {
+      alert('Error al agregar pintura: ' + (err.message || err));
+    }
+  }
+
+  async function handleGenerateAiRecipe(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const query = document.getElementById('recipe-query-input').value.trim();
+    const preferredMedium = document.getElementById('recipe-medium-select').value;
+    const resultsContainer = document.getElementById('recipe-results-container');
+    const generateBtn = document.getElementById('recipe-generate-btn');
+    if (!query || !resultsContainer) return;
+
+    if (generateBtn) {
+      generateBtn.disabled = true;
+      generateBtn.textContent = '✨ Generando...';
+    }
+
+    resultsContainer.style.display = 'block';
+    resultsContainer.innerHTML = '<div style="text-align: center; padding: 2rem; color: #94a3b8;">Formulando receta de pintura y verificando disponibilidad en tu Rack...</div>';
+
+    const apiBase = '${(config.apiUrl || '').replace(/\/$/, '')}';
+    try {
+      const res = await fetch(apiBase + '/api/v1/paints/ai/recipe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': currentToken ? 'Bearer ' + currentToken : '',
+          'X-Tenant-Slug': '${config.tenantSlug}'
+        },
+        body: JSON.stringify({ query, preferredMedium })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        resultsContainer.innerHTML = '<div style="color: #f87171; padding: 1rem;">' + (err.detail || 'Error al generar receta') + '</div>';
+        return;
+      }
+
+      const recipe = await res.json();
+      renderAiRecipeResults(recipe);
+    } catch (err) {
+      resultsContainer.innerHTML = '<div style="color: #f87171; padding: 1rem;">Error de conexión con el servidor.</div>';
+    } finally {
+      if (generateBtn) {
+        generateBtn.disabled = false;
+        generateBtn.textContent = '✨ Mezclar';
+      }
+    }
+  }
+
+  function renderAiRecipeResults(recipe) {
+    const resultsContainer = document.getElementById('recipe-results-container');
+    if (!resultsContainer) return;
+
+    const components = recipe.components || [];
+    const airbrush = recipe.airbrushApplication || {};
+
+    let componentsHtml = components.map(c => {
+      const isOwned = c.inUserRack;
+      return '<div style="background: rgba(255,255,255,0.02); border: 1px solid ' + (isOwned ? 'rgba(34,197,94,0.4)' : 'var(--border-color)') + '; border-radius: 8px; padding: 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">' +
+        '<div style="display: flex; align-items: center; gap: 0.75rem;">' +
+          '<div style="width: 28px; height: 28px; border-radius: 50%; background: ' + (c.hexColor || '#94a3b8') + '; border: 2px solid rgba(255,255,255,0.2); flex-shrink: 0;"></div>' +
+          '<div>' +
+            '<div style="font-size: 0.88rem; font-weight: 700; color: #fff;">' + (c.recommendedPaint || c.code) + ' (' + c.brand + ' ' + c.code + ')</div>' +
+            '<div style="font-size: 0.75rem; color: #94a3b8;">' + c.partOrTonalStep + ' • ' + (c.percentage || 0) + '% de la mezcla</div>' +
+          '</div>' +
+        '</div>' +
+        '<div>' +
+          (isOwned 
+            ? '<span style="background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.35); font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 9999px; font-weight: 700;">✅ En tu Rack</span>'
+            : '<button class="filter-pill" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="addPaintCodeToRack(&quot;' + c.code + '&quot;, &quot;' + c.brand + '&quot;)">+ Al Rack</button>') +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    resultsContainer.innerHTML = 
+      '<div style="border-top: 1px solid var(--border-color); padding-top: 1rem;">' +
+        '<div style="margin-bottom: 1rem;">' +
+          '<h4 style="font-size: 1.15rem; font-weight: 700; color: #38bdf8; margin: 0 0 0.35rem 0;">' + recipe.recipeName + '</h4>' +
+          '<p style="font-size: 0.82rem; color: #cbd5e1; margin: 0;">' + recipe.description + '</p>' +
+        '</div>' +
+        '<div style="font-size: 0.82rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.5rem;">Fórmula de Componentes:</div>' +
+        '<div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">' +
+          componentsHtml +
+        '</div>' +
+        (recipe.mixingInstructions ? '<div style="background: rgba(255,255,255,0.02); border-left: 3px solid #38bdf8; padding: 0.85rem; border-radius: 4px; font-size: 0.8rem; color: #cbd5e1; margin-bottom: 1rem;">🥣 <strong>Instrucciones de Mezcla:</strong> ' + recipe.mixingInstructions + '</div>' : '') +
+        (airbrush.baseCoat ? '<div style="background: rgba(56,189,248,0.05); border: 1px solid rgba(56,189,248,0.2); border-radius: 8px; padding: 0.85rem; font-size: 0.8rem; color: #94a3b8;">' +
+          '<div style="color: #38bdf8; font-weight: 700; margin-bottom: 0.35rem;">🖌️ Aplicación recomendada:</div>' +
+          '<div>• Imprimación: ' + (airbrush.primer || 'Gris 1200') + '</div>' +
+          '<div>• Capa base: ' + (airbrush.baseCoat || '') + '</div>' +
+          '<div>• Dilución & PSI: ' + (airbrush.thinnerRatio || '1:1.5') + ' | ' + (airbrush.psi || '15 PSI') + '</div>' +
+        '</div>' : '') +
+      '</div>';
+  }
+
   // File to Base64 helper
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
@@ -3370,6 +3709,12 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
       }
 
       // Render Paint Rack Grid
+      window.__WB_PAINTS = paintItems;
+      const paintsBadge = document.getElementById('wb-paints-count-badge');
+      if (paintsBadge) {
+        paintsBadge.textContent = paintItems.length + (paintItems.length === 1 ? ' frasco' : ' frascos');
+      }
+
       const paintsContainer = document.getElementById('wb-paints-grid');
       if (paintsContainer) {
         if (paintItems.length === 0) {
@@ -3378,19 +3723,23 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
               '<div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎨</div>' +
               '<h3 style="font-size: 1.15rem; color: #fff; margin-bottom: 0.4rem;">Tu Rack de Pinturas está vacío</h3>' +
               '<p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.25rem;">Registra los frascos que tienes en tu taller para usarlos en tus recetas.</p>' +
-              '<button class="btn-primary" onclick="openAddPaintModal()">+ Registrar Primera Pintura</button>' +
+              '<div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">' +
+                '<button class="btn-primary" onclick="openAddPaintModal()">+ Registrar Primera Pintura</button>' +
+                '<button class="filter-pill" style="background: rgba(56,189,248,0.15); color: #38bdf8; border-color: rgba(56,189,248,0.3);" onclick="openPaintEquivalencesModal()">🧪 Probar Asistente de Equivalencias</button>' +
+              '</div>' +
             '</div>';
         } else {
           paintsContainer.innerHTML = paintItems.map(item => {
             const p = item.paint || {};
             const hex = p.colorHex || '#94a3b8';
-            return '<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; display: flex; align-items: center; gap: 0.75rem;">' +
+            return '<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">' +
               '<div style="width: 32px; height: 32px; border-radius: 50%; background: ' + hex + '; border: 2px solid rgba(255,255,255,0.2); flex-shrink: 0;"></div>' +
-              '<div style="flex: 1; overflow: hidden;">' +
+              '<div style="flex: 1; min-width: 110px; overflow: hidden;">' +
                 '<div style="font-size: 0.82rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (p.code || 'Pintura') + ' ' + (p.name || '') + '</div>' +
                 '<div style="font-size: 0.72rem; color: #94a3b8;">' + (p.brand || 'Mr. Color') + ' • Cantidad: ' + (item.quantity || 1) + '</div>' +
               '</div>' +
-              '<div style="display: flex; gap: 0.25rem;">' +
+              '<div style="display: flex; gap: 0.3rem; align-items: center;">' +
+                '<button class="filter-pill" style="font-size: 0.7rem; padding: 0.2rem 0.45rem; background: rgba(56,189,248,0.12); color: #38bdf8; border-color: rgba(56,189,248,0.3);" onclick="openPaintEquivalencesModal(&quot;' + (p.code || '') + '&quot;, &quot;' + (p.brand || '') + '&quot;)" title="Buscar equivalencias químicas">🔄 Equivalencias</button>' +
                 '<button class="filter-pill" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;" onclick="updatePaintQty(&quot;' + item.id + '&quot;, ' + ((item.quantity || 1) + 1) + ')">+</button>' +
                 '<button class="filter-pill" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;" onclick="updatePaintQty(&quot;' + item.id + '&quot;, ' + Math.max(0, (item.quantity || 1) - 1) + ')">-</button>' +
               '</div>' +

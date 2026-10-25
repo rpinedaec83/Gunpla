@@ -477,7 +477,22 @@ export function renderViews(
 
         <!-- Sub-Tab 3: Paint Rack Grid -->
         <div id="wb-subtab-paints" class="wb-subtab-content" style="display: none;">
-          <div id="wb-paints-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff; margin: 0;">🎨 Frascos en Taller</h3>
+              <span id="wb-paints-count-badge" style="background: rgba(192,132,252,0.15); color: #c084fc; border: 1px solid rgba(192,132,252,0.3); font-size: 0.75rem; padding: 0.15rem 0.55rem; border-radius: 9999px; font-weight: 600;">0 frascos</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="filter-pill" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; background: linear-gradient(90deg, rgba(56,189,248,0.15), rgba(168,85,247,0.15)); color: #38bdf8; border-color: rgba(56,189,248,0.4);" onclick="openPaintEquivalencesModal()">
+                🧪 Asistente de Equivalencias IA
+              </button>
+              <button class="btn-primary" style="font-size: 0.8rem; padding: 0.45rem 0.85rem;" onclick="openAddPaintModal()">
+                + Registrar Pintura
+              </button>
+            </div>
+          </div>
+
+          <div id="wb-paints-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem;">
             <!-- Dynamically populated via loadWorkbenchData() -->
           </div>
         </div>

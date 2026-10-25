@@ -1647,7 +1647,48 @@ async function runSmoketest() {
 
     console.log('[PASS] Trusted Shops Wishlist Stock Alerts & Fan-Out Notifications verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS CHECKS PASSED ===');
+    // -------------------------------------------------------------
+    // 26. Verify AI Paint Rack Equivalences Assistant & UI Modal
+    // -------------------------------------------------------------
+    console.log('--- Verifying AI Paint Rack Equivalences Assistant ---');
+
+    // 1. Query equivalences for rack item (Mr. Color C1 White)
+    const equivRes = await fetch(`${baseUrl}/api/v1/workbench/paints/${rackItem.id}/equivalences`, {
+      headers: {
+        Authorization: `Bearer ${googleSsoData.token}`
+      }
+    });
+    assert.equal(equivRes.status, 200, 'GET /api/v1/workbench/paints/:id/equivalences must return 200 OK');
+    const equivData = await equivRes.json();
+    assert.ok(equivData.matches.length >= 4, 'Must return cross-brand matches for C1 White');
+    const mrColorMatch = equivData.matches.find(m => m.brand === 'Mr. Hobby' && m.code === 'C1');
+    assert.ok(mrColorMatch, 'Must find Mr. Hobby C1 in matches');
+    assert.equal(mrColorMatch.ownedInRack, true, 'Mr. Color C1 must be marked as owned in rack');
+    assert.equal(mrColorMatch.rackQuantity, 3, 'Must report rack quantity of 3');
+
+    // Check application guide
+    assert.ok(equivData.airbrushGuide, 'Must return airbrushing application guide');
+    assert.ok(equivData.airbrushGuide.thinningRatio, 'Must include thinning ratio');
+
+    // 2. Query equivalences with medium filter
+    const equivMtnRes = await fetch(`${baseUrl}/api/v1/workbench/paints/${rackItem.id}/equivalences?targetMedium=montana_colors`, {
+      headers: {
+        Authorization: `Bearer ${googleSsoData.token}`
+      }
+    });
+    assert.equal(equivMtnRes.status, 200);
+    const equivMtnData = await equivMtnRes.json();
+    assert.equal(equivMtnData.matches[0].brand, 'Montana Colors', 'Montana Colors match must be prioritized first');
+
+    // 3. UI checks in web frontend HTML
+    assert.ok(plamoCommHtml.includes('id="modal-paint-equivalences"'), 'HTML must include AI paint equivalences modal');
+    assert.ok(plamoCommHtml.includes('openPaintEquivalencesModal'), 'HTML must include openPaintEquivalencesModal JS function');
+    assert.ok(plamoCommHtml.includes('id="wb-paints-count-badge"'), 'HTML must include paints count badge in Paint Rack header');
+    assert.ok(plamoCommHtml.includes('🔄 Equivalencias'), 'HTML must include Equivalencias button on rack cards');
+
+    console.log('[PASS] AI Paint Rack Equivalences Assistant & UI Modal verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

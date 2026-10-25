@@ -9,7 +9,8 @@ import {
   CreateStashItemRequest,
   UpdateStashItemRequest,
   CreatePaintRackItemRequest,
-  UpdatePaintRackItemRequest
+  UpdatePaintRackItemRequest,
+  PaintMedium
 } from '@gunpla/shared';
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
@@ -19,6 +20,7 @@ import {
   getShopsFromDb,
   matchWishlistWithShopStock
 } from '../community/community.slice';
+import { findPaintEquivalences } from '../paints-ai/paints-ai.slice';
 
 export const workbenchRouter = Router();
 
@@ -465,5 +467,58 @@ workbenchRouter.delete('/paints/:id', (req: Request, res: Response) => {
   return res.json({
     deleted: true,
     id: itemId
+  });
+});
+
+/**
+ * GET /api/v1/workbench/paints/:id/equivalences
+ * Get AI-powered cross-brand equivalences for a specific paint in the user's rack
+ */
+workbenchRouter.get('/paints/:id/equivalences', (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const itemId = req.params.id;
+  const targetMedium = req.query.targetMedium as PaintMedium | undefined;
+
+  const db = getDb();
+  let rackItem = db.paintRackItems.find(p => p.id === itemId && p.userId === userId);
+  let paint = rackItem ? db.paints.find(p => p.id === rackItem!.paintId) : undefined;
+
+  // Fallback: check if :id is directly a paintId
+  if (!paint) {
+    paint = db.paints.find(p => p.id === itemId);
+    if (paint) {
+      rackItem = db.paintRackItems.find(p => p.paintId === itemId && p.userId === userId);
+    }
+  }
+
+  if (!paint) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Pintura No Encontrada',
+      `No se encontró ninguna pintura en tu rack con el identificador '${itemId}'.`,
+      'not-found'
+    );
+  }
+
+  const userRack = db.paintRackItems.filter(p => p.userId === userId);
+  const result = findPaintEquivalences(paint.code, paint.brand, targetMedium, userRack, db.paints);
+
+  if (!result) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Equivalencias No Disponibles',
+      `No se encontraron fórmulas de equivalencia directa para la pintura '${paint.brand} ${paint.code}'.`,
+      'not-found'
+    );
+  }
+
+  return res.json({
+    ...result,
+    rackItemId: rackItem?.id,
+    currentRackQuantity: rackItem?.quantity || 0
   });
 });
