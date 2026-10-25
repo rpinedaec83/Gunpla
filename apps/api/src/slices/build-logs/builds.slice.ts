@@ -15,7 +15,10 @@ import {
   MediaAsset,
   ScaleCategory,
   GenerateSpecCardRequest,
-  GenerateSpecCardResponse
+  GenerateSpecCardResponse,
+  WhatsAppInquiryType,
+  WhatsAppInquiryRequest,
+  WhatsAppInquiryResponse
 } from '@gunpla/shared';
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
@@ -233,6 +236,171 @@ buildsRouter.get('/:slugOrId', (req: Request, res: Response) => {
     kit: populatedKit,
     steps: populatedSteps
   });
+});
+
+export function generateWhatsAppInquiry(params: {
+  builderUsername: string;
+  builderDisplayName: string;
+  targetWhatsapp: string;
+  itemTitle: string;
+  tenantName: string;
+  inquiryType: WhatsAppInquiryType;
+  clientName?: string;
+  itemUrl?: string;
+}): WhatsAppInquiryResponse {
+  const {
+    builderUsername,
+    builderDisplayName,
+    targetWhatsapp,
+    itemTitle,
+    tenantName,
+    inquiryType,
+    clientName,
+    itemUrl
+  } = params;
+
+  let message = '';
+  const greeting = clientName
+    ? `¡Hola ${builderDisplayName}! Soy ${clientName}.`
+    : `¡Hola ${builderDisplayName}!`;
+
+  switch (inquiryType) {
+    case 'paint_recipe':
+      message = `${greeting} Vi tu obra "${itemTitle}" en ${tenantName}. Me encantó el acabado y quería consultarte qué recetas de pintura o diluciones utilizaste. ¿Podrías darme algunos consejos?`;
+      break;
+    case 'custom_commission':
+      message = `${greeting} Vi tu trabajo en "${itemTitle}" en ${tenantName} y me interesa cotizar un encargo de pintura / armado personalizado de estilo similar. ¿Tienes cupos disponibles en tu taller?`;
+      break;
+    case 'purchase_build':
+      message = `${greeting} Te escribo desde ${tenantName} porque estoy muy interesado en adquirir o consultar si tienes a la venta tu maqueta terminada "${itemTitle}". ¿Está disponible?`;
+      break;
+    case 'general':
+    default:
+      message = `${greeting} Vi tu maqueta "${itemTitle}" en ${tenantName} y quería hacerte una consulta sobre tu proceso de construcción.`;
+      break;
+  }
+
+  if (itemUrl) {
+    message += ` Link: ${itemUrl}`;
+  }
+
+  let whatsappUrl = '';
+  if (targetWhatsapp.startsWith('https://chat.whatsapp.com/')) {
+    whatsappUrl = targetWhatsapp;
+  } else {
+    const cleanDigits = targetWhatsapp.replace(/[^0-9]/g, '');
+    whatsappUrl = `https://wa.me/${cleanDigits}?text=${encodeURIComponent(message)}`;
+  }
+
+  return {
+    builderUsername,
+    builderDisplayName,
+    targetWhatsapp,
+    whatsappUrl,
+    prefilledMessage: message,
+    inquiryType
+  };
+}
+
+/**
+ * GET /api/v1/builds/:slugOrId/whatsapp-inquiry
+ * Generate prefilled WhatsApp deep-link to inquire with the modeler about this build
+ */
+buildsRouter.get('/:slugOrId/whatsapp-inquiry', (req: Request, res: Response) => {
+  const db = getDb();
+  const build = db.builds.find(
+    (b) => b.id === req.params.slugOrId || b.slug === req.params.slugOrId
+  );
+
+  if (!build) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Bitácora No Encontrada',
+      `No se encontró el proyecto de construcción '${req.params.slugOrId}'.`,
+      'not-found'
+    );
+  }
+
+  const inquiryType = (req.query.inquiryType as WhatsAppInquiryType) || 'general';
+  const clientName = (req.query.clientName as string) || '';
+  const tenantSlug = req.tenant ? req.tenant.slug : 'gunplajunkies';
+  const tenantName = tenantSlug === 'plamoscale' ? 'PlamoScale' : 'GunplaJunkies';
+
+  const author = db.users.find(
+    (u) => u.id === build.userId || u.username === build.username
+  );
+  const commBuilder = (db.commissionBuilders || []).find(
+    (cb) => cb.username === build.username
+  );
+
+  const targetWhatsapp =
+    author?.whatsapp || commBuilder?.whatsappUrl || '+51 987 654 321';
+  const builderDisplayName =
+    author?.displayName || build.userDisplayName || build.username;
+
+  const result = generateWhatsAppInquiry({
+    builderUsername: build.username,
+    builderDisplayName,
+    targetWhatsapp,
+    itemTitle: build.title,
+    tenantName,
+    inquiryType,
+    clientName,
+    itemUrl: `https://${
+      tenantSlug === 'plamoscale' ? 'www.plamoscale.com' : 'www.gunplajunkies.com'
+    }#build-${build.slug}`
+  });
+
+  return res.json(result);
+});
+
+/**
+ * POST /api/v1/builds/whatsapp-inquiry
+ * Generate prefilled WhatsApp deep-link from arbitrary showcase or gallery item
+ */
+buildsRouter.post('/whatsapp-inquiry', (req: Request, res: Response) => {
+  const { builderUsername, itemTitle, inquiryType, clientName, itemUrl } = req.body || {};
+  if (!builderUsername || !itemTitle) {
+    return sendProblem(
+      req,
+      res,
+      400,
+      'Parámetros Requeridos Faltantes',
+      'Se requieren los campos builderUsername y itemTitle.'
+    );
+  }
+
+  const db = getDb();
+  const cleanUname = String(builderUsername).replace(/^@/, '').toLowerCase();
+  const author = db.users.find(
+    (u) => u.username.toLowerCase() === cleanUname
+  );
+  const commBuilder = (db.commissionBuilders || []).find(
+    (cb) => cb.username.toLowerCase() === cleanUname
+  );
+
+  const tenantSlug = req.tenant ? req.tenant.slug : 'gunplajunkies';
+  const tenantName = tenantSlug === 'plamoscale' ? 'PlamoScale' : 'GunplaJunkies';
+
+  const targetWhatsapp =
+    author?.whatsapp || commBuilder?.whatsappUrl || '+51 987 654 321';
+  const builderDisplayName =
+    author?.displayName || builderUsername;
+
+  const result = generateWhatsAppInquiry({
+    builderUsername,
+    builderDisplayName,
+    targetWhatsapp,
+    itemTitle,
+    tenantName,
+    inquiryType: (inquiryType as WhatsAppInquiryType) || 'general',
+    clientName,
+    itemUrl
+  });
+
+  return res.json(result);
 });
 
 /**

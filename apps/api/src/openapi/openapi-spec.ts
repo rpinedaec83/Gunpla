@@ -362,6 +362,49 @@ export const openApiSpec = {
         }
       }
     },
+    '/api/v1/builds/{slugOrId}/whatsapp-inquiry': {
+      get: {
+        tags: ['Build Logs'],
+        summary: 'Generate prefilled WhatsApp deep-link to inquire with modeler about a build',
+        parameters: [
+          { name: 'slugOrId', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'inquiryType', in: 'query', schema: { type: 'string', enum: ['general', 'paint_recipe', 'custom_commission', 'purchase_build'] } },
+          { name: 'clientName', in: 'query', schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': { description: 'WhatsApp inquiry deep-link and prefilled message' },
+          '404': { description: 'Build project not found' }
+        }
+      }
+    },
+    '/api/v1/builds/whatsapp-inquiry': {
+      post: {
+        tags: ['Build Logs'],
+        summary: 'Generate prefilled WhatsApp deep-link from arbitrary gallery or showcase item',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['builderUsername', 'itemTitle'],
+                properties: {
+                  builderUsername: { type: 'string' },
+                  itemTitle: { type: 'string' },
+                  inquiryType: { type: 'string', enum: ['general', 'paint_recipe', 'custom_commission', 'purchase_build'] },
+                  clientName: { type: 'string' },
+                  itemUrl: { type: 'string' }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          '200': { description: 'WhatsApp inquiry deep-link and prefilled message' },
+          '400': { description: 'Validation error' }
+        }
+      }
+    },
     '/api/v1/builds/{id}/steps': {
       post: {
         tags: ['Build Logs'],

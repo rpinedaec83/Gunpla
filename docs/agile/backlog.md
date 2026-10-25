@@ -4,10 +4,14 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
-- **Direct WhatsApp Community Feed & Build Inquiries:** Direct contact channels between builders and collectors on showcased models and work-in-progress logs.
 - **Bulk Import / CSV Stash & Paint Rack Migration Tool:** Allow modelers to migrate their existing inventories from spreadsheets or external platforms directly into Mi Taller.
+- **Push Notifications & In-App Activity Bell:** Web push notification service worker listener for build comments and stock alert triggers.
 
 ## Completed Candidates & Parking Lot Items
+
+### WHATSAPP-INQUIRIES -- Direct WhatsApp Community Inquiries on Builds & Showcase (COMPLETED)
+- Goal: Direct contact channels between builders and collectors on showcased models and work-in-progress logs for paint recipes, custom commissions, and build purchase inquiries.
+- Delivered: Endpoints `GET /api/v1/builds/:slugOrId/whatsapp-inquiry` and `POST /api/v1/builds/whatsapp-inquiry`; 4 intent templates (`paint_recipe`, `custom_commission`, `purchase_build`, `general`); `wa.me` clean number generator with group invite link preservation; `💬 Consultar WhatsApp` action buttons on build cards in `#view-builds`; `💬 Consultar al Modelista (WhatsApp)` in `#lightbox-modal`; modal `#modal-whatsapp-inquiry` with live preview; 4 isolated unit tests (`tests/unit/whatsapp-inquiry.test.mjs`); and verified live deployment on LXC 190.
 
 ### CONTEST-HALL-OF-FAME -- Contest Community Voting Badges & Public Hall of Fame (COMPLETED)
 - Goal: Public showcase and permanent trophy showcase for contest winners across community tenants with digital winner badges.

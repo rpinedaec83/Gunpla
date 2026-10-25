@@ -1234,11 +1234,133 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     });
   }
 
+  window.__LIGHTBOX_CURRENT = { url: '', title: '', author: '' };
+
   function openLightbox(url, title, author) {
+    window.__LIGHTBOX_CURRENT = { url: url, title: title, author: author };
     document.getElementById('lightbox-image').src = url;
     document.getElementById('lightbox-title').textContent = title;
     document.getElementById('lightbox-author').textContent = 'Construido y fotografiado por ' + author;
     document.getElementById('lightbox-modal').classList.add('active');
+  }
+
+  function openWhatsAppInquiryFromLightbox() {
+    const cur = window.__LIGHTBOX_CURRENT || {};
+    const authorUname = (cur.author || '').replace(/^@/, '');
+    openWhatsAppInquiryModal(authorUname, cur.title || 'Obra del Showcase', 'showcase', null, cur.url);
+  }
+
+  let currentWhatsAppInquiryUrl = '';
+
+  function openWhatsAppInquiryModal(builderUsername, itemTitle, itemType, slugOrId, itemUrl) {
+    const modal = document.getElementById('modal-whatsapp-inquiry');
+    if (!modal) return;
+
+    document.getElementById('wa-inquiry-builder-username').value = builderUsername;
+    document.getElementById('wa-inquiry-item-title').value = itemTitle;
+    document.getElementById('wa-inquiry-slug-or-id').value = slugOrId || '';
+
+    // Set default client name from logged in session if any
+    const userJson = localStorage.getItem('plamo_sso_user');
+    let defaultClientName = '';
+    if (userJson) {
+      try {
+        const u = JSON.parse(userJson);
+        defaultClientName = u.displayName || u.username || '';
+      } catch (e) {}
+    }
+    const nameInput = document.getElementById('wa-inquiry-client-name');
+    if (nameInput && !nameInput.value) {
+      nameInput.value = defaultClientName;
+    }
+
+    document.getElementById('wa-inquiry-dest-label').textContent = '@' + builderUsername.replace(/^@/, '');
+    document.getElementById('wa-inquiry-item-label').textContent = 'Obra / Proyecto: ' + itemTitle;
+
+    // Reset radio to paint_recipe
+    const radios = document.getElementsByName('wa-inquiry-type');
+    for (let i = 0; i < radios.length; i++) {
+      if (radios[i].value === 'paint_recipe') radios[i].checked = true;
+    }
+
+    modal.style.display = 'flex';
+    onWhatsAppInquiryTypeChange(itemUrl);
+  }
+
+  function closeWhatsAppInquiryModal(e) {
+    if (!e || e.target.id === 'modal-whatsapp-inquiry' || !e.target) {
+      const modal = document.getElementById('modal-whatsapp-inquiry');
+      if (modal) modal.style.display = 'none';
+    }
+  }
+
+  async function onWhatsAppInquiryTypeChange(providedUrl) {
+    const builderUsername = document.getElementById('wa-inquiry-builder-username').value;
+    const itemTitle = document.getElementById('wa-inquiry-item-title').value;
+    const slugOrId = document.getElementById('wa-inquiry-slug-or-id').value;
+    const clientName = document.getElementById('wa-inquiry-client-name').value;
+
+    let selectedType = 'general';
+    const radios = document.getElementsByName('wa-inquiry-type');
+    for (let i = 0; i < radios.length; i++) {
+      if (radios[i].checked) {
+        selectedType = radios[i].value;
+        break;
+      }
+    }
+
+    const previewArea = document.getElementById('wa-inquiry-message-preview');
+    const apiBase = (typeof config !== 'undefined' && config.apiUrl) ? config.apiUrl : '';
+
+    try {
+      let endpoint = '';
+      let fetchOpts = {};
+      if (slugOrId) {
+        endpoint = apiBase + '/api/v1/builds/' + encodeURIComponent(slugOrId) + '/whatsapp-inquiry?inquiryType=' + encodeURIComponent(selectedType) + '&clientName=' + encodeURIComponent(clientName);
+        fetchOpts = { method: 'GET' };
+      } else {
+        endpoint = apiBase + '/api/v1/builds/whatsapp-inquiry';
+        fetchOpts = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            builderUsername: builderUsername,
+            itemTitle: itemTitle,
+            inquiryType: selectedType,
+            clientName: clientName,
+            itemUrl: providedUrl || window.location.href
+          })
+        };
+      }
+
+      const res = await fetch(endpoint, fetchOpts);
+      if (res.ok) {
+        const data = await res.json();
+        if (previewArea) previewArea.value = data.prefilledMessage;
+        currentWhatsAppInquiryUrl = data.whatsappUrl;
+        document.getElementById('wa-inquiry-target-phone').value = data.targetWhatsapp;
+      }
+    } catch (err) {
+      console.warn('Error fetching WhatsApp inquiry template:', err);
+    }
+  }
+
+  function handleWhatsAppInquirySubmit(e) {
+    if (e) e.preventDefault();
+    const previewArea = document.getElementById('wa-inquiry-message-preview');
+    const customMessage = previewArea ? previewArea.value : '';
+    const targetPhone = document.getElementById('wa-inquiry-target-phone').value || '+51 987 654 321';
+
+    let launchUrl = '';
+    if (targetPhone.startsWith('https://chat.whatsapp.com/')) {
+      launchUrl = targetPhone;
+    } else {
+      const cleanDigits = targetPhone.replace(/[^0-9]/g, '');
+      launchUrl = 'https://wa.me/' + cleanDigits + '?text=' + encodeURIComponent(customMessage);
+    }
+
+    window.open(launchUrl, '_blank');
+    closeWhatsAppInquiryModal();
   }
 
   function closeLightbox(e) {

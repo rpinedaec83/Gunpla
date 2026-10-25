@@ -80,6 +80,7 @@ export function renderViews(
               </div>
               <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                 <button class="filter-pill" style="font-size: 0.78rem; padding: 0.4rem 0.75rem; background: rgba(56,189,248,0.15); color: #38bdf8; border-color: rgba(56,189,248,0.3);" onclick="openSpecCardModal('${b.id}')">🏷️ Ficha de Mesa & QR</button>
+                <button class="filter-pill" style="font-size: 0.78rem; padding: 0.4rem 0.75rem; background: rgba(37,211,102,0.15); color: #4ade80; border-color: rgba(37,211,102,0.3);" onclick="openWhatsAppInquiryModal('${b.username}', '${escapeHtml(b.title)}', 'build', '${b.slug}')">💬 Consultar WhatsApp</button>
                 <button class="btn-primary" onclick="likeBuild('${b.id}')">❤️ Like</button>
               </div>
             </div>

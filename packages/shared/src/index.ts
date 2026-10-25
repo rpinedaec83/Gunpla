@@ -822,6 +822,30 @@ export interface PaginatedResult<T> {
   totalCount: number;
 }
 
+export type WhatsAppInquiryType =
+  | 'general'
+  | 'paint_recipe'
+  | 'custom_commission'
+  | 'purchase_build';
+
+export interface WhatsAppInquiryRequest {
+  builderUsername: string;
+  itemTitle: string;
+  inquiryType?: WhatsAppInquiryType;
+  itemUrl?: string;
+  buildSlugOrId?: string;
+  clientName?: string;
+}
+
+export interface WhatsAppInquiryResponse {
+  builderUsername: string;
+  builderDisplayName: string;
+  targetWhatsapp: string;
+  whatsappUrl: string;
+  prefilledMessage: string;
+  inquiryType: WhatsAppInquiryType;
+}
+
 export * from './ui-shell/app-shell';
 export * from './ui-shell/views';
 export * from './ui-shell/modals';

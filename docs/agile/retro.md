@@ -352,3 +352,27 @@ Decisions made:
 Lessons learned:
 - Attaching contest badges directly to the builder's public profile gives community members permanent prestige and motivation to enter future group builds and contests.
 Usage: Moderate -- self-estimated
+
+### WHATSAPP-INQUIRIES -- Direct WhatsApp Community Inquiries on Builds & Showcase | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Designed and authored shared data models in `packages/shared/src/index.ts`: `WhatsAppInquiryType`, `WhatsAppInquiryRequest`, and `WhatsAppInquiryResponse`.
+- Implemented core business logic in `apps/api/src/slices/build-logs/builds.slice.ts`:
+  - `generateWhatsAppInquiry`: Generates structured WhatsApp deep-links with sanitized numeric phone numbers (`wa.me`) or official community group links (`chat.whatsapp.com`), tailoring the prefilled message according to 4 user intents (`paint_recipe`, `custom_commission`, `purchase_build`, `general`) and linking the canonical build URL.
+  - Endpoint `GET /api/v1/builds/:slugOrId/whatsapp-inquiry` for direct inquiries from build log projects.
+  - Endpoint `POST /api/v1/builds/whatsapp-inquiry` for inquiries originating from arbitrary Showcase gallery photos.
+- Documented new endpoints in OpenAPI 3.1 specification (`apps/api/src/openapi/openapi-spec.ts`).
+- Created UI components:
+  - Added `💬 Consultar WhatsApp` button to every build project card in `#view-builds`.
+  - Added `💬 Consultar al Modelista (WhatsApp)` button directly inside the high-resolution Lightbox viewer (`#lightbox-modal`).
+  - Implemented interactive modal `#modal-whatsapp-inquiry` in `modals.ts` featuring topic selection, sender name, live editable message preview, and one-click WhatsApp launcher.
+  - Implemented client handlers `openWhatsAppInquiryModal`, `openWhatsAppInquiryFromLightbox`, `onWhatsAppInquiryTypeChange`, and `handleWhatsAppInquirySubmit` in `app-shell.ts`.
+- Authored isolated unit test suite `tests/unit/whatsapp-inquiry.test.mjs` (4 test cases). Total unit test suite: 43 passed in 151ms.
+- Extended end-to-end regression smoketest in `scripts/smoketest.mjs` with full coverage.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190`) with live curl assertions on API and both web applications.
+Issues hit:
+- Handled dual destination formats: individual phone numbers format cleanly to `https://wa.me/{digits}?text=...` while existing community group invite links (`chat.whatsapp.com`) are preserved directly without breaking regex sanitization.
+Decisions made:
+- Providing radio buttons for 4 common inquiry intents with live message preview drastically lowers friction for casual fans to contact expert builders while letting them customize their message before launching WhatsApp.
+Lessons learned:
+- Storing the current Lightbox context (`window.__LIGHTBOX_CURRENT`) allows seamless transition from browsing full-resolution photos directly to contacting the modeler who created them.
+Usage: Moderate -- self-estimated

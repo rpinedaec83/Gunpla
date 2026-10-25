@@ -1741,7 +1741,48 @@ async function runSmoketest() {
 
     console.log('[PASS] Contest Community Badges & Public Hall of Fame verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME CHECKS PASSED ===');
+    // --- Verifying Direct WhatsApp Community Inquiries ---
+    console.log('\n--- Verifying Direct WhatsApp Community Inquiries ---');
+
+    // 1. Build log WhatsApp inquiry endpoint
+    const waBuildRes = await fetch(`${baseUrl}/api/v1/builds/mg-eclipse-gundam-custom-paint/whatsapp-inquiry?inquiryType=paint_recipe&clientName=Roberto`);
+    assert.equal(waBuildRes.status, 200, 'GET /api/v1/builds/:slugOrId/whatsapp-inquiry must return 200 OK');
+    const waBuildData = await waBuildRes.json();
+    assert.equal(waBuildData.inquiryType, 'paint_recipe');
+    assert.ok(waBuildData.prefilledMessage.includes('Roberto'), 'Must include client name');
+    assert.ok(waBuildData.prefilledMessage.includes('recetas de pintura'), 'Must include paint recipe inquiry text');
+    assert.ok(waBuildData.whatsappUrl.startsWith('https://wa.me/'), 'Must generate valid wa.me URL');
+
+    // 2. Showcase / Gallery arbitrary WhatsApp inquiry endpoint
+    const waShowcaseRes = await fetch(`${baseUrl}/api/v1/builds/whatsapp-inquiry`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        builderUsername: 'aperich',
+        itemTitle: 'RG 1/144 Hi-Nu Gundam Titanium Finish',
+        inquiryType: 'custom_commission',
+        clientName: 'Daniel'
+      })
+    });
+    assert.equal(waShowcaseRes.status, 200, 'POST /api/v1/builds/whatsapp-inquiry must return 200 OK');
+    const waShowcaseData = await waShowcaseRes.json();
+    assert.equal(waShowcaseData.builderUsername, 'aperich');
+    assert.ok(waShowcaseData.prefilledMessage.includes('cotizar un encargo'));
+    assert.ok(waShowcaseData.whatsappUrl.includes('whatsapp.com') || waShowcaseData.whatsappUrl.includes('wa.me'), 'Must generate valid WhatsApp URL');
+
+    // 3. UI checks on both web frontends
+    assert.ok(plamoHofHtml.includes('id="modal-whatsapp-inquiry"'), 'PlamoScale must render #modal-whatsapp-inquiry');
+    assert.ok(plamoHofHtml.includes('openWhatsAppInquiryModal'), 'PlamoScale must include openWhatsAppInquiryModal');
+    assert.ok(plamoHofHtml.includes('openWhatsAppInquiryFromLightbox'), 'PlamoScale must include openWhatsAppInquiryFromLightbox');
+    assert.ok(plamoHofHtml.includes('id="lightbox-btn-whatsapp"'), 'PlamoScale must render WhatsApp button in Lightbox');
+
+    assert.ok(gunplaHofHtml.includes('id="modal-whatsapp-inquiry"'), 'GunplaJunkies must render #modal-whatsapp-inquiry');
+    assert.ok(gunplaHofHtml.includes('openWhatsAppInquiryModal'), 'GunplaJunkies must include openWhatsAppInquiryModal');
+    assert.ok(gunplaHofHtml.includes('💬 Consultar WhatsApp'), 'GunplaJunkies must render WhatsApp button on build cards');
+
+    console.log('[PASS] Direct WhatsApp Community Inquiries verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

@@ -4,12 +4,31 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences & Contest Hall of Fame Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + 4 Technical Debt resolutions verified via `npm test` (38 unit tests + full integration suite) and live LXC 190 deployment.
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame & WhatsApp Inquiries Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + 4 Technical Debt resolutions verified via `npm test` (43 unit tests + full integration suite) and live LXC 190 deployment.
 - Current branch or release line: `feature/dt9-google-oauth-sso` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Canales de Consulta Directa por WhatsApp en Obras del Showcase y Bitácoras (Direct WhatsApp Community Inquiries):**
+  - **Generador Determinista de Enlaces y Plantillas (`generateWhatsAppInquiry`):**
+    - Construcción de enlaces profundos para WhatsApp (`wa.me`) con números limpios internacionales y mensajes preconfigurados según 4 tipos de intención:
+      1. `paint_recipe` (Recetas de Pintura & Técnicas de Aerografía).
+      2. `custom_commission` (Cotización de Encargo Personalizado de Pintura/Armado).
+      3. `purchase_build` (Consulta de Venta/Adquisición de la Maqueta Terminada).
+      4. `general` (Consulta Técnica General de Modelismo).
+    - Preservación inteligente de enlaces comunitarios y grupos oficiales (`chat.whatsapp.com`).
+  - **Endpoints Especializados de Consulta:**
+    - `GET /api/v1/builds/:slugOrId/whatsapp-inquiry`: Genera la plantilla de consulta preconfigurada asociada a una bitácora de montaje específica, vinculando al autor y URL canónica.
+    - `POST /api/v1/builds/whatsapp-inquiry`: Genera la plantilla de consulta abierta desde cualquier tarjeta del Showcase o fotografía del visor.
+  - **Integración UI Completa en el Frontend:**
+    - Botón `💬 Consultar WhatsApp` en cada tarjeta de bitácora en `#view-builds`.
+    - Botón `💬 Consultar al Modelista (WhatsApp)` integrado directamente en el visor de alta resolución (`#lightbox-modal`).
+    - Modal interactivo `#modal-whatsapp-inquiry` con selector de motivos por radio buttons, campo opcional de nombre del remitente, área de edición en vivo del mensaje preformateado y botón de lanzamiento `🚀 Abrir WhatsApp`.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/whatsapp-inquiry.test.mjs` (4 casos de prueba aislados). Total unit tests: 43 passed in 151ms.
+    - Extensión de `scripts/smoketest.mjs` con cobertura end-to-end de endpoints, generación de enlaces y renderizado en UI de PlamoScale y GunplaJunkies.
 
 - **Insignias de Votación Comunitaria y Salón de la Fama de Concursos (Contest Badges & Hall of Fame):**
   - **Cálculo de Podio y Voto Popular Determinista (`calculateContestAwards`):**

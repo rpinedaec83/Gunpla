@@ -23,6 +23,11 @@ export function renderModals(
     <img id="lightbox-image" class="lightbox-img" src="" alt="Obra de Modelismo en Alta Resolución" />
     <div id="lightbox-title" class="lightbox-caption"></div>
     <div id="lightbox-author" class="lightbox-author"></div>
+    <div style="margin-top: 1rem; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+      <button id="lightbox-btn-whatsapp" type="button" class="btn-primary" style="background: #25d366; color: #fff; font-size: 0.85rem; padding: 0.45rem 1.1rem; display: inline-flex; align-items: center; gap: 0.4rem; border: none; border-radius: 6px; cursor: pointer;" onclick="openWhatsAppInquiryFromLightbox()">
+        <span>💬</span> Consultar al Modelista (WhatsApp)
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1294,6 +1299,79 @@ export function renderModals(
         <button type="button" class="filter-pill" onclick="closeMarketplaceInquiryModal()">Cancelar</button>
         <button type="submit" id="inquiry-submit-btn" class="btn-primary" style="padding: 0.5rem 1.25rem;">
           ✉️ Enviar Consulta por Email
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- WhatsApp Direct Modeler Inquiry Modal -->
+<div id="modal-whatsapp-inquiry" class="modal" onclick="closeWhatsAppInquiryModal(event)" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+  <div class="modal-box" onclick="event.stopPropagation()" style="background: #0f172a; border: 1px solid rgba(37,211,102,0.4); border-radius: 12px; width: 100%; max-width: 520px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); overflow: hidden;">
+    <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, rgba(37,211,102,0.12) 0%, rgba(15,23,42,0.95) 100%); display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.4rem;">💬</span>
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Consulta Directa por WhatsApp</h3>
+          <p style="font-size: 0.78rem; color: #4ade80; margin: 0.15rem 0 0 0;">Canal directo con el modelista</p>
+        </div>
+      </div>
+      <span style="font-size: 1.5rem; color: #94a3b8; cursor: pointer; line-height: 1;" onclick="closeWhatsAppInquiryModal()">&times;</span>
+    </div>
+
+    <form id="form-whatsapp-inquiry" onsubmit="handleWhatsAppInquirySubmit(event)" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+      <input type="hidden" id="wa-inquiry-builder-username" value="" />
+      <input type="hidden" id="wa-inquiry-item-title" value="" />
+      <input type="hidden" id="wa-inquiry-slug-or-id" value="" />
+      <input type="hidden" id="wa-inquiry-target-phone" value="" />
+
+      <!-- Modeler & Item Context Banner -->
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.85rem 1rem;">
+        <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.2rem;">Destinatario / Modelista:</div>
+        <div id="wa-inquiry-dest-label" style="font-size: 0.95rem; font-weight: 700; color: #fff;">@modelista</div>
+        <div id="wa-inquiry-item-label" style="font-size: 0.8rem; color: #38bdf8; margin-top: 0.2rem;">Obra: Titulo</div>
+      </div>
+
+      <!-- Inquiry Type Pills -->
+      <div>
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.4rem;">Motivo de tu consulta:</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+          <label style="display: flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 0.45rem 0.65rem; cursor: pointer; font-size: 0.78rem; color: #e2e8f0;">
+            <input type="radio" name="wa-inquiry-type" value="paint_recipe" checked onchange="onWhatsAppInquiryTypeChange()" />
+            <span>🎨 Receta / Pintura</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 0.45rem 0.65rem; cursor: pointer; font-size: 0.78rem; color: #e2e8f0;">
+            <input type="radio" name="wa-inquiry-type" value="custom_commission" onchange="onWhatsAppInquiryTypeChange()" />
+            <span>🖌️ Encargar Obra</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 0.45rem 0.65rem; cursor: pointer; font-size: 0.78rem; color: #e2e8f0;">
+            <input type="radio" name="wa-inquiry-type" value="purchase_build" onchange="onWhatsAppInquiryTypeChange()" />
+            <span>🛒 Comprar Obra</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 0.45rem 0.65rem; cursor: pointer; font-size: 0.78rem; color: #e2e8f0;">
+            <input type="radio" name="wa-inquiry-type" value="general" onchange="onWhatsAppInquiryTypeChange()" />
+            <span>💬 Consulta General</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Sender Name -->
+      <div>
+        <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.25rem;">Tu Nombre (Opcional):</label>
+        <input type="text" id="wa-inquiry-client-name" class="auth-input" placeholder="ej. Roberto Pineda" oninput="onWhatsAppInquiryTypeChange()" />
+      </div>
+
+      <!-- Live Editable Message Preview -->
+      <div>
+        <label style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.25rem;">Mensaje Preconfigurado (Editable):</label>
+        <textarea id="wa-inquiry-message-preview" class="auth-input" rows="4" style="font-family: inherit; font-size: 0.82rem; line-height: 1.5;"></textarea>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+        <button type="button" class="filter-pill" onclick="closeWhatsAppInquiryModal()">Cancelar</button>
+        <button type="submit" id="wa-inquiry-submit-btn" class="btn-primary" style="background: #25d366; color: #fff; padding: 0.5rem 1.25rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+          <span>🚀 Abrir WhatsApp</span>
         </button>
       </div>
     </form>
