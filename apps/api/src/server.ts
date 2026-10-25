@@ -8,6 +8,7 @@ import { seedPlatformDatabase, resolveLegacyPlamoscaleDir } from './seed/seed-le
 import { getDb } from './core/db';
 import { resolveTenantMiddleware } from './core/tenant.middleware';
 import { sendProblem } from './core/problem-details';
+import { createRateLimiter } from './core/rate-limit.middleware';
 import { tenantsRouter } from './slices/tenants/tenants.slice';
 import { authRouter } from './slices/auth-sso/auth.slice';
 import { buildersRouter } from './slices/builders/builders.slice';
@@ -28,7 +29,24 @@ export function createApp() {
   seedPlatformDatabase(false);
 
   const app = express();
-  app.use(cors());
+  const allowedOriginPattern = /^(https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?|https?:\/\/.*(plamoscale|gunplajunkies)\.com(:\d+)?)$/;
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOriginPattern.test(origin)) {
+          return callback(null, true);
+        }
+        const db = getDb();
+        const match = db.tenants.some((t) => origin.includes(t.domain) || origin.includes(t.slug));
+        if (match) {
+          return callback(null, true);
+        }
+        return callback(null, false);
+      },
+      credentials: true
+    })
+  );
   app.use(express.json({ limit: '20mb' }));
   app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
@@ -81,14 +99,26 @@ export function createApp() {
   // Apply Multi-Tenant Context Resolution to all /api/v1/* tenant-scoped slices
   app.use('/api/v1', resolveTenantMiddleware);
 
-  // Mount Vertical Slices
+  // Mount Vertical Slices with Rate Limiting Guards
+  const authLimiter = createRateLimiter({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    message: 'Demasiadas solicitudes de autenticacion desde esta IP. Por favor intente mas tarde.'
+  });
+  const uploadLimiter = createRateLimiter({
+    windowMs: 10 * 60 * 1000,
+    max: 100,
+    message: 'Limite de subida de fotos excedido. Espere unos minutos antes de subir mas fotos.'
+  });
+
   app.use('/api/v1/tenants', tenantsRouter);
-  app.use('/api/v1/auth', authRouter);
+  app.use('/api/v1/auth', authLimiter, authRouter);
   app.use('/api/v1/builders', buildersRouter);
   app.use('/api/v1/notifications', notificationsRouter);
   app.use('/api/v1/catalog', catalogRouter);
   app.use('/api/v1/workbench', workbenchRouter);
   app.use('/api/v1/builds', buildsRouter);
+  app.use('/api/v1/media/upload', uploadLimiter);
   app.use('/api/v1/media', mediaRouter);
   app.use('/api/v1/marketplace', marketplaceRouter);
   app.use('/api/v1/commissions', commissionsRouter);

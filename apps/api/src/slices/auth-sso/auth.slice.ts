@@ -6,10 +6,14 @@ import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
 import { sendTenantEmailViaResend } from '../notifications-resend/resend.slice';
 
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  process.env.jwtSecret ||
-  'gunpla-plamoscale-sso-dev-secret-2026';
+const DEFAULT_DEV_JWT_SECRET = 'gunpla-plamoscale-sso-dev-secret-2026';
+const configuredJwtSecret = process.env.JWT_SECRET || process.env.jwtSecret;
+
+if (process.env.NODE_ENV === 'production' && (!configuredJwtSecret || configuredJwtSecret === DEFAULT_DEV_JWT_SECRET)) {
+  console.warn('[SECURITY WARNING]: In production environment, JWT_SECRET should be set via environment variable rather than default fallback.');
+}
+
+const JWT_SECRET = configuredJwtSecret || DEFAULT_DEV_JWT_SECRET;
 
 export interface JwtPayloadData {
   sub: string;
