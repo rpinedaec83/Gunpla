@@ -25,6 +25,7 @@ import { sendProblem } from '../../core/problem-details';
 import { requireAuth } from '../auth-sso/auth.slice';
 import { uploadMedia, getStorageDiagnostics } from '../../core/storage';
 import { sendTenantEmailViaResend } from '../notifications-resend/resend.slice';
+import { dispatchNotification } from '../notifications-bell/notifications.slice';
 
 export const buildsRouter = Router();
 export const mediaRouter = Router();
@@ -792,6 +793,20 @@ buildsRouter.post('/:id/comments', requireAuth, async (req: Request, res: Respon
       });
     } catch (emailErr) {
       console.error('Failed to dispatch build comment email notification:', emailErr);
+    }
+
+    try {
+      await dispatchNotification({
+        recipientUserId: build.userId,
+        tenantSlug: activeTenant.slug,
+        type: 'build_comment',
+        title: 'Nuevo comentario en tu bitácora',
+        message: `${user.username} comentó: "${newComment.comment.slice(0, 80)}"`,
+        link: `#/builds/${build.slug || build.id}`,
+        metadata: { buildId: build.id, commentId: newComment.id }
+      });
+    } catch (notifErr) {
+      console.error('Failed to dispatch build comment in-app notification:', notifErr);
     }
   }
 

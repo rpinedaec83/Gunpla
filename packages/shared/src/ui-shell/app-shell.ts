@@ -316,6 +316,87 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData, og?: 
       gap: 1rem;
     }
 
+    /* Activity Bell & Dropdown Styles */
+    .activity-bell-btn {
+      position: relative;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+      border-radius: 8px;
+      width: 38px;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 1.05rem;
+    }
+    .activity-bell-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .activity-unread-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.1rem 0.35rem;
+      border-radius: 9999px;
+      min-width: 16px;
+      text-align: center;
+      border: 2px solid #0b0f19;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+    }
+    .activity-dropdown {
+      position: absolute;
+      right: 0;
+      top: 46px;
+      width: 360px;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+      z-index: 120;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      display: none;
+    }
+    .activity-dropdown.active {
+      display: block;
+      animation: fadeIn 0.15s ease;
+    }
+    .activity-item {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .activity-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .activity-item.unread {
+      background: rgba(56, 189, 248, 0.07);
+      border-left: 3px solid #38bdf8;
+    }
+    .activity-icon-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
     .portal-switcher {
       display: flex;
       align-items: center;
@@ -1081,6 +1162,38 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData, og?: 
         <span>+ Nueva Bitácora</span>
       </button>
 
+      <!-- In-App Activity Bell & Notifications Dropdown -->
+      <div id="activity-bell-container" style="position: relative;">
+        <button id="activity-bell-btn" class="activity-bell-btn" onclick="toggleActivityDropdown(event)" title="Notificaciones de actividad">
+          <span>🔔</span>
+          <span id="activity-unread-badge" class="activity-unread-badge" style="display: none;">0</span>
+        </button>
+
+        <!-- Activity Dropdown Menu -->
+        <div id="activity-bell-dropdown" class="activity-dropdown">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color); background: rgba(255,255,255,0.02);">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-weight: 700; font-size: 0.9rem; color: #fff;">Actividad</span>
+              <span id="activity-dropdown-count" style="font-size: 0.72rem; color: #94a3b8; background: rgba(255,255,255,0.08); padding: 0.1rem 0.4rem; border-radius: 9999px;">0 nuevas</span>
+            </div>
+            <button onclick="markAllNotificationsAsRead()" style="background: transparent; border: none; color: #38bdf8; font-size: 0.75rem; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; font-weight: 600;">Marcar leídas</button>
+          </div>
+
+          <!-- Web Push Permission Banner inside dropdown -->
+          <div id="activity-push-banner" style="display: none; padding: 0.6rem 1rem; background: rgba(56, 189, 248, 0.1); border-bottom: 1px solid rgba(56, 189, 248, 0.2); font-size: 0.78rem; justify-content: space-between; align-items: center;">
+            <span style="color: #cbd5e1;">¿Activar alertas Web Push?</span>
+            <button onclick="requestPushSubscription()" style="background: #0284c7; color: #fff; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.72rem; font-weight: 600; cursor: pointer;">Activar</button>
+          </div>
+
+          <!-- Notification List container -->
+          <div id="activity-list-container" style="max-height: 360px; overflow-y: auto;">
+            <div style="padding: 2rem 1rem; text-align: center; color: #64748b; font-size: 0.85rem;">
+              <span>🔔 No hay notificaciones recientes</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Authentication Section -->
       <div id="auth-user-container" style="position: relative;">
         <button id="btn-open-login" class="btn-auth" onclick="openAuthModal()">
@@ -1778,6 +1891,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
           '</div>' +
         '</div>';
       updateContestVotesForCurrentUser();
+      loadUserNotifications();
     } else {
       const navThemeBtn = document.getElementById('nav-customize-theme');
       if (navThemeBtn) navThemeBtn.style.display = 'none';
@@ -1791,6 +1905,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
           '<svg width="16" height="16" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15.2s.7 5.5 1.9 7.9l3.7-2.9z"/><path fill="#34A853" d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2-6.4-4.8L1.9 17C3.7 20.7 7.5 23.5 12 23.5z"/></svg>' +
           '<span>Iniciar Sesión</span>' +
         '</button>';
+      loadUserNotifications();
     }
   }
 
@@ -5044,11 +5159,254 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Activity Bell & Web Push Notifications Engine
+  // -------------------------------------------------------------------------
+  let userNotifications = [];
+
+  function formatRelativeTime(isoString) {
+    if (!isoString) return '';
+    const now = Date.now();
+    const date = new Date(isoString).getTime();
+    const diffSec = Math.floor((now - date) / 1000);
+    if (diffSec < 60) return 'Hace unos segundos';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return 'Hace ' + diffMin + 'm';
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return 'Hace ' + diffHours + 'h';
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return 'Ayer';
+    if (diffDays < 7) return 'Hace ' + diffDays + 'd';
+    return new Date(isoString).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  }
+
+  function getNotificationIcon(type) {
+    switch (type) {
+      case 'build_comment': return '💬';
+      case 'contest_judged': return '⚖️';
+      case 'contest_award': return '🏆';
+      case 'commission_update': return '🎨';
+      case 'wishlist_stock': return '📦';
+      case 'community_vote': return '⭐';
+      default: return '🔔';
+    }
+  }
+
+  async function loadUserNotifications() {
+    const badge = document.getElementById('activity-unread-badge');
+    const countLabel = document.getElementById('activity-dropdown-count');
+    const container = document.getElementById('activity-list-container');
+    const pushBanner = document.getElementById('activity-push-banner');
+
+    if (!currentToken || !currentUser) {
+      if (badge) badge.style.display = 'none';
+      if (countLabel) countLabel.textContent = '0 nuevas';
+      if (container) {
+        container.innerHTML = '<div style="padding: 2rem 1rem; text-align: center; color: #64748b; font-size: 0.85rem;"><span>🔒 Inicia sesión para ver tu actividad</span></div>';
+      }
+      return;
+    }
+
+    if ('Notification' in window && Notification.permission === 'default' && pushBanner) {
+      pushBanner.style.display = 'flex';
+    } else if (pushBanner) {
+      pushBanner.style.display = 'none';
+    }
+
+    try {
+      const res = await fetch('/api/v1/notifications', {
+        headers: { 'Authorization': 'Bearer ' + currentToken }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      userNotifications = data.items || [];
+      const unreadCount = data.unreadCount || 0;
+
+      if (badge) {
+        if (unreadCount > 0) {
+          badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+          badge.style.display = 'block';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+
+      if (countLabel) {
+        countLabel.textContent = unreadCount + ' nuevas';
+      }
+
+      if (container) {
+        if (userNotifications.length === 0) {
+          container.innerHTML = '<div style="padding: 2rem 1rem; text-align: center; color: #64748b; font-size: 0.85rem;"><span>🔔 No hay notificaciones recientes</span></div>';
+        } else {
+          container.innerHTML = userNotifications.map(n => {
+            const icon = getNotificationIcon(n.type);
+            const timeAgo = formatRelativeTime(n.createdAt);
+            const unreadClass = !n.read ? 'unread' : '';
+            return '<div class="activity-item ' + unreadClass + '" data-notif-id="' + n.id + '" data-notif-link="' + (n.link || '') + '" onclick="handleNotificationClick(this.dataset.notifId, this.dataset.notifLink)">' +
+              '<div class="activity-icon-badge">' + icon + '</div>' +
+              '<div style="flex: 1; min-width: 0;">' +
+                '<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; margin-bottom: 0.2rem;">' +
+                  '<div style="font-size: 0.82rem; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + escapeHtml(n.title) + '</div>' +
+                  '<div style="font-size: 0.68rem; color: #64748b; flex-shrink: 0;">' + timeAgo + '</div>' +
+                '</div>' +
+                '<div style="font-size: 0.76rem; color: #94a3b8; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">' + escapeHtml(n.message) + '</div>' +
+              '</div>' +
+            '</div>';
+          }).join('');
+        }
+      }
+    } catch (err) {
+      console.warn('Error loading notifications:', err);
+    }
+  }
+
+  function toggleActivityDropdown(e) {
+    if (e) e.stopPropagation();
+    const dropdown = document.getElementById('activity-bell-dropdown');
+    if (!dropdown) return;
+    const isShowing = dropdown.classList.contains('active');
+
+    const userMenu = document.getElementById('user-dropdown');
+    if (userMenu) userMenu.classList.remove('active');
+
+    if (isShowing) {
+      dropdown.classList.remove('active');
+    } else {
+      dropdown.classList.add('active');
+      loadUserNotifications();
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    const bellContainer = document.getElementById('activity-bell-container');
+    const dropdown = document.getElementById('activity-bell-dropdown');
+    if (dropdown && bellContainer && !bellContainer.contains(e.target)) {
+      dropdown.classList.remove('active');
+    }
+  });
+
+  async function handleNotificationClick(id, link) {
+    const item = userNotifications.find(n => n.id === id);
+    if (item) item.read = true;
+
+    if (currentToken) {
+      fetch('/api/v1/notifications/' + id + '/read', {
+        method: 'PATCH',
+        headers: { 'Authorization': 'Bearer ' + currentToken }
+      }).catch(() => {});
+    }
+
+    const dropdown = document.getElementById('activity-bell-dropdown');
+    if (dropdown) dropdown.classList.remove('active');
+
+    loadUserNotifications();
+
+    if (link) {
+      if (link.startsWith('#/workbench')) {
+        goToWorkbench();
+      } else if (link.startsWith('#/contests/')) {
+        switchTab('contests');
+      } else if (link.startsWith('#/builds/')) {
+        switchTab('builds');
+      } else if (link.startsWith('#/marketplace')) {
+        switchTab('marketplace');
+      } else {
+        window.location.hash = link.replace('#', '');
+      }
+    }
+  }
+
+  async function markAllNotificationsAsRead() {
+    if (!currentToken) return;
+    try {
+      const res = await fetch('/api/v1/notifications/mark-all-read', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + currentToken }
+      });
+      if (res.ok) {
+        userNotifications.forEach(n => { n.read = true; });
+        loadUserNotifications();
+      }
+    } catch (err) {
+      console.warn('Error marking all notifications as read:', err);
+    }
+  }
+
+  async function requestPushSubscription() {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      alert('Tu navegador no soporta notificaciones Web Push.');
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        alert('Se rechazó el permiso de notificaciones.');
+        return;
+      }
+
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBKr3qBUYIHBQFLXYp5Nksh8U'
+        });
+      }
+
+      const rawKey = sub.getKey ? sub.getKey('p256dh') : null;
+      const rawAuth = sub.getKey ? sub.getKey('auth') : null;
+      const p256dh = rawKey ? btoa(String.fromCharCode.apply(null, new Uint8Array(rawKey))) : 'mock-p256dh';
+      const auth = rawAuth ? btoa(String.fromCharCode.apply(null, new Uint8Array(rawAuth))) : 'mock-auth';
+
+      if (currentToken) {
+        await fetch('/api/v1/notifications/push-subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + currentToken
+          },
+          body: JSON.stringify({
+            endpoint: sub.endpoint,
+            keys: { p256dh, auth },
+            userAgent: navigator.userAgent
+          })
+        });
+      }
+
+      const pushBanner = document.getElementById('activity-push-banner');
+      if (pushBanner) pushBanner.style.display = 'none';
+
+      showShareToast('🔔 Alertas Web Push activadas correctamente');
+    } catch (err) {
+      console.warn('Push registration fallback:', err);
+      if (currentToken) {
+        await fetch('/api/v1/notifications/push-subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + currentToken
+          },
+          body: JSON.stringify({
+            endpoint: 'https://push.plamoscale.com/mock-endpoint/' + (currentUser ? currentUser.id : 'anon'),
+            keys: { p256dh: 'mock-p256dh-key', auth: 'mock-auth-secret' },
+            userAgent: navigator.userAgent
+          })
+        }).catch(() => {});
+      }
+      const pushBanner = document.getElementById('activity-push-banner');
+      if (pushBanner) pushBanner.style.display = 'none';
+      showShareToast('🔔 Alertas Web Push activadas');
+    }
+  }
+
   function logout() {
     localStorage.removeItem('plamo_sso_token');
     localStorage.removeItem('plamo_sso_user');
     currentUser = null;
     currentToken = null;
+    userNotifications = [];
     renderAuthUI();
     loadWorkbenchData();
   }
@@ -5056,6 +5414,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
   // Initialize auth state and Google One-Tap on page load
   window.addEventListener('DOMContentLoaded', () => {
     checkAuth();
+    setInterval(loadUserNotifications, 30000);
   });
 </script>
 

@@ -762,3 +762,59 @@ paths:
       responses:
         '201':
           description: Inquiry sent to seller
+  /api/v1/notifications:
+    get:
+      tags: [Notifications]
+      summary: Get notifications for authenticated user
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: unreadOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of notifications and unread count
+  /api/v1/notifications/{id}/read:
+    patch:
+      tags: [Notifications]
+      summary: Mark a single notification as read
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification marked as read
+  /api/v1/notifications/mark-all-read:
+    post:
+      tags: [Notifications]
+      summary: Mark all user notifications as read
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: All notifications marked as read
+  /api/v1/notifications/push-subscribe:
+    post:
+      tags: [Notifications]
+      summary: Register or refresh Web Push subscription
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Push subscription stored
+    delete:
+      tags: [Notifications]
+      summary: Remove Web Push subscription
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Push subscription removed

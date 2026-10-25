@@ -919,6 +919,49 @@ export interface OpenGraphMetadata {
   siteName?: string;
 }
 
+export type NotificationType =
+  | 'build_comment'
+  | 'contest_judged'
+  | 'contest_award'
+  | 'commission_update'
+  | 'wishlist_stock'
+  | 'community_vote'
+  | 'system';
+
+export interface NotificationItem {
+  id: string;
+  tenantSlug: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link: string;
+  read: boolean;
+  createdAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface PushSubscriptionKeys {
+  p256dh: string;
+  auth: string;
+}
+
+export interface PushSubscriptionRecord {
+  id: string;
+  tenantSlug: string;
+  userId: string;
+  endpoint: string;
+  keys: PushSubscriptionKeys;
+  createdAt: string;
+  userAgent?: string;
+}
+
+export interface NotificationsListResponse {
+  items: NotificationItem[];
+  unreadCount: number;
+  totalCount: number;
+}
+
 export * from './ui-shell/app-shell';
 export * from './ui-shell/views';
 export * from './ui-shell/modals';

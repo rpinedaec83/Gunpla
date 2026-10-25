@@ -791,6 +791,60 @@ export const openApiSpec = {
           }
         }
       }
+    },
+    '/api/v1/notifications': {
+      get: {
+        tags: ['Notifications & Activity Bell'],
+        summary: 'Get notifications list and unread count for current user',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'unreadOnly', in: 'query', required: false, schema: { type: 'boolean' } }
+        ],
+        responses: {
+          '200': { description: 'Notification list' }
+        }
+      }
+    },
+    '/api/v1/notifications/{id}/read': {
+      patch: {
+        tags: ['Notifications & Activity Bell'],
+        summary: 'Mark a notification as read',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': { description: 'Notification updated' }
+        }
+      }
+    },
+    '/api/v1/notifications/mark-all-read': {
+      post: {
+        tags: ['Notifications & Activity Bell'],
+        summary: 'Mark all notifications as read for current user',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '200': { description: 'All notifications marked as read' }
+        }
+      }
+    },
+    '/api/v1/notifications/push-subscribe': {
+      post: {
+        tags: ['Notifications & Activity Bell'],
+        summary: 'Register Web Push subscription',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '200': { description: 'Subscribed' }
+        }
+      },
+      delete: {
+        tags: ['Notifications & Activity Bell'],
+        summary: 'Unregister Web Push subscription',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '200': { description: 'Unsubscribed' }
+        }
+      }
     }
   }
 };

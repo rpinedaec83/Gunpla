@@ -21,6 +21,7 @@ import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
 import { requireAuth } from '../auth-sso/auth.slice';
 import { sendTenantEmailViaResend } from '../notifications-resend/resend.slice';
+import { dispatchNotification } from '../notifications-bell/notifications.slice';
 
 export const communityRouter = Router();
 
@@ -1199,6 +1200,20 @@ communityRouter.post('/contests/:id/entries/:entryId/judge', requireAuth, async 
     console.error('Failed to dispatch contest judge email notification:', emailErr);
   }
 
+  try {
+    await dispatchNotification({
+      recipientUserId: entry.userId,
+      tenantSlug: contest.tenantSlug,
+      type: 'contest_judged',
+      title: 'Evaluación de Jurado Recibida',
+      message: `El juez ${user.username} evaluó tu obra "${entry.title}" (${totalScore}/40 pts)`,
+      link: `#/contests/${contest.slug || contest.id}`,
+      metadata: { contestId: contest.id, entryId: entry.id, totalScore }
+    });
+  } catch (notifErr) {
+    console.error('Failed to dispatch contest judge in-app notification:', notifErr);
+  }
+
   return res.status(200).json({
     entry,
     judgeScore: judgeRecord
@@ -1521,6 +1536,16 @@ communityRouter.post('/shops/:id/stock', requireAuth, async (req: Request, res: 
               <p style="font-size: 0.8rem; color: #64748b;">Notificación automática de Stock Wishlist • ${activeTenant.name}</p>
             </div>
           `
+        }).catch(() => {});
+
+        dispatchNotification({
+          recipientUserId: stashItem.userId,
+          tenantSlug: activeTenant.slug,
+          type: 'wishlist_stock',
+          title: '¡Stock en tienda aliada!',
+          message: `"${stockItem.kitName}" disponible en ${shop.name} a PEN ${stockItem.pricePEN.toFixed(2)}`,
+          link: '#/workbench',
+          metadata: { shopId: shop.id, kitId: stockItem.kitId, pricePEN: stockItem.pricePEN }
         }).catch(() => {});
       }
     }

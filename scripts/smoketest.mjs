@@ -1939,7 +1939,86 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] Social Sharing OpenGraph Preview Cards & Meta Tags verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG CHECKS PASSED ===');
+    // -------------------------------------------------------------------------
+    // Verification: Push Notifications & In-App Activity Bell
+    // -------------------------------------------------------------------------
+    console.log('\n--- Verifying Push Notifications & In-App Activity Bell ---');
+
+    // 1. Unauthorized access to /api/v1/notifications blocked
+    const unauthNotifsRes = await fetch(`${baseUrl}/api/v1/notifications`);
+    assert.equal(unauthNotifsRes.status, 401, 'GET /api/v1/notifications without auth must return 401');
+
+    // 2. Authorized access to /api/v1/notifications
+    const authNotifsRes = await fetch(`${baseUrl}/api/v1/notifications`, {
+      headers: { 'Authorization': `Bearer ${aperichToken}` }
+    });
+    assert.equal(authNotifsRes.status, 200, 'GET /api/v1/notifications with auth must return 200');
+    const authNotifsData = await authNotifsRes.json();
+    assert.ok(Array.isArray(authNotifsData.items), 'items must be an array');
+    assert.equal(typeof authNotifsData.unreadCount, 'number', 'unreadCount must be numeric');
+
+    // 3. Trigger test notification
+    const testNotifRes = await fetch(`${baseUrl}/api/v1/notifications/test`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${aperichToken}`
+      },
+      body: JSON.stringify({
+        type: 'build_comment',
+        title: 'Prueba Smoketest',
+        message: 'Verificación de alertas y campana de actividad'
+      })
+    });
+    assert.equal(testNotifRes.status, 201, 'POST /api/v1/notifications/test must return 201 Created');
+    const testNotifData = await testNotifRes.json();
+    assert.ok(testNotifData.id.startsWith('notif-'), 'Notification ID must start with notif-');
+    assert.equal(testNotifData.read, false, 'Initial read state must be false');
+
+    // 4. Mark single notification as read
+    const markReadRes = await fetch(`${baseUrl}/api/v1/notifications/${testNotifData.id}/read`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${aperichToken}` }
+    });
+    assert.equal(markReadRes.status, 200, 'PATCH /api/v1/notifications/:id/read must return 200');
+    const markReadData = await markReadRes.json();
+    assert.equal(markReadData.read, true, 'read state must be true after PATCH');
+
+    // 5. Web Push Subscription registration
+    const pushSubRes = await fetch(`${baseUrl}/api/v1/notifications/push-subscribe`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${aperichToken}`
+      },
+      body: JSON.stringify({
+        endpoint: 'https://push.example.com/wpush/v2/smoketest-token',
+        keys: { p256dh: 'BNcRdreALRF...', auth: 'tBHItDa...' },
+        userAgent: 'NodeSmoketest/1.0'
+      })
+    });
+    assert.equal(pushSubRes.status, 201, 'POST /api/v1/notifications/push-subscribe must return 201 Created');
+    const pushSubData = await pushSubRes.json();
+    assert.ok(pushSubData.subscriptionId, 'Must return subscriptionId');
+
+    // 6. PlamoScale and GunplaJunkies Web HTML Activity Bell verification
+    const plamoWebShellRes = await fetch(`${plamoUrl}/`);
+    const plamoWebShellHtml = await plamoWebShellRes.text();
+    assert.ok(plamoWebShellHtml.includes('id="activity-bell-btn"'), 'PlamoScale must render activity-bell-btn');
+    assert.ok(plamoWebShellHtml.includes('id="activity-bell-dropdown"'), 'PlamoScale must render activity-bell-dropdown');
+    assert.ok(plamoWebShellHtml.includes('id="activity-unread-badge"'), 'PlamoScale must render activity-unread-badge');
+    assert.ok(plamoWebShellHtml.includes('loadUserNotifications'), 'PlamoScale must include loadUserNotifications');
+
+    // 7. Service Worker Push Listener verification
+    const swRes = await fetch(`${plamoUrl}/sw.js`);
+    assert.equal(swRes.status, 200, 'GET /sw.js must return 200');
+    const swJs = await swRes.text();
+    assert.ok(swJs.includes("self.addEventListener('push'"), 'Service worker must include push listener');
+    assert.ok(swJs.includes("self.addEventListener('notificationclick'"), 'Service worker must include notificationclick listener');
+
+    console.log('[PASS] Push Notifications & In-App Activity Bell verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

@@ -19,6 +19,7 @@ import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
 import { requireAuth, optionalAuth } from '../auth-sso/auth.slice';
 import { sendTenantEmailViaResend } from '../notifications-resend/resend.slice';
+import { dispatchNotification } from '../notifications-bell/notifications.slice';
 
 const escapeHtml = (str: string) =>
   str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -462,6 +463,20 @@ ${offerPrice ? `<p><strong>Oferta propuesta por el comprador:</strong> <span sty
     console.error('Failed to dispatch listing inquiry email notification:', emailErr);
   }
 
+  try {
+    await dispatchNotification({
+      recipientUserId: listing.userId,
+      tenantSlug: tenant.slug,
+      type: 'system',
+      title: 'Nueva consulta en tu publicación del Bazar',
+      message: `${buyerName} consultó por "${kitName}" (${listing.currency} ${offerPrice || listing.price || 'A convenir'})`,
+      link: '#/marketplace',
+      metadata: { listingId: listing.id, inquiryId: inquiryRecord.id }
+    });
+  } catch (notifErr) {
+    console.error('Failed to dispatch listing inquiry in-app notification:', notifErr);
+  }
+
   return res.status(201).json({
     status: 'sent',
     inquiry: inquiryRecord,
@@ -612,6 +627,22 @@ commissionsRouter.post('/requests', optionalAuth, async (req: Request, res: Resp
         <p>El modelista revisará tu proyecto y responderá con una cotización y plazo estimado pronto.</p>
       `
     }).catch(() => {});
+  }
+
+  if (targetBuilder && ((targetBuilder as any).userId || targetBuilder.id)) {
+    try {
+      await dispatchNotification({
+        recipientUserId: (targetBuilder as any).userId || targetBuilder.id,
+        tenantSlug: tenant ? tenant.slug : 'plamoscale',
+        type: 'commission_update',
+        title: 'Nueva solicitud de encargo recibida',
+        message: `${finalClientName} solicitó un encargo para "${newRequest.kitTitle}" (${newRequest.code})`,
+        link: '#/workbench',
+        metadata: { commissionId: newRequest.id, code: newRequest.code }
+      });
+    } catch (notifErr) {
+      console.error('Failed to dispatch commission in-app notification:', notifErr);
+    }
   }
 
   return res.status(201).json({
@@ -792,6 +823,18 @@ commissionsRouter.patch('/requests/:id', requireAuth, async (req: Request, res: 
 </div>
 <p>Ingresa a tu taller en <em>Mi Taller &gt; Encargos</em> para aceptar la cotización o coordinar directamente por WhatsApp.</p>`
       });
+
+      if (commission.clientUserId) {
+        dispatchNotification({
+          recipientUserId: commission.clientUserId,
+          tenantSlug: activeTenant.slug,
+          type: 'commission_update',
+          title: 'Cotización recibida para tu encargo',
+          message: `@${commission.builderUsername} cotizó ${commission.currency} ${commission.quotePrice} para "${commission.kitTitle}"`,
+          link: '#/workbench',
+          metadata: { commissionId: commission.id, code: commission.code }
+        }).catch(() => {});
+      }
     } catch (emailErr) {
       console.error('Failed to dispatch commission quote email notification:', emailErr);
     }
@@ -820,6 +863,18 @@ commissionsRouter.patch('/requests/:id', requireAuth, async (req: Request, res: 
 </div>
 <p>Ya puedes coordinar la recepción de la maqueta e iniciar los trabajos en tu mesa de armado.</p>`
       });
+
+      if (builderUser) {
+        dispatchNotification({
+          recipientUserId: builderUser.id,
+          tenantSlug: activeTenant.slug,
+          type: 'commission_update',
+          title: '¡Cotización aceptada!',
+          message: `${commission.clientName} aceptó tu cotización de ${commission.currency} ${commission.quotePrice} (${commission.code})`,
+          link: '#/workbench',
+          metadata: { commissionId: commission.id, code: commission.code }
+        }).catch(() => {});
+      }
     } catch (emailErr) {
       console.error('Failed to dispatch commission accept email notification:', emailErr);
     }
