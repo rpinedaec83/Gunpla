@@ -109,4 +109,60 @@ class GunplaApiClient(private val baseUrlProvider: () -> String) {
             Result.failure(e)
         }
     }
+
+    suspend fun getStashItems(token: String?, status: String? = null): Result<StashResponse> = withContext(Dispatchers.IO) {
+        if (token.isNullOrBlank()) {
+            return@withContext Result.failure(Exception("Debes iniciar sesion para ver tu Stash."))
+        }
+        try {
+            val urlBuilder = StringBuilder("${baseUrlProvider()}/api/v1/workbench/stash")
+            if (!status.isNullOrBlank() && status != "all") {
+                urlBuilder.append("?status=$status")
+            }
+            val request = Request.Builder()
+                .url(urlBuilder.toString())
+                .header("Authorization", "Bearer $token")
+                .get()
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                val responseBody = response.body?.string() ?: ""
+                if (response.isSuccessful) {
+                    val parsed = json.decodeFromString(StashResponse.serializer(), responseBody)
+                    Result.success(parsed)
+                } else {
+                    Result.failure(Exception("Error al cargar Stash: HTTP ${response.code}"))
+                }
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateStashItem(token: String?, id: String, req: UpdateStashRequest): Result<StashItemDto> = withContext(Dispatchers.IO) {
+        if (token.isNullOrBlank()) {
+            return@withContext Result.failure(Exception("Debes iniciar sesion para actualizar tu Stash."))
+        }
+        try {
+            val url = "${baseUrlProvider()}/api/v1/workbench/stash/$id"
+            val body = json.encodeToString(UpdateStashRequest.serializer(), req).toRequestBody(jsonMediaType)
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", "Bearer $token")
+                .patch(body)
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                val responseBody = response.body?.string() ?: ""
+                if (response.isSuccessful) {
+                    val parsed = json.decodeFromString(StashItemDto.serializer(), responseBody)
+                    Result.success(parsed)
+                } else {
+                    Result.failure(Exception("Error al actualizar kit: HTTP ${response.code}"))
+                }
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

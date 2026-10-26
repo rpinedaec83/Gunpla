@@ -3,7 +3,23 @@
 Completed work belongs here.
 
 ## Session -- 2026-10-25 | Goal: Native Mobile Android App (M1) & Physical Device Verification
-Start: 20:30 | End: 20:56 | Duration: 0h 26m
+Start: 20:30 | End: 21:12 | Duration: 0h 42m
+
+### AND-05 -- Modulo de Stash con Filtros, Busqueda y Conexion al API Real | eMOE: 3 CU | aMOE: 3 CU
+What was done:
+- Added data models in apps/mobile-android/app/src/main/kotlin/com/gunpla/mobile/data/model/Models.kt: StashItemDto, StashResponse, and UpdateStashRequest.
+- Implemented getStashItems and updateStashItem in GunplaApiClient.kt connecting to /api/v1/workbench/stash.
+- Replaced mock StashScreen.kt with a live connected implementation supporting real-time search, filter chips (Todas, Armando, En Caja, Vitrina), session verification banner with 1-click Demo Builder login, and status/progress update dialog.
+- Created unit tests in StashDataTest.kt covering JSON deserialization, serialization, and filtering logic.
+- Verified testDebugUnitTest (24 tasks executed successfully in 2s) and monorepo npm test (all tests passing).
+- Compiled debug APK and successfully deployed/launched on physical Xiaomi Redmi device (M2101K7BG) via ADB Wireless Debugging.
+Issues hit:
+- StashScreen required passing apiClient from MainActivity.kt; resolved by updating MainActivity Scaffold tab routing.
+Decisions made:
+- Integrated a 1-click login prompt directly on StashScreen if the user is unauthenticated, allowing instant testing and onboarding without having to navigate to ProfileScreen first.
+Lessons learned:
+- Passing status parameter directly to GET /api/v1/workbench/stash filters items on the server while client-side filtering delivers immediate responsiveness during interactive typing in the search bar.
+
 
 ### M1 -- Native Android Mobile App (Jetpack Compose & Material 3) Scaffolding & Device Verification | eMOE: 5 CU | aMOE: 5 CU
 What was done:

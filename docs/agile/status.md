@@ -4,9 +4,9 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- Native Android Jetpack Compose Mobile App M1 Verified on Physical Device, DT26 Redis 7 Caching, PostgreSQL 16 Relational Persistence, Full Monorepo Architecture)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + DT20-DT26 + Native Android App (`apps/mobile-android`) successfully installed and verified on physical Xiaomi Redmi device via ADB Wireless Debugging. 156 backend unit tests + mobile unit tests passing.
-- Current branch or release line: `feature/m1-android-app` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- Native Android Mobile App M1 & AND-05 Stash API Live on Physical Device, DT26 Redis 7 Caching, PostgreSQL 16 Relational Persistence, Full Monorepo Architecture)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + DT20-DT26 + Native Android App (`apps/mobile-android`) with real Stash API integration (AND-05) successfully installed and verified on physical Xiaomi Redmi device via ADB Wireless Debugging. 156 backend unit tests + mobile unit tests passing.
+- Current branch or release line: `feature/and-05-stash-management` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities

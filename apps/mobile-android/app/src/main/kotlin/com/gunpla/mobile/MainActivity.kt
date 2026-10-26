@@ -101,7 +101,7 @@ class MainActivity : ComponentActivity() {
                     val modifier = Modifier.padding(innerPadding)
                     when (currentTab) {
                         BottomTab.WORKBENCH -> WorkbenchScreen(sessionManager, apiClient, modifier)
-                        BottomTab.STASH -> StashScreen(sessionManager, modifier)
+                        BottomTab.STASH -> StashScreen(sessionManager, apiClient, modifier)
                         BottomTab.CATALOG -> CatalogScreen(sessionManager, apiClient, modifier)
                         BottomTab.PROFILE -> ProfileScreen(sessionManager, apiClient, onTenantChanged = { currentTenant = it }, modifier)
                     }

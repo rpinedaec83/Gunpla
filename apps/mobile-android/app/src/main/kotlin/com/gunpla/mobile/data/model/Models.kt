@@ -83,3 +83,31 @@ data class CacheStatsDto(
     val hits: Int = 0,
     val misses: Int = 0
 )
+
+@Serializable
+data class StashItemDto(
+    val id: String,
+    val userId: String,
+    val kitId: String,
+    val status: String,
+    val acquisitionPrice: Double? = null,
+    val notes: String? = null,
+    val progress: Int = 0,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+    val kit: KitDto? = null
+)
+
+@Serializable
+data class StashResponse(
+    val items: List<StashItemDto> = emptyList(),
+    val totalCount: Int = 0
+)
+
+@Serializable
+data class UpdateStashRequest(
+    val status: String? = null,
+    val progress: Int? = null,
+    val notes: String? = null
+)
+
