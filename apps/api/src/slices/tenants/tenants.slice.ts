@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { PaginatedResult, Tenant, ScaleCategory } from '@gunpla/shared';
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
-import { requireAuth, JwtPayloadData } from '../auth-sso/auth.slice';
+import { requireAuth, requireSuperAdmin, isSuperAdminUser, JwtPayloadData } from '../auth-sso/auth.slice';
 
 export const tenantsRouter = Router();
 
@@ -77,8 +77,17 @@ tenantsRouter.get('/:slug', (req: Request, res: Response) => {
 });
 
 tenantsRouter.post('/', (req: Request, res: Response) => {
-  const { slug, name, domain, emailFrom, contactEmail, tagline, allowedCategories, themeConfig } =
-    req.body || {};
+  const {
+    slug,
+    name,
+    domain,
+    emailFrom,
+    contactEmail,
+    tagline,
+    allowedCategories,
+    themeConfig,
+    resendApiKey
+  } = req.body || {};
 
   if (!slug || !name || !domain) {
     sendProblem(
@@ -140,6 +149,8 @@ tenantsRouter.post('/', (req: Request, res: Response) => {
     slug: normalizedSlug,
     name: String(name),
     domain: String(domain),
+    status: 'active',
+    resendApiKey: resendApiKey ? String(resendApiKey).trim() : undefined,
     emailFrom: emailFrom || `${name} <noreply@${domain}>`,
     contactEmail: contactEmail || `contact@${domain}`,
     tagline: tagline || `${name} Scale Modeling Community`,
@@ -176,7 +187,7 @@ tenantsRouter.post('/', (req: Request, res: Response) => {
 
 /**
  * PATCH /api/v1/tenants/:slug
- * Update theme colors, branding, categories and community links (tenant_admin or admin only)
+ * Update theme colors, branding, categories and community links (tenant_admin, admin or super_admin)
  */
 tenantsRouter.patch('/:slug', requireAuth, (req: Request, res: Response) => {
   const db = getDb();
@@ -202,6 +213,8 @@ tenantsRouter.patch('/:slug', requireAuth, (req: Request, res: Response) => {
   }
 
   const isAuthorized =
+    isSuperAdminUser(user) ||
+    user.roles.includes('super_admin') ||
     user.roles.includes('admin') ||
     user.roles.includes('tenant_admin') ||
     user.username === 'rpineda' ||
@@ -229,7 +242,8 @@ tenantsRouter.patch('/:slug', requireAuth, (req: Request, res: Response) => {
     domain,
     allowedCategories,
     themeConfig,
-    communityLinks
+    communityLinks,
+    resendApiKey
   } = req.body || {};
 
   if (name !== undefined) tenant.name = String(name).trim();
@@ -239,6 +253,7 @@ tenantsRouter.patch('/:slug', requireAuth, (req: Request, res: Response) => {
   if (contactEmail !== undefined) tenant.contactEmail = String(contactEmail).trim();
   if (emailFrom !== undefined) tenant.emailFrom = String(emailFrom).trim();
   if (domain !== undefined) tenant.domain = String(domain).trim();
+  if (resendApiKey !== undefined) tenant.resendApiKey = resendApiKey ? String(resendApiKey).trim() : undefined;
 
   if (Array.isArray(allowedCategories)) {
     const valid = allowedCategories.filter((c: any) => VALID_CATEGORIES.includes(c));
@@ -272,6 +287,46 @@ tenantsRouter.patch('/:slug', requireAuth, (req: Request, res: Response) => {
     };
   }
 
+  saveDb(db);
+  res.status(200).json(tenant);
+});
+
+/**
+ * PATCH /api/v1/tenants/:slug/status
+ * Activate, suspend, or archive a tenant community portal. Super Admin only.
+ */
+tenantsRouter.patch('/:slug/status', requireAuth, requireSuperAdmin, (req: Request, res: Response) => {
+  const db = getDb();
+  const slug = req.params.slug.toLowerCase().trim();
+  const tenant = db.tenants.find((t) => t.slug === slug);
+
+  if (!tenant) {
+    sendProblem(
+      req,
+      res,
+      404,
+      'Tenant Not Found',
+      `Tenant with slug '${slug}' not found.`,
+      'tenant-not-found'
+    );
+    return;
+  }
+
+  const { status, suspensionReason } = req.body || {};
+  if (!status || !['active', 'suspended', 'archived'].includes(status)) {
+    sendProblem(
+      req,
+      res,
+      400,
+      'Validation Error',
+      'Field status must be active, suspended, or archived.',
+      'validation-error'
+    );
+    return;
+  }
+
+  tenant.status = status;
+  tenant.suspensionReason = suspensionReason ? String(suspensionReason).trim() : undefined;
   saveDb(db);
   res.status(200).json(tenant);
 });

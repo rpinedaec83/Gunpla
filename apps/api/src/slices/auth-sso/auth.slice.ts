@@ -85,6 +85,13 @@ export interface JwtPayloadData {
   ageBracket?: string;
 }
 
+export function isSuperAdminUser(user: { email?: string; roles?: string[] } | null | undefined): boolean {
+  if (!user) return false;
+  if (user.email && user.email.toLowerCase() === 'rpinedaec83@gmail.com') return true;
+  if (user.roles && (user.roles.includes('super_admin') as boolean)) return true;
+  return false;
+}
+
 export function issueSsoToken(user: UserRecord, tenantSlug: string): string {
   const payload: JwtPayloadData = {
     sub: user.id,
@@ -160,6 +167,24 @@ export function requireAuth(
       isAdult: decoded.isAdult !== false,
       ageBracket: decoded.ageBracket || 'adult_18_plus'
     };
+
+    // Cross-tenant access check:
+    // If request has a tenant context, ordinary user tokens must match the tenant.
+    // Super Admin (rpinedaec83@gmail.com / super_admin role) bypasses this isolation.
+    if (req.tenant && decoded.tenantSlug && decoded.tenantSlug !== req.tenant.slug) {
+      if (!isSuperAdminUser(req.user)) {
+        sendProblem(
+          req,
+          res,
+          403,
+          'Forbidden',
+          `Token issued for tenant '${decoded.tenantSlug}' cannot access tenant '${req.tenant.slug}'. Communities are completely isolated.`,
+          'tenant-access-forbidden'
+        );
+        return;
+      }
+    }
+
     next();
   } catch {
     sendProblem(
@@ -186,7 +211,7 @@ export function optionalAuth(
   if (token) {
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as JwtPayloadData;
-      req.user = {
+      const candidateUser = {
         id: decoded.sub,
         username: decoded.username,
         email: decoded.email,
@@ -195,9 +220,72 @@ export function optionalAuth(
         isAdult: decoded.isAdult !== false,
         ageBracket: decoded.ageBracket || 'adult_18_plus'
       };
+
+      // In optionalAuth, if token is from a different tenant and user is not Super Admin, do not attach user
+      if (
+        !req.tenant ||
+        !decoded.tenantSlug ||
+        decoded.tenantSlug === req.tenant.slug ||
+        isSuperAdminUser(candidateUser)
+      ) {
+        req.user = candidateUser;
+      }
     } catch {
       // Ignore token failure for optional auth
     }
+  }
+  next();
+}
+
+export function requireSuperAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  if (!req.user) {
+    sendProblem(req, res, 401, 'Unauthorized', 'Authentication required.');
+    return;
+  }
+  if (!isSuperAdminUser(req.user)) {
+    sendProblem(
+      req,
+      res,
+      403,
+      'Forbidden',
+      'Super Administrator privileges required (rpinedaec83@gmail.com).',
+      'insufficient-role'
+    );
+    return;
+  }
+  next();
+}
+
+export function requireCommunityAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  if (!req.user) {
+    sendProblem(req, res, 401, 'Unauthorized', 'Authentication required.');
+    return;
+  }
+  if (isSuperAdminUser(req.user)) {
+    next();
+    return;
+  }
+  const hasCommunityAdminRole = req.user.roles.some(
+    (r) => r === 'community_admin' || r === 'admin'
+  );
+  if (!hasCommunityAdminRole || (req.tenant && req.user.tenantSlug !== req.tenant.slug)) {
+    sendProblem(
+      req,
+      res,
+      403,
+      'Forbidden',
+      'Community Administrator privileges required for this community.',
+      'insufficient-role'
+    );
+    return;
   }
   next();
 }
@@ -319,25 +407,37 @@ async function handleSignup(req: Request, res: Response): Promise<void> {
   const normalizedEmail = String(email).trim().toLowerCase();
   const db = getDb();
 
-  if (db.users.some((u) => u.username.toLowerCase() === normalizedUsername)) {
+  if (
+    db.users.some(
+      (u) =>
+        u.primaryTenantSlug === tenant.slug &&
+        u.username.toLowerCase() === normalizedUsername
+    )
+  ) {
     sendProblem(
       req,
       res,
       409,
       'Username Already In Use',
-      `Username '${normalizedUsername}' is already registered.`,
+      `Username '${normalizedUsername}' is already registered in ${tenant.name}.`,
       'duplicate-username'
     );
     return;
   }
 
-  if (db.users.some((u) => u.email.toLowerCase() === normalizedEmail)) {
+  if (
+    db.users.some(
+      (u) =>
+        u.primaryTenantSlug === tenant.slug &&
+        u.email.toLowerCase() === normalizedEmail
+    )
+  ) {
     sendProblem(
       req,
       res,
       409,
       'Email Already In Use',
-      `Email '${normalizedEmail}' is already registered. You can sign in with password or Google SSO.`,
+      `Email '${normalizedEmail}' is already registered in ${tenant.name}. You can sign in with password or Google SSO.`,
       'duplicate-email'
     );
     return;
@@ -361,6 +461,11 @@ async function handleSignup(req: Request, res: Response): Promise<void> {
   const ageBracket = ageGate.ageBracket;
   const numBirthYear = ageGate.numBirthYear;
 
+  const isSuperAdmin = normalizedEmail === 'rpinedaec83@gmail.com';
+  const roles: RoleName[] = isSuperAdmin
+    ? ['super_admin', 'admin', 'moderator', 'user']
+    : ['user'];
+
   const newUser: UserRecord = {
     id: `user-${Date.now()}`,
     username: normalizedUsername,
@@ -369,7 +474,7 @@ async function handleSignup(req: Request, res: Response): Promise<void> {
     passwordHash: bcrypt.hashSync(String(password), 10),
     googleId: null,
     authProviders: ['local'],
-    roles: ['user'],
+    roles,
     primaryTenantSlug: tenant.slug,
     bio: '',
     socialLinks: [],
@@ -389,7 +494,7 @@ async function handleSignup(req: Request, res: Response): Promise<void> {
     to: [newUser.email],
     subject: `Bienvenido a ${tenant.name}, @${newUser.username}!`,
     html: `<h2>Bienvenido a ${tenant.name}!</h2>
-<p>Tu cuenta unica SSO (<strong>@${newUser.username}</strong>) ya esta activa para <strong>plamoscale.com</strong> y <strong>gunplajunkies.com</strong>.</p>`
+<p>Tu cuenta (<strong>@${newUser.username}</strong>) ya esta activa en la comunidad <strong>${tenant.name}</strong>.</p>`
   });
 
   const token = issueSsoToken(newUser, tenant.slug);
@@ -422,11 +527,17 @@ async function handleSignin(req: Request, res: Response): Promise<void> {
 
   const normalizedId = String(identifier).trim().toLowerCase();
   const db = getDb();
-  const user = db.users.find(
+  let user = db.users.find(
     (u) =>
-      u.username.toLowerCase() === normalizedId ||
-      u.email.toLowerCase() === normalizedId
+      u.primaryTenantSlug === tenant.slug &&
+      (u.username.toLowerCase() === normalizedId ||
+        u.email.toLowerCase() === normalizedId)
   );
+
+  // Platform Super Admin (rpinedaec83@gmail.com) universal sign-in fallback across any tenant
+  if (!user && normalizedId === 'rpinedaec83@gmail.com') {
+    user = db.users.find((u) => u.email.toLowerCase() === 'rpinedaec83@gmail.com');
+  }
 
   if (!user || !user.passwordHash) {
     sendProblem(
@@ -434,7 +545,7 @@ async function handleSignin(req: Request, res: Response): Promise<void> {
       res,
       401,
       'Invalid Credentials',
-      'Invalid username/email or password.',
+      'Invalid username/email or password for this community.',
       'invalid-credentials'
     );
     return;
@@ -447,7 +558,7 @@ async function handleSignin(req: Request, res: Response): Promise<void> {
       res,
       401,
       'Invalid Credentials',
-      'Invalid username/email or password.',
+      'Invalid username/email or password for this community.',
       'invalid-credentials'
     );
     return;
@@ -463,6 +574,10 @@ async function handleSignin(req: Request, res: Response): Promise<void> {
       'underage-restriction'
     );
     return;
+  }
+
+  if (user.email.toLowerCase() === 'rpinedaec83@gmail.com' && !user.roles.includes('super_admin')) {
+    user.roles.push('super_admin');
   }
 
   const token = issueSsoToken(user, tenant.slug);
@@ -524,11 +639,18 @@ async function handleGoogleSso(req: Request, res: Response): Promise<void> {
 
   const db = getDb();
   let accountLinked = false;
+  // Look up user within active tenant
   let user = db.users.find(
     (u) =>
-      u.googleId === googleProfile.sub ||
-      u.email.toLowerCase() === googleProfile.email
+      u.primaryTenantSlug === tenant.slug &&
+      (u.googleId === googleProfile.sub ||
+        u.email.toLowerCase() === googleProfile.email)
   );
+
+  // Platform Super Admin (rpinedaec83@gmail.com) universal fallback across any tenant
+  if (!user && googleProfile.email === 'rpinedaec83@gmail.com') {
+    user = db.users.find((u) => u.email.toLowerCase() === 'rpinedaec83@gmail.com');
+  }
 
   if (user) {
     if (user.birthYear !== undefined && !evaluateAgeGate(user.birthYear).allowed) {
@@ -551,6 +673,9 @@ async function handleGoogleSso(req: Request, res: Response): Promise<void> {
       user.authProviders.push('google');
       accountLinked = true;
     }
+    if (googleProfile.email === 'rpinedaec83@gmail.com' && !user.roles.includes('super_admin')) {
+      user.roles.push('super_admin');
+    }
     if (googleProfile.picture && !user.avatarUrl) {
       user.avatarUrl = googleProfile.picture;
     }
@@ -561,15 +686,20 @@ async function handleGoogleSso(req: Request, res: Response): Promise<void> {
     }
     saveDb(db);
   } else {
-    // Provision new account from Google SSO
+    // Provision new isolated account in this tenant from Google SSO
     const baseUsername = googleProfile.email
       .split('@')[0]
       .replace(/[^a-zA-Z0-9_]/g, '')
       .toLowerCase();
     let finalUsername = baseUsername || `builder_${Date.now()}`;
-    if (db.users.some((u) => u.username.toLowerCase() === finalUsername)) {
+    if (db.users.some((u) => u.primaryTenantSlug === tenant.slug && u.username.toLowerCase() === finalUsername)) {
       finalUsername = `${finalUsername}_${Math.floor(Math.random() * 1000)}`;
     }
+
+    const isSuperAdmin = googleProfile.email === 'rpinedaec83@gmail.com';
+    const roles: RoleName[] = isSuperAdmin
+      ? ['super_admin', 'admin', 'moderator', 'user']
+      : ['user'];
 
     user = {
       id: `user-${Date.now()}`,
@@ -579,7 +709,7 @@ async function handleGoogleSso(req: Request, res: Response): Promise<void> {
       passwordHash: null,
       googleId: googleProfile.sub,
       authProviders: ['google'],
-      roles: ['user'],
+      roles,
       primaryTenantSlug: tenant.slug,
       bio: '',
       avatarUrl: googleProfile.picture,
@@ -599,7 +729,7 @@ async function handleGoogleSso(req: Request, res: Response): Promise<void> {
       to: [user.email],
       subject: `Bienvenido a ${tenant.name} via Google SSO, @${user.username}!`,
       html: `<h2>Bienvenido a ${tenant.name}!</h2>
-<p>Has ingresado con Google SSO. Tu cuenta <strong>@${user.username}</strong> es valida en <strong>plamoscale.com</strong> y <strong>gunplajunkies.com</strong>.</p>`
+<p>Has ingresado con Google SSO. Tu cuenta independiente <strong>@${user.username}</strong> esta activa para la comunidad <strong>${tenant.name}</strong>.</p>`
     });
   }
 

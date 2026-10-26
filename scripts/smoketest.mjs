@@ -120,12 +120,12 @@ async function runSmoketest() {
     assert.equal(signupData.authMethod, 'local');
     assert.ok(signupData.token);
 
-    // Sign in with Username + Password on plamoscale tenant (Cross-Tenant SSO)
+    // Sign in with Username + Password on gunplajunkies tenant (same tenant as registration)
     const signinRes = await fetch(`${baseUrl}/api/v1/auth/sessions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Tenant-Slug': 'plamoscale'
+        'X-Tenant-Slug': 'gunplajunkies'
       },
       body: JSON.stringify({
         identifier: 'amuroray',
@@ -134,7 +134,7 @@ async function runSmoketest() {
     });
     assert.equal(signinRes.status, 200, 'Local signin must return 200 OK');
 
-    // Sign in with Google SSO using the SAME email -> Must automatically link Google account!
+    // Sign in with Google SSO using the SAME email on gunplajunkies -> Must automatically link Google account!
     const googleTokenPayload = JSON.stringify({
       sub: 'google-oauth2-1092837465',
       email: testEmail,
@@ -145,7 +145,7 @@ async function runSmoketest() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Tenant-Slug': 'plamoscale'
+        'X-Tenant-Slug': 'gunplajunkies'
       },
       body: JSON.stringify({
         idToken: `google-test-token:${googleTokenPayload}`
@@ -157,7 +157,7 @@ async function runSmoketest() {
     assert.equal(googleSsoData.accountLinked, true, 'Google SSO must link to existing local account');
     assert.deepEqual(googleSsoData.user.authProviders, ['local', 'google']);
 
-    // Verify /api/v1/auth/me with SSO token across tenants
+    // Verify /api/v1/auth/me with token on active tenant
     const meRes = await fetch(`${baseUrl}/api/v1/auth/me`, {
       headers: {
         Authorization: `Bearer ${googleSsoData.token}`,
@@ -174,7 +174,8 @@ async function runSmoketest() {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${googleSsoData.token}`
+        Authorization: `Bearer ${googleSsoData.token}`,
+        'X-Tenant-Slug': 'gunplajunkies'
       },
       body: JSON.stringify({
         displayName: 'Amuro Ray - White Devil Custom',
@@ -208,7 +209,8 @@ async function runSmoketest() {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${googleSsoData.token}`
+        Authorization: `Bearer ${googleSsoData.token}`,
+        'X-Tenant-Slug': 'gunplajunkies'
       },
       body: JSON.stringify({ displayName: '' })
     });
@@ -1288,7 +1290,7 @@ async function runSmoketest() {
     // Obtain updated session for amuroray with tenant_admin role
     const judgeSessionRes = await fetch(`${baseUrl}/api/v1/auth/sessions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'plamoscale' },
+      headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'gunplajunkies' },
       body: JSON.stringify({ identifier: 'amuroray', password: 'Rx78-2-Password!' })
     });
     assert.equal(judgeSessionRes.status, 200);
@@ -3033,7 +3035,110 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT27 Public Community Landing Page & Workbench Switcher verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN + WORKBENCH-TOOLS + LANDING-PAGE CHECKS PASSED ===');
+    // -------------------------------------------------------------------------
+    // 35. DT28 - Multi-Tenant Total Auth Isolation & Platform Super Admin
+    // -------------------------------------------------------------------------
+    console.log('\n--- Verifying DT28 Multi-Tenant Auth Isolation & Super Admin ---');
+
+    // 1. Register an isolated user in PlamoScale
+    const plamoUserRes = await fetch(`${baseUrl}/api/v1/auth/registrations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'plamoscale' },
+      body: JSON.stringify({
+        username: 'plamo_isolated_user',
+        displayName: 'Plamo Isolated User',
+        email: 'isolated@plamoscale.com',
+        password: 'Password123!',
+        birthYear: 1995
+      })
+    });
+    assert.equal(plamoUserRes.status, 201, 'PlamoScale user registration must succeed with 201');
+    const plamoUserData = await plamoUserRes.json();
+    const plamoToken = plamoUserData.token;
+
+    // 2. Cross-tenant request: PlamoScale user token attempting to access GunplaJunkies must be rejected with 403
+    const crossTenantRes = await fetch(`${baseUrl}/api/v1/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${plamoToken}`,
+        'X-Tenant-Slug': 'gunplajunkies'
+      }
+    });
+    assert.equal(crossTenantRes.status, 403, 'Cross-tenant request with ordinary user token must return 403 Forbidden');
+    const crossTenantData = await crossTenantRes.json();
+    assert.ok(
+      crossTenantData.type.includes('tenant-access-forbidden'),
+      'Cross-tenant request must return tenant-access-forbidden problem code'
+    );
+
+    // 3. Super Admin Sign-In: rpinedaec83@gmail.com
+    const superAdminRes = await fetch(`${baseUrl}/api/v1/auth/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Tenant-Slug': 'plamoscale' },
+      body: JSON.stringify({
+        identifier: 'rpinedaec83@gmail.com',
+        password: 'PlamoScaleDev2026!'
+      })
+    });
+    assert.equal(superAdminRes.status, 200, 'Super Admin login must succeed with 200');
+    const superAdminData = await superAdminRes.json();
+    assert.ok(superAdminData.user.roles.includes('super_admin'), 'Super Admin must possess super_admin role');
+    const superAdminToken = superAdminData.token;
+
+    // 4. Super Admin universal access bypass: Can access GunplaJunkies with PlamoScale-issued token
+    const superAdminGunplaRes = await fetch(`${baseUrl}/api/v1/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${superAdminToken}`,
+        'X-Tenant-Slug': 'gunplajunkies'
+      }
+    });
+    assert.equal(superAdminGunplaRes.status, 200, 'Super Admin must have cross-tenant universal access (200 OK)');
+    const superAdminGunplaData = await superAdminGunplaRes.json();
+    assert.equal(superAdminGunplaData.user.email, 'rpinedaec83@gmail.com');
+
+    // 5. Tenant Status Management: Super Admin can suspend and reactivate a tenant
+    const suspendRes = await fetch(`${baseUrl}/api/v1/tenants/gunplajunkies/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${superAdminToken}`,
+        'X-Tenant-Slug': 'gunplajunkies'
+      },
+      body: JSON.stringify({
+        status: 'suspended',
+        suspensionReason: 'Mantenimiento del servidor por actualización'
+      })
+    });
+    assert.equal(suspendRes.status, 200, 'Super Admin can suspend tenant');
+    const suspendData = await suspendRes.json();
+    assert.equal(suspendData.status, 'suspended');
+
+    // 6. Suspended tenant blocks unauthenticated / ordinary traffic with 403 tenant-suspended
+    const suspendedCheckRes = await fetch(`${baseUrl}/api/v1/tenants/current`, {
+      headers: { 'X-Tenant-Slug': 'gunplajunkies' }
+    });
+    assert.equal(suspendedCheckRes.status, 403, 'Suspended tenant must return 403 Forbidden for ordinary requests');
+    const suspendedCheckData = await suspendedCheckRes.json();
+    assert.ok(suspendedCheckData.type.includes('tenant-suspended'));
+
+    // 7. Super Admin can reactivate tenant back to active
+    const reactivateRes = await fetch(`${baseUrl}/api/v1/tenants/gunplajunkies/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${superAdminToken}`,
+        'X-Tenant-Slug': 'gunplajunkies'
+      },
+      body: JSON.stringify({
+        status: 'active'
+      })
+    });
+    assert.equal(reactivateRes.status, 200, 'Super Admin can reactivate tenant');
+    const reactivateData = await reactivateRes.json();
+    assert.equal(reactivateData.status, 'active');
+
+    console.log('[PASS] DT28 Multi-Tenant Auth Isolation & Super Admin verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN + WORKBENCH-TOOLS + LANDING-PAGE + TENANT-AUTH-ISOLATION-SUPERADMIN CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

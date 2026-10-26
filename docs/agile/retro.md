@@ -2,6 +2,33 @@
 
 Completed work belongs here.
 
+## Session -- 2026-10-25 | Goal: Multi-Tenant Total Auth Isolation & Platform Super Admin
+Start: 22:20 | End: 22:45 | Duration: 0h 25m
+
+### DT28 -- Aislamiento Total de Autenticacion Multi-Tenant, Token Scoping y Super Admin | eMOE: 3 CU | aMOE: 3 CU
+What was done:
+- Designed and implemented total authentication isolation between communities (`plamoscale`, `gunplajunkies`, and future white-label tenants):
+  - Local registrations (`handleSignup`) now strictly scope username and email uniqueness by `primaryTenantSlug === tenant.slug`. Builders can register the same username or email in different communities without collisions.
+  - Sign-in (`handleSignin`) validates credentials strictly within the requested community (`primaryTenantSlug === tenant.slug`), blocking cross-tenant credential usage.
+  - Google SSO (`handleGoogleSso`) performs tenant-scoped account lookups. If a user signs in with Google on a new community, the platform automatically provisions a brand-new, isolated account for that community with a fresh stash, paint rack, and profile.
+  - Configured platform Super Admin (`rpinedaec83@gmail.com`) with role `super_admin`, granting universal access and cross-tenant bypass across all communities.
+  - Enforced strict token scoping in `requireAuth`: non-super-admin tokens issued for one tenant cannot access another tenant (`403 Forbidden` with RFC 7807 problem code `tenant-access-forbidden`).
+  - Implemented `requireSuperAdmin` and `requireCommunityAdmin` authorization middlewares.
+  - Added tenant status lifecycle management (`status: 'active' | 'suspended' | 'archived'`) in `tenants.slice.ts` and `tenant.middleware.ts`. Requests to suspended/archived tenants are rejected with `403` problem code (`tenant-suspended` / `tenant-archived`) while allowing Super Admin administrative access.
+  - Added `resendApiKey` support on tenant creation (`POST /api/v1/tenants`) and modification (`PATCH /api/v1/tenants/:slug`).
+  - Added dedicated endpoint `PATCH /api/v1/tenants/:slug/status` protected by `requireSuperAdmin` to toggle tenant status and set suspension reasons.
+  - Isolated client-side session storage in `packages/shared/src/ui-shell/app-shell.ts` using community-prefixed keys (`${config.tenantSlug}_sso_token` and `${config.tenantSlug}_sso_user`).
+  - Authored comprehensive unit tests in `tests/unit/multi-tenant-auth.test.mjs` (8 tests passing).
+  - Expanded end-to-end smoketest in `scripts/smoketest.mjs` (Step 35) verifying cross-tenant token rejection (403), Super Admin universal bypass, tenant suspension and reactivation.
+  - Built and verified: all 173 unit tests and full end-to-end smoketest passing.
+Issues hit:
+- Initial smoketest check expected 4 founding builders; resolved by ensuring `user-rpineda-legacy` is marked with `isFounder: false`.
+- Direct localhost API calls without `X-Tenant-Slug` header initially defaulted to `plamoscale`; enhanced `resolveTenantMiddleware` to inspect `decoded.tenantSlug` from Bearer tokens when host/header slugs are absent.
+Decisions made:
+- Followed option A1 for complete user isolation per tenant: Stash, Workbench, and Paint Racks are kept 100% separate across communities to preserve community privacy and independence, while granting `rpinedaec83@gmail.com` global Super Admin oversight.
+Lessons learned:
+- Inspecting the Bearer token in `resolveTenantMiddleware` as a fallback when no domain or explicit header is specified preserves seamless developer CLI and automated API testing while maintaining strict boundary checks in `requireAuth`.
+
 ## Session -- 2026-10-25 | Goal: Public Community Landing Page & Workbench Portal Switcher
 Start: 21:35 | End: 21:55 | Duration: 0h 20m
 

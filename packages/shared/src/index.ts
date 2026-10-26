@@ -1,4 +1,4 @@
-export type RoleName = 'user' | 'moderator' | 'tenant_admin' | 'admin';
+export type RoleName = 'user' | 'moderator' | 'tenant_admin' | 'admin' | 'super_admin' | 'community_admin';
 
 export type AuthProviderType = 'local' | 'google';
 
@@ -40,6 +40,9 @@ export interface Tenant {
     gundamHobbyLife?: string;
     trustedShopsCatalog?: string;
   };
+  status?: 'active' | 'suspended' | 'archived';
+  resendApiKey?: string;
+  suspensionReason?: string;
   createdBy?: string;
   createdAt: string;
 }

@@ -1612,6 +1612,8 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
 <script>
   window.__COMM_BUILDERS = ${JSON.stringify(data.commissionBuilders || [])};
   window.__LANDING_ARTICLES = ${JSON.stringify(getLandingNewsArticles(isGunpla))};
+  const tenantSsoTokenKey = '${config.tenantSlug}_sso_token';
+  const tenantSsoUserKey = '${config.tenantSlug}_sso_user';
 
   // -------------------------------------------------------------------------
   // PWA & Service Worker Registration / Offline Cache Engine
@@ -1849,7 +1851,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     document.getElementById('wa-inquiry-slug-or-id').value = slugOrId || '';
 
     // Set default client name from logged in session if any
-    const userJson = localStorage.getItem('plamo_sso_user');
+    const userJson = localStorage.getItem(tenantSsoUserKey);
     let defaultClientName = '';
     if (userJson) {
       try {
@@ -2477,8 +2479,8 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
   let currentToken = null;
 
   function checkAuth() {
-    const storedUser = localStorage.getItem('plamo_sso_user');
-    const storedToken = localStorage.getItem('plamo_sso_token');
+    const storedUser = localStorage.getItem(tenantSsoUserKey);
+    const storedToken = localStorage.getItem(tenantSsoTokenKey);
     if (storedUser && storedToken) {
       try {
         currentUser = JSON.parse(storedUser);
@@ -2979,7 +2981,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
       // If current user is logged in, grant role locally too
       if (currentUser && currentUser.roles && !currentUser.roles.includes('tenant_admin')) {
         currentUser.roles.push('tenant_admin');
-        localStorage.setItem('plamo_sso_user', JSON.stringify(currentUser));
+        localStorage.setItem(tenantSsoUserKey, JSON.stringify(currentUser));
         renderAuthUI();
       }
 
@@ -3709,8 +3711,8 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
         throw new Error(err.detail || 'Error al autenticar con Google');
       }
       const data = await res.json();
-      localStorage.setItem('plamo_sso_token', data.token);
-      localStorage.setItem('plamo_sso_user', JSON.stringify(data.user));
+      localStorage.setItem(tenantSsoTokenKey, data.token);
+      localStorage.setItem(tenantSsoUserKey, JSON.stringify(data.user));
       currentUser = data.user;
       currentToken = data.token;
       renderAuthUI();
@@ -3751,8 +3753,8 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
         throw new Error(err.detail || 'Credenciales incorrectas');
       }
       const data = await res.json();
-      localStorage.setItem('plamo_sso_token', data.token);
-      localStorage.setItem('plamo_sso_user', JSON.stringify(data.user));
+      localStorage.setItem(tenantSsoTokenKey, data.token);
+      localStorage.setItem(tenantSsoUserKey, JSON.stringify(data.user));
       currentUser = data.user;
       currentToken = data.token;
       renderAuthUI();
@@ -3799,8 +3801,8 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
         throw new Error(err.detail || 'Error al registrar cuenta');
       }
       const data = await res.json();
-      localStorage.setItem('plamo_sso_token', data.token);
-      localStorage.setItem('plamo_sso_user', JSON.stringify(data.user));
+      localStorage.setItem(tenantSsoTokenKey, data.token);
+      localStorage.setItem(tenantSsoUserKey, JSON.stringify(data.user));
       currentUser = data.user;
       currentToken = data.token;
       renderAuthUI();
@@ -7653,7 +7655,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
   }
 
   async function executeBulkImport(dryRun) {
-    const token = localStorage.getItem('plamo_sso_token');
+    const token = currentToken || localStorage.getItem(tenantSsoTokenKey);
     if (!token) {
       alert('Debes iniciar sesi\u00f3n para importar elementos a tu taller.');
       openAuthModal();
@@ -8296,7 +8298,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
 
       // Update local storage with updated user
       currentUser = { ...currentUser, ...data.user };
-      localStorage.setItem('plamo_sso_user', JSON.stringify(currentUser));
+      localStorage.setItem(tenantSsoUserKey, JSON.stringify(currentUser));
 
       renderAuthUI();
       loadWorkbenchData();
@@ -9823,8 +9825,8 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
   }
 
   function logout() {
-    localStorage.removeItem('plamo_sso_token');
-    localStorage.removeItem('plamo_sso_user');
+    localStorage.removeItem(tenantSsoTokenKey);
+    localStorage.removeItem(tenantSsoUserKey);
     currentUser = null;
     currentToken = null;
     userNotifications = [];

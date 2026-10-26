@@ -4,12 +4,33 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT27 Public Landing Page with News & Collector Showcase, Native Android App M1 & AND-05 Stash API Live on Device, DT26 Redis 7 Caching, PostgreSQL 16 Persistence)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + DT20-DT27 + Native Android App (`apps/mobile-android`). 165 backend/web unit tests + mobile unit tests passing. Full smoketest green.
-- Current branch or release line: `feature/dt27-portal-landing-page` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT28 Multi-Tenant Auth Isolation & Super Admin, DT27 Public Landing Page with News & Collector Showcase, Native Android App M1 & AND-05 Stash API Live on Device, DT26 Redis 7 Caching, PostgreSQL 16 Persistence)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + DT20-DT28 + Native Android App (`apps/mobile-android`). 173 backend/web unit tests + mobile unit tests passing. Full smoketest green (35 steps).
+- Current branch or release line: `feature/dt28-tenant-auth-isolation-superadmin`
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Aislamiento Total de Autenticacion Multi-Tenant y Super Admin (DT28):**
+  - **Aislamiento Total entre Comunidades:**
+    - Cuentas de usuario estrictamente separadas por tenant (`primaryTenantSlug`). Registro local (`POST /api/v1/auth/registrations`) evalua unicidad de nombre de usuario y correo por portal, permitiendo el mismo nombre en diferentes comunidades sin colisiones.
+    - Autenticacion de contraseñas (`POST /api/v1/auth/sessions`) restringe el acceso al portal correspondiente, bloqueando intentos de inicio de sesion cruzados.
+    - Google SSO (`POST /api/v1/auth/google-sessions`) verifica membresia dentro de la comunidad activa. Si el usuario ingresa por primera vez a un nuevo portal con Google, se aprovisiona automaticamente una cuenta independiente con perfil en blanco y Stash/Taller limpios.
+  - **Administrador Todopoderoso ("Super Admin" - rpinedaec83@gmail.com):**
+    - Cuenta global permanente (`user-superadmin-rpineda`) con rol `super_admin` asignado a `rpinedaec83@gmail.com`.
+    - Bypass y acceso universal a traves de cualquier comunidad, independientemente del portal donde se emitio el token.
+    - Middleware `requireSuperAdmin` para operaciones criticas de gobernanza.
+    - Middleware `requireCommunityAdmin` que permite administracion local delegada por comunidad o control global por el Super Admin.
+  - **Enforcement Estricto de Tokens (Token Scoping):**
+    - `requireAuth` valida que el `tenantSlug` del token JWT coincida con el tenant activo de la solicitud (`req.tenant.slug`).
+    - Intentos de acceso cruzado por usuarios regulares son rechazados de inmediato con `403 Forbidden` y codigo de problema RFC 7807 `tenant-access-forbidden`.
+  - **Ciclo de Vida de Comunidades y Estado de Tenants (`status`):**
+    - Campo `status` (`'active' | 'suspended' | 'archived'`) y `suspensionReason` en entidades `Tenant`.
+    - `resolveTenantMiddleware` intercepta solicitudes hacia portales inactivos y responde con `403` institucional amigable (`tenant-suspended` o `tenant-archived`), permitiendo bypass administrativo unicamente al Super Admin con Bearer token.
+    - Endpoint protegido `PATCH /api/v1/tenants/:slug/status` exclusivo para Super Admin para suspender o reactivar portales.
+    - Soporte para recepcion y actualizacion de `resendApiKey` en onboarding (`POST /api/v1/tenants`) y configuracion (`PATCH /api/v1/tenants/:slug`).
+  - **Aislamiento de Sesion en Frontend:**
+    - Llaves de `localStorage` prefijadas por portal (`${config.tenantSlug}_sso_token` y `${config.tenantSlug}_sso_user`) garantizando que cerrar sesion o cambiar de pestaña entre PlamoScale y GunplaJunkies mantenga estados completamente aislados.
 
 - **Landing Page Publica con Noticias, Galeria de Coleccionistas y Acceso al Taller (DT27):**
   - **Experiencia de Portada Activa por Defecto (`#view-landing`):**

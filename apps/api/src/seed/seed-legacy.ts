@@ -129,6 +129,7 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
         gundamHobbyLife: 'https://1drv.ms/f/s!AgQu-4xfFGycxSQ-HpvT4fSr1kkU?e=8zJQNN',
         trustedShopsCatalog: 'https://bit.ly/45m7bII'
       },
+      status: 'active',
       createdAt: now
     },
     {
@@ -156,6 +157,7 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
         whatsappGroup: 'https://chat.whatsapp.com/GJsVix10Hqy2ywwYmh8EYx',
         trustedShopsCatalog: 'https://bit.ly/45m7bII'
       },
+      status: 'active',
       createdAt: now
     }
   ];
@@ -165,22 +167,39 @@ export function seedPlatformDatabase(forceReset = false): PlatformDatabaseState 
 
   const users: UserRecord[] = [
     {
-      id: 'user-rpineda',
+      id: 'user-superadmin-rpineda',
       username: 'rpineda',
       displayName: 'Roberto Pineda',
-      email: 'rpineda@x-codec.net',
+      email: 'rpinedaec83@gmail.com',
       passwordHash: defaultPasswordHash,
       googleId: null,
-      authProviders: ['local'],
-      roles: ['user', 'moderator', 'tenant_admin', 'admin'],
+      authProviders: ['local', 'google'],
+      roles: ['super_admin', 'admin', 'moderator', 'user'],
       primaryTenantSlug: 'plamoscale',
-      bio: 'Founder at x-codec.net. Compartimos experiencia y buena onda con los Model Kits.',
+      bio: 'Super Admin de la plataforma. Modelismo y tecnologia.',
       socialLinks: [
         'https://www.instagram.com/robertdpl_ec/',
         'https://www.facebook.com/robertdpl',
         'https://x-codec.net'
       ],
       isFounder: true,
+      createdAt: now
+    },
+    {
+      id: 'user-rpineda-legacy',
+      username: 'rpineda_legacy',
+      displayName: 'Roberto Pineda (Legacy)',
+      email: 'rpineda@x-codec.net',
+      passwordHash: defaultPasswordHash,
+      googleId: null,
+      authProviders: ['local'],
+      roles: ['super_admin', 'admin', 'moderator', 'user'],
+      primaryTenantSlug: 'plamoscale',
+      bio: 'Founder at x-codec.net. Compartimos experiencia y buena onda con los Model Kits.',
+      socialLinks: [
+        'https://x-codec.net'
+      ],
+      isFounder: false,
       createdAt: now
     }
   ];
