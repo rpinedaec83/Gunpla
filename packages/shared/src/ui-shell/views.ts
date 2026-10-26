@@ -1540,7 +1540,7 @@ export function renderViews(
               ${l.kit ? l.kit.name : 'Kit a Escala'}
             </h3>
             <div style="font-size: 0.78rem; color: var(--accent); margin-bottom: 0.65rem;">
-              ${l.kit ? l.kit.brand + ' • ' + l.kit.scale : l.category} • Estado: <strong>${l.boxCondition.replace('_', ' ')}</strong>
+              ${l.kit ? l.kit.brand + ' • ' + l.kit.scale : l.category} • Estado: <strong>${(l.boxCondition || 'mint_sealed').replace('_', ' ')}</strong>
             </div>
 
             <p style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 1rem; flex: 1;">
@@ -1610,6 +1610,150 @@ export function renderViews(
         `
           )
           .join('')}
+      </div>
+    </section>
+
+    <!-- 11. COMMUNITY ADMIN TAB -->
+    <section id="view-admin" class="view-section">
+      <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 25px rgba(0,0,0,0.4);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
+              <span style="background: rgba(239, 68, 68, 0.25); color: #f87171; font-size: 0.75rem; font-weight: 800; padding: 0.2rem 0.6rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid rgba(239, 68, 68, 0.4);">
+                PANEL DE COMUNIDAD
+              </span>
+              <span style="font-size: 0.85rem; color: #94a3b8;">${config.tenantName} (${config.tenantSlug})</span>
+            </div>
+            <h2 style="font-size: 1.5rem; font-weight: 800; color: #fff; margin: 0;">Administración & Moderación de Comunidad</h2>
+            <p style="color: #cbd5e1; font-size: 0.85rem; margin-top: 0.35rem; max-width: 720px;">
+              Gestiona las tiendas de confianza con cupones de descuento exclusivos, publica noticias y novedades locales, cura las fotos de la vitrina y modera las publicaciones del Bazar.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn-primary" onclick="openTenantNewsModal()" style="font-size: 0.82rem; padding: 0.45rem 0.9rem; background: #3b82f6; border-color: #3b82f6;">
+              📰 Redactar Noticia
+            </button>
+            <button type="button" class="btn-primary" onclick="openLinkMasterShopModal()" style="font-size: 0.82rem; padding: 0.45rem 0.9rem; background: #10b981; border-color: #10b981;">
+              🏪 Vincular Tienda
+            </button>
+            <button type="button" class="btn-primary" onclick="openAddFeaturedPhotoModal()" style="font-size: 0.82rem; padding: 0.45rem 0.9rem; background: #8b5cf6; border-color: #8b5cf6;">
+              📸 Destacar Foto
+            </button>
+          </div>
+        </div>
+
+        <!-- Sub-tabs navigation -->
+        <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; flex-wrap: wrap;">
+          <button type="button" id="admin-subtab-btn-shops" class="filter-pill active" onclick="switchAdminSubtab('shops')" style="font-size: 0.82rem; padding: 0.35rem 0.8rem; cursor: pointer;">
+            🏪 Tiendas de Confianza (<span id="admin-shops-count">${data.shops.length}</span>)
+          </button>
+          <button type="button" id="admin-subtab-btn-news" class="filter-pill" onclick="switchAdminSubtab('news')" style="font-size: 0.82rem; padding: 0.35rem 0.8rem; cursor: pointer;">
+            📰 Noticias & Artículos (<span id="admin-news-count">...</span>)
+          </button>
+          <button type="button" id="admin-subtab-btn-photos" class="filter-pill" onclick="switchAdminSubtab('photos')" style="font-size: 0.82rem; padding: 0.35rem 0.8rem; cursor: pointer;">
+            📸 Vitrina de Fotos (<span id="admin-photos-count">...</span>)
+          </button>
+          <button type="button" id="admin-subtab-btn-bazar" class="filter-pill" onclick="switchAdminSubtab('bazar')" style="font-size: 0.82rem; padding: 0.35rem 0.8rem; cursor: pointer;">
+            ⚖️ Moderación de Bazar (<span id="admin-bazar-count">${(data.listings || []).length}</span>)
+          </button>
+        </div>
+      </div>
+
+      <!-- Subtab 1: Tiendas de Confianza -->
+      <div id="admin-subtab-shops" class="admin-subtab-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Tiendas de Confianza de ${config.tenantName}</h3>
+          <button type="button" class="btn-primary" onclick="openLinkMasterShopModal()" style="font-size: 0.82rem; padding: 0.35rem 0.75rem;">
+            + Vincular Tienda del Catálogo Maestro
+          </button>
+        </div>
+        <div id="admin-trusted-shops-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
+          <!-- Dynamically populated or server-rendered items -->
+          ${data.shops.map((shop: any) => `
+            <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
+                  <h4 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #fff;">${shop.name}</h4>
+                  <span style="font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 4px; background: rgba(34, 197, 94, 0.2); color: #4ade80;">
+                    ${shop.tenantLink?.active !== false ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
+                <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.5rem;">
+                  📍 ${shop.city}, ${shop.country} \u2022 ⭐ ${shop.rating || 5}/5
+                </div>
+                ${shop.tenantLink?.discountCode ? `
+                  <div style="margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.75rem; background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px dashed rgba(234, 179, 8, 0.4); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700;">
+                      🎟️ Cupón: ${shop.tenantLink.discountCode}
+                    </span>
+                  </div>
+                ` : ''}
+                ${shop.tenantLink?.partnerBadge ? `
+                  <div style="font-size: 0.75rem; color: #38bdf8; margin-bottom: 0.35rem;">
+                    ${shop.tenantLink.partnerBadge}
+                  </div>
+                ` : ''}
+                ${shop.tenantLink?.agreementNotes ? `
+                  <div style="font-size: 0.75rem; color: #94a3b8; font-style: italic; margin-bottom: 0.5rem;">
+                    ${shop.tenantLink.agreementNotes}
+                  </div>
+                ` : ''}
+              </div>
+              <div style="display: flex; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; margin-top: 0.75rem;">
+                <button type="button" class="filter-pill" onclick="openEditTenantShopModal('${shop.id}', '${(shop.tenantLink?.discountCode || '').replace(/'/g, "\\'")}', '${(shop.tenantLink?.partnerBadge || '').replace(/'/g, "\\'")}', '${(shop.tenantLink?.agreementNotes || '').replace(/'/g, "\\'")}', ${shop.tenantLink?.active !== false})" style="font-size: 0.78rem; padding: 0.3rem 0.6rem; cursor: pointer;">
+                  ✏️ Editar Cupon
+                </button>
+                <button type="button" class="filter-pill" onclick="deleteTenantShopLink('${shop.id}', '${shop.name.replace(/'/g, "\\'")}')" style="font-size: 0.78rem; padding: 0.3rem 0.6rem; color: #f87171; border-color: rgba(239, 68, 68, 0.3); cursor: pointer;">
+                  🗑️ Desvincular
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Subtab 2: Noticias & Articulos -->
+      <div id="admin-subtab-news" class="admin-subtab-content" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Noticias & Comunicados de la Comunidad</h3>
+          <button type="button" class="btn-primary" onclick="openTenantNewsModal()" style="font-size: 0.82rem; padding: 0.35rem 0.75rem;">
+            + Redactar Nueva Noticia
+          </button>
+        </div>
+        <div id="admin-news-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
+          <p style="color: #94a3b8; font-size: 0.85rem;">Cargando noticias de la comunidad...</p>
+        </div>
+      </div>
+
+      <!-- Subtab 3: Vitrina de Fotos Destacadas -->
+      <div id="admin-subtab-photos" class="admin-subtab-content" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Fotografías Destacadas en Portada</h3>
+          <button type="button" class="btn-primary" onclick="openAddFeaturedPhotoModal()" style="font-size: 0.82rem; padding: 0.35rem 0.75rem;">
+            + Destacar Foto de Coleccionista
+          </button>
+        </div>
+        <div id="admin-photos-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem;">
+          <p style="color: #94a3b8; font-size: 0.85rem;">Cargando vitrina de fotos...</p>
+        </div>
+      </div>
+
+      <!-- Subtab 4: Moderacion del Bazar -->
+      <div id="admin-subtab-bazar" class="admin-subtab-content" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Moderación de Publicaciones del Bazar</h3>
+            <p style="color: #94a3b8; font-size: 0.8rem; margin: 0.2rem 0 0 0;">
+              Supervisa avisos de compraventa, suspende avisos o elimina anuncios no conformes con las normas de INDECOPI y la comunidad.
+            </p>
+          </div>
+          <button type="button" class="filter-pill" onclick="loadAdminBazarListings()" style="font-size: 0.82rem; padding: 0.35rem 0.75rem; cursor: pointer;">
+            🔄 Refrescar Listado
+          </button>
+        </div>
+        <div id="admin-bazar-list" style="overflow-x: auto;">
+          <p style="color: #94a3b8; font-size: 0.85rem;">Cargando avisos del bazar...</p>
+        </div>
       </div>
     </section>
 

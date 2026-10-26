@@ -17,7 +17,7 @@ import {
 } from '@gunpla/shared';
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
-import { requireAuth, optionalAuth } from '../auth-sso/auth.slice';
+import { requireAuth, optionalAuth, isCommunityAdminUser } from '../auth-sso/auth.slice';
 import { sendTenantEmailViaResend } from '../notifications-resend/resend.slice';
 import { dispatchNotification } from '../notifications-bell/notifications.slice';
 
@@ -340,7 +340,9 @@ marketplaceRouter.patch('/listings/:id', requireAuth, (req: Request, res: Respon
     return sendProblem(req, res, 404, 'Publicación No Encontrada', `No se encontró la publicación '${listingId}'.`);
   }
 
-  if (listing.userId !== user.id) {
+  const isOwner = listing.userId === user.id;
+  const isAuthorizedAdmin = isCommunityAdminUser(user, req.tenant?.slug);
+  if (!isOwner && !isAuthorizedAdmin) {
     return sendProblem(req, res, 403, 'Acceso Prohibido', 'No tienes permiso para modificar esta publicación.');
   }
 
@@ -374,7 +376,9 @@ marketplaceRouter.delete('/listings/:id', requireAuth, (req: Request, res: Respo
     return sendProblem(req, res, 404, 'Publicación No Encontrada', `No se encontró la publicación '${listingId}'.`);
   }
 
-  if (db.marketplaceListings[index].userId !== user.id) {
+  const isOwner = db.marketplaceListings[index].userId === user.id;
+  const isAuthorizedAdmin = isCommunityAdminUser(user, req.tenant?.slug);
+  if (!isOwner && !isAuthorizedAdmin) {
     return sendProblem(req, res, 403, 'Acceso Prohibido', 'No tienes permiso para eliminar esta publicación.');
   }
 

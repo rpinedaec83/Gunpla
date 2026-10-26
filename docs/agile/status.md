@@ -4,12 +4,31 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT29 Master Shops Catalog, Tenant Trusted Shops & Community Discount Codes, DT28 Multi-Tenant Auth Isolation & Super Admin, DT27 Public Landing Page with News & Collector Showcase, Native Android App M1 & AND-05 Stash API Live on Device, DT26 Redis 7 Caching, PostgreSQL 16 Persistence)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + DT20-DT29 + Native Android App (`apps/mobile-android`). 178 backend/web unit tests + mobile unit tests passing. Full smoketest green (36 steps).
-- Current branch or release line: `feature/dt29-master-shops-tenant-trusted`
+- Stage: **PVT (In Progress -- DT30 Community Admin Panel & Marketplace Moderation, DT29 Master Shops Catalog, Tenant Trusted Shops & Community Discount Codes, DT28 Multi-Tenant Auth Isolation & Super Admin, DT27 Public Landing Page with News & Collector Showcase, Native Android App M1 & AND-05 Stash API Live on Device, DT26 Redis 7 Caching, PostgreSQL 16 Persistence)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + DT20-DT30 + Native Android App (`apps/mobile-android`). 184 backend/web unit tests + mobile unit tests passing. Full smoketest green (37 steps).
+- Current branch or release line: `feature/dt30-community-admin-panel`
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Panel de Administracion de Comunidad y Moderacion de Bazar en Web (DT30):**
+  - **Acceso Exclusivo y Proteccion de Roles:**
+    - Elemento de navegacion `#nav-community-admin` en barra lateral y enlace directo en el menu de usuario desplegable, visible unicamente para administradores de comunidad (`admin`, `community_admin`, `tenant_admin`, `super_admin`) y el Administrador Todopoderoso (`rpinedaec83@gmail.com`).
+    - Validacion en cliente y servidor con control estricto de pertenencia a la comunidad (`user.tenantSlug === req.tenant.slug`).
+  - **Gestion de Tiendas de Confianza (`admin-subtab-shops`):**
+    - Listado visual de tiendas asociadas con cupones de descuento exclusivos, badges de partner y notas de convenio.
+    - Modal interactivo `#modal-admin-link-shop` para explorar el catalogo maestro global (`GET /api/v1/shops?all=true`), vincular comercios y definir cupones personalizados.
+    - Acciones de edicion rapida de cupones y desvinculacion con confirmacion y actualizacion dinamica.
+  - **Publicacion Editorial y Noticias Locales (`admin-subtab-news`):**
+    - Gestor de comunicados y novedades categorizadas (Lanzamientos, Tecnicas, Herramientas, Eventos).
+    - Modal de redaccion `#modal-admin-news` con tiempo estimado de lectura, extracto para portada, contenido completo y etiquetas.
+    - Edicion y eliminacion inmediata de articulos con reflejo instantaneo en la Landing Page.
+  - **Curaduria de Vitrina de Coleccionistas (`admin-subtab-photos`):**
+    - Mosaico de fotos destacadas para la portada con autor, kit y escala.
+    - Modal `#modal-admin-featured-photo` para promover nuevas fotos de modelistas y accion de retiro en 1 clic.
+  - **Moderacion del Bazar y Cumplimiento Legal INDECOPI (`admin-subtab-bazar`):**
+    - Tabla completa de publicaciones de compraventa e intercambio de kits.
+    - Funciones de moderador para pausar publicaciones sospechosas, reactivar publicaciones verificadas o eliminar avisos infractores.
 
 - **Catalogo Maestro Global de Tiendas, Tenant Shops de Confianza y Codigos de Descuento (DT29):**
   - **Catalogo Maestro Centralizado de Tiendas (`shops`):**

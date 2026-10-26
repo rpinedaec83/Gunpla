@@ -3267,7 +3267,99 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT29 Master Shops, Tenant Trusted Shops & Discount Codes verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN + WORKBENCH-TOOLS + LANDING-PAGE + TENANT-AUTH-ISOLATION-SUPERADMIN + MASTER-SHOPS-TENANT-TRUSTED CHECKS PASSED ===');
+    // 37. DT30 - Community Admin Panel & Marketplace Moderation
+    console.log('\n--- Verifying DT30 Community Admin Panel & Marketplace Moderation ---');
+
+    // 1. Verify Web Frontends include Community Admin Panel markup and modals
+    const adminCheckRes = await fetch(`${gunplaUrl}/`);
+    assert.equal(adminCheckRes.status, 200);
+    const adminCheckHtml = await adminCheckRes.text();
+    assert.ok(adminCheckHtml.includes('id="view-admin"'), 'Frontend must render #view-admin view section');
+    assert.ok(adminCheckHtml.includes('id="nav-community-admin"'), 'Frontend must render #nav-community-admin sidebar navigation item');
+    assert.ok(adminCheckHtml.includes('id="admin-subtab-shops"'), 'Must render trusted shops subtab');
+    assert.ok(adminCheckHtml.includes('id="admin-subtab-news"'), 'Must render community news subtab');
+    assert.ok(adminCheckHtml.includes('id="admin-subtab-photos"'), 'Must render featured photos subtab');
+    assert.ok(adminCheckHtml.includes('id="admin-subtab-bazar"'), 'Must render marketplace moderation subtab');
+    assert.ok(adminCheckHtml.includes('id="modal-admin-link-shop"'), 'Must render shop linking modal');
+    assert.ok(adminCheckHtml.includes('id="modal-admin-news"'), 'Must render news authoring modal');
+    assert.ok(adminCheckHtml.includes('id="modal-admin-featured-photo"'), 'Must render featured photo modal');
+    assert.ok(adminCheckHtml.includes('switchAdminSubtab'), 'Must include switchAdminSubtab client function');
+    assert.ok(adminCheckHtml.includes('loadAdminBazarListings'), 'Must include loadAdminBazarListings client function');
+
+    // 2. Marketplace listing moderation permissions test:
+    // Create a new listing as regular builder (quattro)
+    const createBazarRes = await fetch(`${baseUrl}/api/v1/marketplace/listings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${quattroData.token}`,
+        'X-Tenant-Slug': 'gunplajunkies'
+      },
+      body: JSON.stringify({
+        kitId: 'kit-mg-barbatos',
+        type: 'sale',
+        price: 260,
+        currency: 'PEN',
+        boxCondition: 'mint_sealed',
+        notes: 'Aviso de prueba para moderacion'
+      })
+    });
+    assert.equal(createBazarRes.status, 201, 'Quattro should create marketplace listing');
+    const createdListing = await createBazarRes.json();
+
+    // 3. Unauthorized moderation attempt by regular builder on another user's listing (listing-sazabi-verka owned by dcampos) -> 403 Forbidden
+    const unauthModRes = await fetch(`${baseUrl}/api/v1/marketplace/listings/listing-sazabi-verka`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${quattroData.token}`,
+        'X-Tenant-Slug': 'gunplajunkies'
+      },
+      body: JSON.stringify({ status: 'inactive' })
+    });
+    assert.equal(unauthModRes.status, 403, 'Regular builder cannot moderate someone else\'s listing');
+
+    // 4. Authorized moderation by Super Admin (rpineda) -> Pause listing
+    const adminPauseRes = await fetch(`${baseUrl}/api/v1/marketplace/listings/${createdListing.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${superAdminToken}`,
+        'X-Tenant-Slug': 'gunplajunkies'
+      },
+      body: JSON.stringify({ status: 'inactive' })
+    });
+    assert.equal(adminPauseRes.status, 200, 'Super Admin can pause listing in marketplace');
+    const pausedListing = await adminPauseRes.json();
+    assert.equal(pausedListing.status, 'inactive');
+
+    // 5. Authorized moderation: Reactivate listing
+    const adminReactivateRes = await fetch(`${baseUrl}/api/v1/marketplace/listings/${createdListing.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${superAdminToken}`,
+        'X-Tenant-Slug': 'gunplajunkies'
+      },
+      body: JSON.stringify({ status: 'active' })
+    });
+    assert.equal(adminReactivateRes.status, 200, 'Super Admin can reactivate listing');
+    const reactivatedListing = await adminReactivateRes.json();
+    assert.equal(reactivatedListing.status, 'active');
+
+    // 6. Authorized moderation: Delete inappropriate listing
+    const adminDeleteListingRes = await fetch(`${baseUrl}/api/v1/marketplace/listings/${createdListing.id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${superAdminToken}`,
+        'X-Tenant-Slug': 'gunplajunkies'
+      }
+    });
+    assert.equal(adminDeleteListingRes.status, 200, 'Super Admin can delete listing from marketplace');
+
+    console.log('[PASS] DT30 Community Admin Panel & Marketplace Moderation verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN + WORKBENCH-TOOLS + LANDING-PAGE + TENANT-AUTH-ISOLATION-SUPERADMIN + MASTER-SHOPS-TENANT-TRUSTED + COMMUNITY-ADMIN-MODERATION CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

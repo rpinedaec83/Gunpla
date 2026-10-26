@@ -4,8 +4,8 @@ Active tasks only. This is a burn-down list, not a history log.
 
 ## Current Phase
 
-Name: Post-DT29 Ready / Next Phase Planning
-Goal: DT29 completed. Awaiting user direction or next phase definition.
+Name: Post-DT30 Ready / Next Phase Planning
+Goal: DT30 completed. Awaiting user direction or next phase definition.
 
 ## Active Tasks
 

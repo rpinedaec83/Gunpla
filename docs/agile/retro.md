@@ -2,6 +2,35 @@
 
 Completed work belongs here.
 
+## Session -- 2026-10-25 | Goal: Community Admin Panel & Marketplace Moderation
+Start: 23:08 | End: 23:25 | Duration: 0h 17m
+
+### DT30 -- Panel de Administracion de Comunidad y Moderacion en Web | eMOE: 3 CU | aMOE: 3 CU
+What was done:
+- Designed and implemented dedicated Community Administration and Moderation interface (`#view-admin`) in `packages/shared/src/ui-shell/views.ts` and `app-shell.ts`:
+  - Added role-gated navigation item `#nav-community-admin` in sidebar and user dropdown menu, displayed exclusively for community admins (`admin`, `community_admin`, `tenant_admin`, `super_admin`) and Super Admin (`rpinedaec83@gmail.com`).
+  - Implemented 4 sub-tab management modules in `#view-admin`:
+    1. Tiendas de Confianza (`#admin-subtab-shops`): Interactive cards of linked partner shops with discount code chips (e.g. GUNPLA10, PLAMO7), partner badges, agreement notes, active state badges, and direct edit/unlink triggers.
+    2. Noticias y Comunicados (`#admin-subtab-news`): Editorial feed manager with categories (Lanzamientos, Tecnicas, Herramientas, Eventos), publication dates, reading times, summaries, and edit/delete actions.
+    3. Vitrina de Fotos Destacadas (`#admin-subtab-photos`): Collector showcase curation grid with photo thumbnails, builder attribution, scale/grade badges, and un-feature triggers.
+    4. Moderacion de Bazar (`#admin-subtab-bazar`): Moderation table of all marketplace listings with seller, kit name, trade/sale type, price, box condition, and one-click moderation buttons (`Pausar / Retirar`, `Activar`, `Eliminar Aviso`).
+  - Added administrative modal dialogues in `packages/shared/src/ui-shell/modals.ts`:
+    - `#modal-admin-link-shop`: Master catalog shop selector (`GET /api/v1/shops?all=true`), custom discount coupon code, partner badge, and commercial agreement notes.
+    - `#modal-admin-news`: News authoring and editing form with category selector, read time, summary, full content, cover image, and tags.
+    - `#modal-admin-featured-photo`: Showcase submission form for photo URL, title, builder name, and kit scale.
+  - Hardened authorization permissions in API:
+    - Added helper `isCommunityAdminUser` in `apps/api/src/slices/auth-sso/auth.slice.ts` validating matching `tenantSlug` for community admins while granting universal access to Super Admin (`rpinedaec83@gmail.com`).
+    - Updated `PATCH /api/v1/marketplace/listings/:id` and `DELETE /api/v1/marketplace/listings/:id` in `apps/api/src/slices/marketplace/marketplace.slice.ts` to allow community admins and Super Admin to pause, reactivate, or remove any inappropriate listings for legal (INDECOPI) and community compliance.
+  - Authored comprehensive unit test suite in `tests/unit/community-admin-panel.test.mjs` (6 passing tests).
+  - Extended end-to-end smoketest in `scripts/smoketest.mjs` (Step 37) verifying frontend admin markup, unauthorized regular builder rejection (403), Super Admin moderation pause, reactivation, and permanent removal of inappropriate bazar listings.
+  - Built and verified: all 184 unit tests and 37 smoketest steps passing 100% green.
+Issues hit:
+- In smoketest, attempting to use `aperichToken` (issued for plamoscale) against gunplajunkies endpoint was correctly rejected with 403 due to DT28 token scoping; resolved by using gunplajunkies user tokens for tenant-specific actions.
+Decisions made:
+- Integrated community administration directly into the existing responsive web shell with subtabs instead of creating a disconnected separate portal, ensuring community administrators can switch between their workbench and moderation duties seamlessly.
+Lessons learned:
+- Providing real-time client-side feedback (toast notifications and automatic list refreshing) on administrative actions significantly improves moderation usability.
+
 ## Session -- 2026-10-25 | Goal: Master Shops Catalog, Tenant Trusted Shops & Discount Codes
 Start: 22:50 | End: 23:05 | Duration: 0h 15m
 

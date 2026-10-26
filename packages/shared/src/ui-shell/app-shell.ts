@@ -1485,6 +1485,10 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData, og?: 
         <span>🎨 Personalizar Portal</span>
         <span class="nav-badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">Admin</span>
       </a>
+      <a id="nav-community-admin" class="nav-item" onclick="switchTab('admin')" style="display: none;">
+        <span>🛡️ Administrar Comunidad</span>
+        <span class="nav-badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">Admin</span>
+      </a>
     </nav>
   </aside>
 
@@ -1695,7 +1699,8 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
       builders: 'Modelistas Fundadores',
       contests: 'Concursos & Group Builds',
       commissions: 'Comisiones de Armado & Pintura',
-      shops: 'Tiendas de Confianza'
+      shops: 'Tiendas de Confianza',
+      admin: 'Administración & Moderación de Comunidad'
     };
 
     if (titles[tabId]) {
@@ -1730,6 +1735,9 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
 
     if (tabId === 'workbench') {
       loadWorkbenchData();
+    }
+    if (tabId === 'admin') {
+      loadCommunityAdminData();
     }
   }
 
@@ -2503,15 +2511,25 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
         ? '<img class="user-avatar-img" src="' + currentUser.avatarUrl + '" alt="' + currentUser.displayName + '">'
         : '<div class="user-avatar-img">' + initials + '</div>';
 
-      const isTenantAdminOrAdmin = currentUser.roles && (
-        currentUser.roles.includes('admin') ||
-        currentUser.roles.includes('tenant_admin') ||
-        currentUser.username === 'rpineda'
+      const isTenantAdminOrAdmin = currentUser && (
+        (currentUser.roles && (
+          currentUser.roles.includes('admin') ||
+          currentUser.roles.includes('tenant_admin') ||
+          currentUser.roles.includes('community_admin') ||
+          currentUser.roles.includes('super_admin')
+        )) ||
+        currentUser.role === 'admin' ||
+        currentUser.role === 'community_admin' ||
+        currentUser.role === 'super_admin' ||
+        currentUser.username === 'rpineda' ||
+        (currentUser.email && currentUser.email.toLowerCase() === 'rpinedaec83@gmail.com')
       );
 
       const isJudge = currentUser.roles && (
         currentUser.roles.includes('admin') ||
         currentUser.roles.includes('tenant_admin') ||
+        currentUser.roles.includes('community_admin') ||
+        currentUser.roles.includes('super_admin') ||
         currentUser.roles.includes('moderator') ||
         currentUser.username === 'rpineda'
       );
@@ -2522,6 +2540,8 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
 
       const navThemeBtn = document.getElementById('nav-customize-theme');
       if (navThemeBtn) navThemeBtn.style.display = isTenantAdminOrAdmin ? 'flex' : 'none';
+      const navAdminBtn = document.getElementById('nav-community-admin');
+      if (navAdminBtn) navAdminBtn.style.display = isTenantAdminOrAdmin ? 'flex' : 'none';
 
       container.innerHTML = 
         '<div class="user-profile-badge" onclick="toggleUserDropdown(event)">' +
@@ -2533,6 +2553,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
               '<div style="font-size: 0.8rem; font-weight: 700; color: #fff;">' + (currentUser.displayName || currentUser.username) + '</div>' +
               '<div style="font-size: 0.72rem; color: #94a3b8;">' + (currentUser.email || '') + '</div>' +
             '</div>' +
+            (isTenantAdminOrAdmin ? '<a class="user-dropdown-item" onclick="switchTab(&quot;admin&quot;)">🛡️ Administrar Comunidad</a>' : '') +
             (isTenantAdminOrAdmin ? '<a class="user-dropdown-item" onclick="openTenantThemeModal()">🎨 Personalizar Tema del Portal</a>' : '') +
             '<a class="user-dropdown-item" onclick="openNewTenantModal()">🏛️ Crear Nuevo Club / Portal</a>' +
             '<a class="user-dropdown-item" onclick="goToWorkbench()">🛠️ Mi Workbench & Stash</a>' +
@@ -2544,6 +2565,8 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     } else {
       const navThemeBtn = document.getElementById('nav-customize-theme');
       if (navThemeBtn) navThemeBtn.style.display = 'none';
+      const navAdminBtn = document.getElementById('nav-community-admin');
+      if (navAdminBtn) navAdminBtn.style.display = 'none';
 
       document.querySelectorAll('.btn-judge-entry').forEach(btn => {
         btn.style.display = 'none';
@@ -9824,6 +9847,626 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     }
   }
 
+  /* ==========================================================================
+     COMMUNITY ADMIN & MODERATION LOGIC (DT30)
+     ========================================================================== */
+
+  let adminLoadedNews = [];
+
+  function switchAdminSubtab(subtabId) {
+    const subtabs = ['shops', 'news', 'photos', 'bazar'];
+    subtabs.forEach(st => {
+      const btn = document.getElementById('admin-subtab-btn-' + st);
+      const content = document.getElementById('admin-subtab-' + st);
+      if (btn) {
+        if (st === subtabId) btn.classList.add('active');
+        else btn.classList.remove('active');
+      }
+      if (content) {
+        content.style.display = st === subtabId ? 'block' : 'none';
+      }
+    });
+
+    if (subtabId === 'shops') loadAdminShops();
+    if (subtabId === 'news') loadAdminNews();
+    if (subtabId === 'photos') loadAdminPhotos();
+    if (subtabId === 'bazar') loadAdminBazarListings();
+  }
+
+  function loadCommunityAdminData() {
+    loadAdminShops();
+    loadAdminNews();
+    loadAdminPhotos();
+    loadAdminBazarListings();
+  }
+
+  async function loadAdminShops() {
+    const listEl = document.getElementById('admin-trusted-shops-list');
+    const countEl = document.getElementById('admin-shops-count');
+    try {
+      const res = await fetch('/api/v1/tenants/' + config.tenantSlug + '/shops', {
+        headers: {
+          'X-Tenant-Slug': config.tenantSlug,
+          'Authorization': currentToken ? 'Bearer ' + currentToken : ''
+        }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const shops = data.items || [];
+      if (countEl) countEl.textContent = shops.length;
+
+      if (!listEl) return;
+      if (shops.length === 0) {
+        listEl.innerHTML = '<p style="color: #94a3b8; font-size: 0.85rem; grid-column: 1 / -1;">No hay tiendas de confianza vinculadas a esta comunidad todavia.</p>';
+        return;
+      }
+
+      listEl.innerHTML = shops.map(shop => {
+        const link = shop.tenantLink || {};
+        const isActive = link.active !== false;
+        return (
+          '<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">' +
+            '<div>' +
+              '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">' +
+                '<h4 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #fff;">' + escapeHtml(shop.name) + '</h4>' +
+                '<span style="font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 4px; background: ' + (isActive ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)') + '; color: ' + (isActive ? '#4ade80' : '#f87171') + ';">' +
+                  (isActive ? 'Activo' : 'Inactivo') +
+                '</span>' +
+              '</div>' +
+              '<div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.5rem;">' +
+                '📍 ' + escapeHtml(shop.city) + ', ' + escapeHtml(shop.country) + ' • ⭐ ' + (shop.rating || 5) + '/5' +
+              '</div>' +
+              (link.discountCode ? (
+                '<div style="margin-bottom: 0.5rem;">' +
+                  '<span style="font-size: 0.75rem; background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px dashed rgba(234, 179, 8, 0.4); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700;">' +
+                    '🎟️ Cupón: ' + escapeHtml(link.discountCode) +
+                  '</span>' +
+                '</div>'
+              ) : '') +
+              (link.partnerBadge ? (
+                '<div style="font-size: 0.75rem; color: #38bdf8; margin-bottom: 0.35rem;">' +
+                  escapeHtml(link.partnerBadge) +
+                '</div>'
+              ) : '') +
+              (link.agreementNotes ? (
+                '<div style="font-size: 0.75rem; color: #94a3b8; font-style: italic; margin-bottom: 0.5rem;">' +
+                  escapeHtml(link.agreementNotes) +
+                '</div>'
+              ) : '') +
+            '</div>' +
+            '<div style="display: flex; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; margin-top: 0.75rem;">' +
+              '<button type="button" class="filter-pill" onclick="openEditTenantShopModal(&quot;' + shop.id + '&quot;, &quot;' + escapeHtml(link.discountCode || '') + '&quot;, &quot;' + escapeHtml(link.partnerBadge || '') + '&quot;, &quot;' + escapeHtml(link.agreementNotes || '') + '&quot;, ' + isActive + ')" style="font-size: 0.78rem; padding: 0.3rem 0.6rem; cursor: pointer;">' +
+                '✏️ Editar Cupón' +
+              '</button>' +
+              '<button type="button" class="filter-pill" onclick="deleteTenantShopLink(&quot;' + shop.id + '&quot;, &quot;' + escapeHtml(shop.name) + '&quot;)" style="font-size: 0.78rem; padding: 0.3rem 0.6rem; color: #f87171; border-color: rgba(239, 68, 68, 0.3); cursor: pointer;">' +
+                '🗑️ Desvincular' +
+              '</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+    } catch (e) {
+      console.warn('Error loading admin shops:', e);
+    }
+  }
+
+  async function openLinkMasterShopModal() {
+    const modal = document.getElementById('modal-admin-link-shop');
+    if (!modal) return;
+    document.getElementById('admin-shop-edit-mode').value = 'create';
+    document.getElementById('admin-shop-select-container').style.display = 'block';
+    document.getElementById('admin-shop-discount-code').value = '';
+    document.getElementById('admin-shop-partner-badge').value = '';
+    document.getElementById('admin-shop-notes').value = '';
+    document.getElementById('admin-shop-active').checked = true;
+    document.getElementById('admin-shop-modal-title').textContent = '🏪 Vincular Tienda del Catálogo Maestro';
+    document.getElementById('btn-submit-admin-shop').textContent = 'Vincular Tienda';
+
+    const select = document.getElementById('admin-shop-id-select');
+    select.innerHTML = '<option value="">Cargando catálogo maestro...</option>';
+
+    try {
+      const res = await fetch('/api/v1/shops?all=true', {
+        headers: { 'Authorization': currentToken ? 'Bearer ' + currentToken : '' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const shops = data.items || [];
+        select.innerHTML = '<option value="">-- Selecciona una tienda --</option>' +
+          shops.map(s => '<option value="' + s.id + '">' + escapeHtml(s.name) + ' (' + escapeHtml(s.city) + ', ' + escapeHtml(s.country) + ')</option>').join('');
+      }
+    } catch (err) {
+      select.innerHTML = '<option value="">Error cargando tiendas</option>';
+    }
+
+    modal.classList.add('active');
+  }
+
+  function openEditTenantShopModal(shopId, discountCode, partnerBadge, notes, active) {
+    const modal = document.getElementById('modal-admin-link-shop');
+    if (!modal) return;
+    document.getElementById('admin-shop-edit-mode').value = shopId;
+    document.getElementById('admin-shop-select-container').style.display = 'none';
+    document.getElementById('admin-shop-discount-code').value = discountCode || '';
+    document.getElementById('admin-shop-partner-badge').value = partnerBadge || '';
+    document.getElementById('admin-shop-notes').value = notes || '';
+    document.getElementById('admin-shop-active').checked = active !== false;
+    document.getElementById('admin-shop-modal-title').textContent = '✏️ Editar Cupón y Convenio de Tienda';
+    document.getElementById('btn-submit-admin-shop').textContent = 'Actualizar Tienda';
+    modal.classList.add('active');
+  }
+
+  function closeAdminShopModal(e) {
+    if (!e || e.target.id === 'modal-admin-link-shop' || e.target.classList.contains('auth-close') || e.target.tagName === 'BUTTON') {
+      const modal = document.getElementById('modal-admin-link-shop');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  async function submitTenantShopLink(e) {
+    e.preventDefault();
+    if (!currentToken) return alert('Debes iniciar sesión con rol de administrador.');
+    const mode = document.getElementById('admin-shop-edit-mode').value;
+    const discountCode = document.getElementById('admin-shop-discount-code').value.trim();
+    const partnerBadge = document.getElementById('admin-shop-partner-badge').value.trim();
+    const agreementNotes = document.getElementById('admin-shop-notes').value.trim();
+    const active = document.getElementById('admin-shop-active').checked;
+
+    try {
+      let res;
+      if (mode === 'create') {
+        const shopId = document.getElementById('admin-shop-id-select').value;
+        if (!shopId) return alert('Selecciona una tienda del catálogo maestro.');
+        res = await fetch('/api/v1/tenants/' + config.tenantSlug + '/shops', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + currentToken,
+            'X-Tenant-Slug': config.tenantSlug
+          },
+          body: JSON.stringify({ shopId, discountCode, partnerBadge, agreementNotes, active })
+        });
+      } else {
+        res = await fetch('/api/v1/tenants/' + config.tenantSlug + '/shops/' + mode, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + currentToken,
+            'X-Tenant-Slug': config.tenantSlug
+          },
+          body: JSON.stringify({ discountCode, partnerBadge, agreementNotes, active })
+        });
+      }
+
+      if (!res.ok) {
+        const err = await res.json();
+        return alert(err.detail || err.title || 'Error al guardar la tienda');
+      }
+
+      closeAdminShopModal();
+      loadAdminShops();
+      showShareToast('✅ Tienda de confianza actualizada con éxito');
+    } catch (err) {
+      alert('Error de conexión al guardar la tienda');
+    }
+  }
+
+  async function deleteTenantShopLink(shopId, shopName) {
+    if (!confirm('¿Desvincular "' + shopName + '" como tienda de confianza de esta comunidad?')) return;
+    if (!currentToken) return alert('Debes iniciar sesión con rol de administrador.');
+
+    try {
+      const res = await fetch('/api/v1/tenants/' + config.tenantSlug + '/shops/' + shopId, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': config.tenantSlug
+        }
+      });
+      if (res.ok) {
+        loadAdminShops();
+        showShareToast('🗑️ Tienda desvinculada de la comunidad');
+      } else {
+        const err = await res.json();
+        alert(err.detail || 'Error al desvincular tienda');
+      }
+    } catch (err) {
+      alert('Error de conexión al desvincular tienda');
+    }
+  }
+
+  async function loadAdminNews() {
+    const listEl = document.getElementById('admin-news-list');
+    const countEl = document.getElementById('admin-news-count');
+    try {
+      const res = await fetch('/api/v1/tenants/' + config.tenantSlug + '/news');
+      if (!res.ok) return;
+      const data = await res.json();
+      adminLoadedNews = data.items || [];
+      if (countEl) countEl.textContent = adminLoadedNews.length;
+
+      if (!listEl) return;
+      if (adminLoadedNews.length === 0) {
+        listEl.innerHTML = '<p style="color: #94a3b8; font-size: 0.85rem; grid-column: 1 / -1;">No hay noticias publicadas para esta comunidad todavía.</p>';
+        return;
+      }
+
+      listEl.innerHTML = adminLoadedNews.map(item => {
+        return (
+          '<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">' +
+            '<div>' +
+              '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">' +
+                '<span style="font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 4px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; font-weight: 700; text-transform: uppercase;">' +
+                  escapeHtml(item.category) +
+                '</span>' +
+                '<span style="font-size: 0.72rem; color: #64748b;">' + (item.readTime || '3 min') + '</span>' +
+              '</div>' +
+              '<h4 style="margin: 0 0 0.5rem 0; font-size: 1.05rem; font-weight: 700; color: #fff;">' + escapeHtml(item.title) + '</h4>' +
+              '<p style="font-size: 0.82rem; color: #cbd5e1; margin: 0 0 0.75rem 0; line-height: 1.5;">' + escapeHtml(item.summary) + '</p>' +
+            '</div>' +
+            '<div style="display: flex; gap: 0.5rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem; margin-top: 0.75rem;">' +
+              '<button type="button" class="filter-pill" onclick="openTenantNewsModal(&quot;' + item.id + '&quot;)" style="font-size: 0.78rem; padding: 0.3rem 0.6rem; cursor: pointer;">' +
+                '✏️ Editar' +
+              '</button>' +
+              '<button type="button" class="filter-pill" onclick="deleteTenantNews(&quot;' + item.id + '&quot;, &quot;' + escapeHtml(item.title) + '&quot;)" style="font-size: 0.78rem; padding: 0.3rem 0.6rem; color: #f87171; border-color: rgba(239, 68, 68, 0.3); cursor: pointer;">' +
+                '🗑️ Eliminar' +
+              '</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+    } catch (e) {
+      console.warn('Error loading admin news:', e);
+    }
+  }
+
+  function openTenantNewsModal(newsId) {
+    const modal = document.getElementById('modal-admin-news');
+    if (!modal) return;
+    if (newsId) {
+      const item = adminLoadedNews.find(n => n.id === newsId);
+      if (item) {
+        document.getElementById('admin-news-id').value = item.id;
+        document.getElementById('admin-news-title').value = item.title;
+        document.getElementById('admin-news-category').value = item.category || 'releases';
+        document.getElementById('admin-news-read-time').value = item.readTime || '3 min';
+        document.getElementById('admin-news-summary').value = item.summary || '';
+        document.getElementById('admin-news-content').value = item.content || '';
+        document.getElementById('admin-news-image').value = item.imageUrl || '';
+        document.getElementById('admin-news-tags').value = (item.tags || []).join(', ');
+        document.getElementById('admin-news-modal-title').textContent = '✏️ Editar Noticia de Comunidad';
+        document.getElementById('btn-submit-admin-news').textContent = 'Actualizar Noticia';
+      }
+    } else {
+      document.getElementById('admin-news-id').value = '';
+      document.getElementById('admin-news-title').value = '';
+      document.getElementById('admin-news-category').value = 'releases';
+      document.getElementById('admin-news-read-time').value = '3 min';
+      document.getElementById('admin-news-summary').value = '';
+      document.getElementById('admin-news-content').value = '';
+      document.getElementById('admin-news-image').value = '';
+      document.getElementById('admin-news-tags').value = '';
+      document.getElementById('admin-news-modal-title').textContent = '📰 Redactar Noticia de Comunidad';
+      document.getElementById('btn-submit-admin-news').textContent = 'Publicar Noticia';
+    }
+    modal.classList.add('active');
+  }
+
+  function closeAdminNewsModal(e) {
+    if (!e || e.target.id === 'modal-admin-news' || e.target.classList.contains('auth-close') || e.target.tagName === 'BUTTON') {
+      const modal = document.getElementById('modal-admin-news');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  async function submitTenantNews(e) {
+    e.preventDefault();
+    if (!currentToken) return alert('Debes iniciar sesión con rol de administrador.');
+    const id = document.getElementById('admin-news-id').value;
+    const title = document.getElementById('admin-news-title').value.trim();
+    const category = document.getElementById('admin-news-category').value;
+    const readTime = document.getElementById('admin-news-read-time').value.trim() || '3 min';
+    const summary = document.getElementById('admin-news-summary').value.trim();
+    const content = document.getElementById('admin-news-content').value.trim();
+    const imageUrl = document.getElementById('admin-news-image').value.trim() || undefined;
+    const tags = document.getElementById('admin-news-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+
+    try {
+      let res;
+      if (id) {
+        res = await fetch('/api/v1/tenants/' + config.tenantSlug + '/news/' + id, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + currentToken,
+            'X-Tenant-Slug': config.tenantSlug
+          },
+          body: JSON.stringify({ title, category, readTime, summary, content, imageUrl, tags })
+        });
+      } else {
+        res = await fetch('/api/v1/tenants/' + config.tenantSlug + '/news', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + currentToken,
+            'X-Tenant-Slug': config.tenantSlug
+          },
+          body: JSON.stringify({ title, category, readTime, summary, content, imageUrl, tags })
+        });
+      }
+
+      if (!res.ok) {
+        const err = await res.json();
+        return alert(err.detail || err.title || 'Error al guardar la noticia');
+      }
+
+      closeAdminNewsModal();
+      loadAdminNews();
+      showShareToast('📰 Noticia guardada correctamente');
+    } catch (err) {
+      alert('Error de conexión al guardar la noticia');
+    }
+  }
+
+  async function deleteTenantNews(newsId, title) {
+    if (!confirm('¿Eliminar la noticia "' + title + '"?')) return;
+    if (!currentToken) return alert('Debes iniciar sesión con rol de administrador.');
+
+    try {
+      const res = await fetch('/api/v1/tenants/' + config.tenantSlug + '/news/' + newsId, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': config.tenantSlug
+        }
+      });
+      if (res.ok) {
+        loadAdminNews();
+        showShareToast('🗑️ Noticia eliminada');
+      } else {
+        const err = await res.json();
+        alert(err.detail || 'Error al eliminar noticia');
+      }
+    } catch (err) {
+      alert('Error de conexión al eliminar la noticia');
+    }
+  }
+
+  async function loadAdminPhotos() {
+    const listEl = document.getElementById('admin-photos-list');
+    const countEl = document.getElementById('admin-photos-count');
+    try {
+      const res = await fetch('/api/v1/tenants/' + config.tenantSlug + '/featured-photos');
+      if (!res.ok) return;
+      const data = await res.json();
+      const photos = data.items || [];
+      if (countEl) countEl.textContent = photos.length;
+
+      if (!listEl) return;
+      if (photos.length === 0) {
+        listEl.innerHTML = '<p style="color: #94a3b8; font-size: 0.85rem; grid-column: 1 / -1;">No hay fotos destacadas para la vitrina de esta comunidad todavia.</p>';
+        return;
+      }
+
+      listEl.innerHTML = photos.map(photo => {
+        return (
+          '<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;">' +
+            '<div style="width: 100%; height: 140px; background: #000; overflow: hidden;">' +
+              '<img src="' + escapeHtml(photo.photoUrl) + '" alt="' + escapeHtml(photo.title) + '" style="width: 100%; height: 100%; object-fit: cover;">' +
+            '</div>' +
+            '<div style="padding: 0.75rem; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">' +
+              '<div>' +
+                '<div style="font-size: 0.72rem; color: #38bdf8; font-weight: 700; margin-bottom: 0.2rem;">' + escapeHtml(photo.scale || '') + '</div>' +
+                '<h5 style="margin: 0 0 0.35rem 0; font-size: 0.88rem; font-weight: 700; color: #fff;">' + escapeHtml(photo.title) + '</h5>' +
+                '<div style="font-size: 0.75rem; color: #94a3b8;">Por ' + escapeHtml(photo.builderName || 'Coleccionista') + '</div>' +
+              '</div>' +
+              '<button type="button" class="filter-pill" onclick="deleteFeaturedPhoto(&quot;' + photo.id + '&quot;)" style="margin-top: 0.75rem; font-size: 0.75rem; padding: 0.25rem 0.5rem; color: #f87171; border-color: rgba(239, 68, 68, 0.3); cursor: pointer;">' +
+                '🗑️ Quitar de Vitrina' +
+              '</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+    } catch (e) {
+      console.warn('Error loading admin photos:', e);
+    }
+  }
+
+  function openAddFeaturedPhotoModal() {
+    const modal = document.getElementById('modal-admin-featured-photo');
+    if (!modal) return;
+    document.getElementById('admin-photo-url').value = '';
+    document.getElementById('admin-photo-title').value = '';
+    document.getElementById('admin-photo-builder').value = '';
+    document.getElementById('admin-photo-scale').value = '';
+    modal.classList.add('active');
+  }
+
+  function closeAdminFeaturedPhotoModal(e) {
+    if (!e || e.target.id === 'modal-admin-featured-photo' || e.target.classList.contains('auth-close') || e.target.tagName === 'BUTTON') {
+      const modal = document.getElementById('modal-admin-featured-photo');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  async function submitFeaturedPhoto(e) {
+    e.preventDefault();
+    if (!currentToken) return alert('Debes iniciar sesión con rol de administrador.');
+    const photoUrl = document.getElementById('admin-photo-url').value.trim();
+    const title = document.getElementById('admin-photo-title').value.trim();
+    const builderName = document.getElementById('admin-photo-builder').value.trim();
+    const scale = document.getElementById('admin-photo-scale').value.trim();
+
+    try {
+      const res = await fetch('/api/v1/tenants/' + config.tenantSlug + '/featured-photos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': config.tenantSlug
+        },
+        body: JSON.stringify({ photoUrl, title, builderName, scale, kitName: title })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        return alert(err.detail || err.title || 'Error al destacar foto');
+      }
+
+      closeAdminFeaturedPhotoModal();
+      loadAdminPhotos();
+      showShareToast('📸 Foto destacada agregada a la vitrina');
+    } catch (err) {
+      alert('Error de conexión al destacar foto');
+    }
+  }
+
+  async function deleteFeaturedPhoto(photoId) {
+    if (!confirm('¿Quitar esta foto de la vitrina destacada?')) return;
+    if (!currentToken) return alert('Debes iniciar sesión con rol de administrador.');
+
+    try {
+      const res = await fetch('/api/v1/tenants/' + config.tenantSlug + '/featured-photos/' + photoId, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': config.tenantSlug
+        }
+      });
+      if (res.ok) {
+        loadAdminPhotos();
+        showShareToast('🗑️ Foto quitada de la vitrina');
+      } else {
+        const err = await res.json();
+        alert(err.detail || 'Error al eliminar foto');
+      }
+    } catch (err) {
+      alert('Error de conexión al eliminar foto');
+    }
+  }
+
+  async function loadAdminBazarListings() {
+    const listEl = document.getElementById('admin-bazar-list');
+    const countEl = document.getElementById('admin-bazar-count');
+    try {
+      const res = await fetch('/api/v1/marketplace/listings', {
+        headers: {
+          'X-Tenant-Slug': config.tenantSlug,
+          'Authorization': currentToken ? 'Bearer ' + currentToken : ''
+        }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const listings = data.items || [];
+      if (countEl) countEl.textContent = listings.length;
+
+      if (!listEl) return;
+      if (listings.length === 0) {
+        listEl.innerHTML = '<p style="color: #94a3b8; font-size: 0.85rem;">No hay publicaciones en el Bazar en este momento.</p>';
+        return;
+      }
+
+      listEl.innerHTML = (
+        '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: #cbd5e1;">' +
+          '<thead>' +
+            '<tr style="border-bottom: 1px solid var(--border-color); text-align: left; color: #94a3b8;">' +
+              '<th style="padding: 0.6rem 0.5rem;">Kit / Publicación</th>' +
+              '<th style="padding: 0.6rem 0.5rem;">Vendedor</th>' +
+              '<th style="padding: 0.6rem 0.5rem;">Tipo</th>' +
+              '<th style="padding: 0.6rem 0.5rem;">Precio</th>' +
+              '<th style="padding: 0.6rem 0.5rem;">Estado</th>' +
+              '<th style="padding: 0.6rem 0.5rem; text-align: right;">Acciones de Moderación</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody>' +
+            listings.map(l => {
+              const kitName = l.kit ? (l.kit.name + ' (' + l.kit.scale + ')') : (l.kitId || 'Kit');
+              const isActive = l.status === 'active';
+              return (
+                '<tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">' +
+                  '<td style="padding: 0.6rem 0.5rem; font-weight: 600; color: #fff;">' + escapeHtml(kitName) + '</td>' +
+                  '<td style="padding: 0.6rem 0.5rem; color: #94a3b8;">@' + escapeHtml(l.username || l.userId) + '</td>' +
+                  '<td style="padding: 0.6rem 0.5rem;"><span class="badge" style="font-size: 0.72rem;">' + (l.type === 'both' ? 'Venta/Cambio' : (l.type === 'trade' ? 'Intercambio' : 'Venta')) + '</span></td>' +
+                  '<td style="padding: 0.6rem 0.5rem; color: #4ade80;">' + (l.price ? (l.currency + ' ' + l.price) : 'Solo cambio') + '</td>' +
+                  '<td style="padding: 0.6rem 0.5rem;">' +
+                    '<span style="font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 4px; background: ' + (isActive ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)') + '; color: ' + (isActive ? '#4ade80' : '#f87171') + ';">' +
+                      (isActive ? 'Activo' : 'Pausado') +
+                    '</span>' +
+                  '</td>' +
+                  '<td style="padding: 0.6rem 0.5rem; text-align: right;">' +
+                    '<div style="display: inline-flex; gap: 0.4rem;">' +
+                      (isActive ? (
+                        '<button type="button" class="filter-pill" onclick="moderateBazarListingStatus(&quot;' + l.id + '&quot;, &quot;inactive&quot;)" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; cursor: pointer;">' +
+                          '⏸️ Pausar' +
+                        '</button>'
+                      ) : (
+                        '<button type="button" class="filter-pill" onclick="moderateBazarListingStatus(&quot;' + l.id + '&quot;, &quot;active&quot;)" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; color: #4ade80; cursor: pointer;">' +
+                          '▶️ Activar' +
+                        '</button>'
+                      )) +
+                      '<button type="button" class="filter-pill" onclick="moderateDeleteBazarListing(&quot;' + l.id + '&quot;)" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; color: #f87171; border-color: rgba(239, 68, 68, 0.3); cursor: pointer;">' +
+                        '🗑️ Retirar' +
+                      '</button>' +
+                    '</div>' +
+                  '</td>' +
+                '</tr>'
+              );
+            }).join('') +
+          '</tbody>' +
+        '</table>'
+      );
+    } catch (e) {
+      console.warn('Error loading admin bazar:', e);
+    }
+  }
+
+  async function moderateBazarListingStatus(listingId, newStatus) {
+    if (!currentToken) return alert('Debes iniciar sesión con rol de administrador.');
+    try {
+      const res = await fetch('/api/v1/marketplace/listings/' + listingId, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': config.tenantSlug
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        loadAdminBazarListings();
+        showShareToast('⚖️ Estado de aviso actualizado: ' + newStatus);
+      } else {
+        const err = await res.json();
+        alert(err.detail || 'Error al actualizar aviso');
+      }
+    } catch (err) {
+      alert('Error de conexión al moderar aviso');
+    }
+  }
+
+  async function moderateDeleteBazarListing(listingId) {
+    if (!confirm('¿Retirar y eliminar definitivamente este aviso del Bazar por incumplimiento?')) return;
+    if (!currentToken) return alert('Debes iniciar sesión con rol de administrador.');
+    try {
+      const res = await fetch('/api/v1/marketplace/listings/' + listingId, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': config.tenantSlug
+        }
+      });
+      if (res.ok) {
+        loadAdminBazarListings();
+        showShareToast('🗑️ Aviso retirado del Bazar por moderación');
+      } else {
+        const err = await res.json();
+        alert(err.detail || 'Error al eliminar aviso');
+      }
+    } catch (err) {
+      alert('Error de conexión al eliminar aviso');
+    }
+  }
+
   function logout() {
     localStorage.removeItem(tenantSsoTokenKey);
     localStorage.removeItem(tenantSsoUserKey);
@@ -9839,7 +10482,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     checkAuth();
     setInterval(loadUserNotifications, 30000);
     const hash = window.location.hash.replace('#', '');
-    if (hash && ['workbench', 'builds', 'kits', 'paints', 'showcase', 'marketplace', 'builders', 'contests', 'commissions', 'shops'].includes(hash)) {
+    if (hash && ['workbench', 'builds', 'kits', 'paints', 'showcase', 'marketplace', 'builders', 'contests', 'commissions', 'shops', 'admin'].includes(hash)) {
       switchTab(hash);
     } else {
       switchTab('landing');

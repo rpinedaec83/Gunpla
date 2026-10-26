@@ -2758,5 +2758,174 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Modal Administracion: Vincular / Editar Tienda de Confianza -->
+<div id="modal-admin-link-shop" class="custom-modal" onclick="closeAdminShopModal(event)">
+  <div class="auth-box" style="max-width: 520px; width: 90%; background: #0f172a; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeAdminShopModal()" style="position: absolute; top: 1rem; right: 1.25rem; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">&times;</span>
+    <h2 id="admin-shop-modal-title" style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 1.25rem;">
+      🏪 Vincular Tienda de Confianza
+    </h2>
+    <form onsubmit="submitTenantShopLink(event)">
+      <input type="hidden" id="admin-shop-edit-mode" value="create">
+      <div id="admin-shop-select-container" style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Seleccionar Tienda del Catálogo Maestro *
+        </label>
+        <select id="admin-shop-id-select" class="auth-input" style="width: 100%;" required>
+          <option value="">Cargando catálogo maestro...</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Cupón de Descuento Exclusivo (Opcional)
+        </label>
+        <input type="text" id="admin-shop-discount-code" class="auth-input" style="width: 100%; text-transform: uppercase;" placeholder="Ej. GUNPLA10 o PLAMO7">
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Insignia / Distintivo de la Comunidad (Opcional)
+        </label>
+        <input type="text" id="admin-shop-partner-badge" class="auth-input" style="width: 100%;" placeholder="Ej. ⭐ Tienda Oficial de Confianza">
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Notas del Convenio Comercial / Beneficios
+        </label>
+        <textarea id="admin-shop-notes" class="auth-input" style="width: 100%; min-height: 60px;" placeholder="Detalles de acuerdos, contacto directo o regalos para miembros..."></textarea>
+      </div>
+      <div style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        <input type="checkbox" id="admin-shop-active" checked style="accent-color: var(--accent);">
+        <label for="admin-shop-active" style="font-size: 0.85rem; color: #cbd5e1; cursor: pointer;">
+          Habilitar como Tienda Activa en la Comunidad
+        </label>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button type="button" class="filter-pill" onclick="closeAdminShopModal()" style="font-size: 0.82rem; padding: 0.45rem 1rem;">
+          Cancelar
+        </button>
+        <button type="submit" id="btn-submit-admin-shop" class="btn-primary" style="font-size: 0.85rem; padding: 0.5rem 1.25rem;">
+          Guardar Tienda
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Administracion: Redactar / Editar Noticia de Comunidad -->
+<div id="modal-admin-news" class="custom-modal" onclick="closeAdminNewsModal(event)">
+  <div class="auth-box" style="max-width: 620px; width: 90%; background: #0f172a; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeAdminNewsModal()" style="position: absolute; top: 1rem; right: 1.25rem; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">&times;</span>
+    <h2 id="admin-news-modal-title" style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 1.25rem;">
+      📰 Redactar Noticia de Comunidad
+    </h2>
+    <form onsubmit="submitTenantNews(event)">
+      <input type="hidden" id="admin-news-id" value="">
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Título de la Noticia / Artículo *
+        </label>
+        <input type="text" id="admin-news-title" class="auth-input" style="width: 100%;" placeholder="Ej. Lanzamiento Bandai Spirits RG 2.0" required>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+            Categoría *
+          </label>
+          <select id="admin-news-category" class="auth-input" style="width: 100%;" required>
+            <option value="releases">Lanzamientos</option>
+            <option value="techniques">Técnicas de Pintura/Armado</option>
+            <option value="tools">Herramientas & Suministros</option>
+            <option value="events">Eventos & Concursos</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+            Tiempo de Lectura
+          </label>
+          <input type="text" id="admin-news-read-time" class="auth-input" style="width: 100%;" placeholder="Ej. 4 min">
+        </div>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Resumen Breve (Para tarjeta de portada) *
+        </label>
+        <textarea id="admin-news-summary" class="auth-input" style="width: 100%; min-height: 50px;" placeholder="Breve extracto de 1 o 2 oraciones..." required></textarea>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Contenido Completo del Artículo *
+        </label>
+        <textarea id="admin-news-content" class="auth-input" style="width: 100%; min-height: 120px;" placeholder="Desarrollo completo de la noticia, recomendaciones tecnicas, bases o detalles..." required></textarea>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          URL de Imagen de Portada (Opcional)
+        </label>
+        <input type="url" id="admin-news-image" class="auth-input" style="width: 100%;" placeholder="https://ejemplo.com/foto.jpg">
+      </div>
+      <div style="margin-bottom: 1.5rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Etiquetas (separadas por coma)
+        </label>
+        <input type="text" id="admin-news-tags" class="auth-input" style="width: 100%;" placeholder="Gunpla, RG, Bandai, Novedades">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button type="button" class="filter-pill" onclick="closeAdminNewsModal()" style="font-size: 0.82rem; padding: 0.45rem 1rem;">
+          Cancelar
+        </button>
+        <button type="submit" id="btn-submit-admin-news" class="btn-primary" style="font-size: 0.85rem; padding: 0.5rem 1.25rem; background: #3b82f6;">
+          Publicar Noticia
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Administracion: Destacar Foto de Coleccionista -->
+<div id="modal-admin-featured-photo" class="custom-modal" onclick="closeAdminFeaturedPhotoModal(event)">
+  <div class="auth-box" style="max-width: 520px; width: 90%; background: #0f172a; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeAdminFeaturedPhotoModal()" style="position: absolute; top: 1rem; right: 1.25rem; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">&times;</span>
+    <h2 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 1.25rem;">
+      📸 Destacar Fotografía en Vitrina de Portada
+    </h2>
+    <form onsubmit="submitFeaturedPhoto(event)">
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          URL de la Imagen *
+        </label>
+        <input type="url" id="admin-photo-url" class="auth-input" style="width: 100%;" placeholder="https://ejemplo.com/gunpla-rx78.jpg" required>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Título de la Maqueta / Proyecto *
+        </label>
+        <input type="text" id="admin-photo-title" class="auth-input" style="width: 100%;" placeholder="Ej. MG RX-93-v2 Hi-Nu Ver.Ka Custom" required>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+            Nombre del Modelista
+          </label>
+          <input type="text" id="admin-photo-builder" class="auth-input" style="width: 100%;" placeholder="Ej. Aldo Perich">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+            Escala / Grado
+          </label>
+          <input type="text" id="admin-photo-scale" class="auth-input" style="width: 100%;" placeholder="Ej. 1/100 MG">
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button type="button" class="filter-pill" onclick="closeAdminFeaturedPhotoModal()" style="font-size: 0.82rem; padding: 0.45rem 1rem;">
+          Cancelar
+        </button>
+        <button type="submit" id="btn-submit-admin-photo" class="btn-primary" style="font-size: 0.85rem; padding: 0.5rem 1.25rem; background: #8b5cf6;">
+          Destacar en Vitrina
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 `;
 }

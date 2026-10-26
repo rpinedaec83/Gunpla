@@ -92,6 +92,18 @@ export function isSuperAdminUser(user: { email?: string; roles?: string[] } | nu
   return false;
 }
 
+export function isCommunityAdminUser(
+  user: { email?: string; roles?: string[]; tenantSlug?: string } | null | undefined,
+  tenantSlug?: string
+): boolean {
+  if (!user) return false;
+  if (isSuperAdminUser(user)) return true;
+  const hasRole = user.roles && user.roles.some((r: string) => r === 'community_admin' || r === 'admin');
+  if (!hasRole) return false;
+  if (tenantSlug && user.tenantSlug && user.tenantSlug !== tenantSlug) return false;
+  return true;
+}
+
 export function issueSsoToken(user: UserRecord, tenantSlug: string): string {
   const payload: JwtPayloadData = {
     sub: user.id,
@@ -269,14 +281,7 @@ export function requireCommunityAdmin(
     sendProblem(req, res, 401, 'Unauthorized', 'Authentication required.');
     return;
   }
-  if (isSuperAdminUser(req.user)) {
-    next();
-    return;
-  }
-  const hasCommunityAdminRole = req.user.roles.some(
-    (r) => r === 'community_admin' || r === 'admin'
-  );
-  if (!hasCommunityAdminRole || (req.tenant && req.user.tenantSlug !== req.tenant.slug)) {
+  if (!isCommunityAdminUser(req.user, req.tenant?.slug)) {
     sendProblem(
       req,
       res,
