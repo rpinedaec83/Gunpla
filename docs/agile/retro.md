@@ -838,3 +838,25 @@ Decisions made:
 Lessons learned:
 - Separating in-memory hydration (`hydrateDbFromPostgres`) from normal mutation persistence (`saveDb`) prevents infinite synchronization loops between PostgreSQL and local memory.
 Usage: Moderate -- self-estimated
+
+### DT26 -- Capa de Caching Redis 7 & Optimización de Rendimiento VPS | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Added dedicated `gunpla-redis` container using `redis:7-alpine` in `infra/docker-compose.yml` with persistent storage volume (`redisdata`), AOF persistence, and LRU memory eviction limit (256MB).
+- Built resilient caching manager `apps/api/src/core/cache.ts` using `ioredis` with auto-reconnection, lazy connection, and transparent fallback to in-memory LRU cache when Redis is offline or unconfigured.
+- Implemented declarative Express `cacheMiddleware` injecting real-time diagnostics: `X-Cache: HIT | MISS`, `X-Cache-Engine: Redis-7 | Memory-LRU`, and `X-Response-Time`.
+- Integrated caching into high-frequency read endpoints:
+  - `GET /api/v1/catalog/kits` & `/api/v1/catalog/kits/:id` (TTL: 60s).
+  - `GET /api/v1/catalog/brands` (TTL: 120s).
+  - `GET /api/v1/catalog/paints` (TTL: 120s).
+- Implemented proactive cache invalidation helpers (`invalidateKitsCache`, `invalidatePaintsCache`) triggered on manual creation or Scalemates kit import.
+- Extended `/api/v1/system/database` reporting cache telemetry: `engine`, `configured`, `connected`, `hits`, `misses`, `keysCount`.
+- Authored isolated unit test suite `tests/unit/redis-cache.test.mjs` (4 tests: configuration detection, set/get/TTL expiration, prefix invalidation, middleware intercept). Total platform tests: 156 passed.
+- Extended regression smoketest `scripts/smoketest.mjs` verifying cache hits and headers on live catalog queries.
+- Deployed and verified on Proxmox LXC 190 (`gunpla-redis` healthy, live response latency dropped from 27ms to 0ms - 2ms).
+Issues hit:
+- None. `ioredis` lazy connect and fallback Map ensured seamless execution both locally without Redis and on production with Redis 7.
+Decisions made:
+- Namespacing all Redis keys with `gunpla:` prevents collisions in multi-service or shared Redis instances.
+Lessons learned:
+- Measuring and returning `X-Response-Time` and `X-Cache` headers in the HTTP response provides clear observability for developers and frontend clients to diagnose cache performance without accessing container logs.
+Usage: Moderate -- self-estimated

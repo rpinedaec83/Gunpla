@@ -18,6 +18,21 @@ services:
       timeout: 5s
       retries: 5
 
+  gunpla-redis:
+    image: redis:7-alpine
+    container_name: gunpla-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   gunpla-api:
     build:
       context: ..
@@ -28,6 +43,7 @@ services:
       NODE_ENV: production
       PORT: 8080
       DATABASE_URL: postgresql://${DB_USER:-gunpla_usr}:${DB_PASSWORD:-gunpla_homelab_pass_2026}@gunpla-db:5432/${DB_NAME:-gunpla_prod}
+      REDIS_URL: ${REDIS_URL:-redis://gunpla-redis:6379}
       JWT_SECRET: ${JWT_SECRET:-gunpla-plamoscale-sso-dev-secret-2026}
       RESEND_API_KEY: ${RESEND_API_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
@@ -42,6 +58,8 @@ services:
       - "8080:8080"
     depends_on:
       gunpla-db:
+        condition: service_healthy
+      gunpla-redis:
         condition: service_healthy
 
   plamoscale-web:
@@ -80,3 +98,4 @@ services:
 
 volumes:
   pgdata:
+  redisdata:

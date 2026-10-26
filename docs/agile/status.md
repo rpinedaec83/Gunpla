@@ -4,12 +4,30 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio, Smart Builder AI Assistant, Stash Insurance Valuation Report, Workshop Ambient Soundscapes, Airbrush PSI/Thinner Calculator, Parts Breakdown Subassembly Cards, Workbench Tool Inventory & PostgreSQL 16 Relational Persistence Hardening Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) + Pistas de Sonido y Soundscapes de Taller (DT21) + Calculadora de Dilución y Presión de Aerógrafo (DT22) + Generador de Fichas Técnicas & Manuales de Despiece (DT23) + Control de Inventario de Herramientas & Vida Útil de Cuchillas (DT24) + Endurecimiento de Persistencia Relacional PostgreSQL 16 (DT25) + 4 Technical Debt resolutions verified via `npm test` (152 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt25-postgres-hardening` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio, Smart Builder AI Assistant, Stash Insurance Valuation Report, Workshop Ambient Soundscapes, Airbrush PSI/Thinner Calculator, Parts Breakdown Subassembly Cards, Workbench Tool Inventory, PostgreSQL 16 Persistence & Redis 7 Caching Layer Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) + Pistas de Sonido y Soundscapes de Taller (DT21) + Calculadora de Dilución y Presión de Aerógrafo (DT22) + Generador de Fichas Técnicas & Manuales de Despiece (DT23) + Control de Inventario de Herramientas & Vida Útil de Cuchillas (DT24) + Endurecimiento de Persistencia Relacional PostgreSQL 16 (DT25) + Capa de Caching Redis 7 & Rendimiento VPS sub-2ms (DT26) + 4 Technical Debt resolutions verified via `npm test` (156 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt26-redis-caching` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Capa de Caching Redis 7 & Optimización de Rendimiento VPS (Low-Latency Cache Layer - DT26):**
+  - **Infraestructura de Caching de Alta Velocidad (`gunpla-redis`):**
+    - Contenedor dedicado `redis:7-alpine` orquestado en `infra/docker-compose.yml` con persistencia AOF (`--appendonly yes`), límite de memoria de 256MB con política LRU (`--maxmemory-policy allkeys-lru`) y healthchecks continuos.
+    - Conexión resiliente en `apps/api/src/core/cache.ts` utilizando `ioredis` con reconexión exponencial y degradación transparente a memoria LRU (*No Masking Policy*) ante desconexiones.
+  - **Middleware Declarativo de Caching para Endpoints de Lectura:**
+    - Inyección de cabeceras de diagnóstico en tiempo real: `X-Cache: HIT | MISS`, `X-Cache-Engine: Redis-7 | Memory-LRU` y `X-Response-Time: 0ms`.
+    - Endpoints acelerados:
+      - `GET /api/v1/catalog/kits` & `/api/v1/catalog/kits/:id` (TTL: 60s).
+      - `GET /api/v1/catalog/brands` (TTL: 120s).
+      - `GET /api/v1/catalog/paints` (TTL: 120s).
+  - **Invalidación Proactiva de Caché ante Mutaciones:**
+    - Limpieza automática de claves con prefijo (`invalidateKitsCache`, `invalidatePaintsCache`) al crear maquetas manualmente o mediante importación desde Scalemates.
+  - **Telemetría y Diagnóstico en `/api/v1/system/database`:**
+    - Exposición de métricas de caché en el endpoint del sistema: `engine`, `configured`, `connected`, `hits`, `misses` y `keysCount`.
+  - **Resultados en Producción (Proxmox LXC 190):**
+    - Latencia reducida de 27ms a **0ms - 2ms** en consultas consecutivas del catálogo.
+    - 156 tests unitarios pasando y verificación de integración en smoketest.
 
 - **Endurecimiento de Persistencia Relacional PostgreSQL 16 (`gunpla-db` - DT25):**
   - **Migración DDL Automatizada & Tabla `schema_migrations`:**

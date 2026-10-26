@@ -29,6 +29,7 @@ import { airbrushRouter } from './slices/airbrush/airbrush.slice';
 import { toolsRouter } from './slices/workbench-tools/tools.slice';
 import { openApiSpec } from './openapi/openapi-spec';
 import { initPostgres, getPostgresStats, isPostgresConfigured, loadStateFromPostgres, syncStateToPostgres } from './core/postgres';
+import { initRedis, isRedisConfigured, getCacheStats } from './core/cache';
 
 dotenv.config();
 
@@ -166,15 +167,17 @@ export function createApp() {
   app.use('/api/v1/decals', decalsRouter);
   app.use('/api/v1', communityRouter);
 
-  // PostgreSQL Diagnostic & Status Endpoint
+  // PostgreSQL & Cache Diagnostic & Status Endpoint
   app.get('/api/v1/system/database', async (_req: Request, res: Response) => {
     const isConfigured = isPostgresConfigured();
     const stats = await getPostgresStats();
+    const cacheStats = await getCacheStats();
     return res.json({
       engine: 'PostgreSQL 16',
       mode: isConfigured ? (stats.connected ? 'relational-postgres' : 'postgres-offline-fallback') : 'standalone-memory-json',
       configured: isConfigured,
-      ...stats
+      ...stats,
+      cache: cacheStats
     });
   });
 
@@ -243,6 +246,16 @@ if (require.main === module) {
         }
       } else {
         console.warn('[Postgres] Could not connect to PostgreSQL; using offline JSON fallback.');
+      }
+    });
+  }
+
+  if (isRedisConfigured()) {
+    initRedis().then((connected) => {
+      if (connected) {
+        console.log('[Redis] Connected and caching operational with Redis 7.');
+      } else {
+        console.warn('[Redis] Redis not reachable; using in-memory LRU cache fallback.');
       }
     });
   }

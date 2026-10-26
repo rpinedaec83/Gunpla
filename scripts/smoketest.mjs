@@ -250,12 +250,21 @@ async function runSmoketest() {
     assert.equal(contactGjData.emailRecord.from, 'GunplaJunkies <noreply@gunplajunkies.com>');
     console.log('[PASS] Resend.com Multi-Domain Email Adapter verified for both plamoscale.com and gunplajunkies.com.');
 
-    // 7. Verify DT2 Kit Master Catalog & Multi-Tenant Category Scoping
+    // 7. Verify DT2 Kit Master Catalog & Multi-Tenant Category Scoping & Redis Cache Layer (DT26)
     // gunplajunkies: allowedCategories = ['gunpla-mecha', 'scifi', 'figures']
+    const gjKitsRes1 = await fetch(`${baseUrl}/api/v1/catalog/kits`, {
+      headers: { 'X-Tenant-Slug': 'gunplajunkies' }
+    });
+    assert.equal(gjKitsRes1.status, 200);
+    assert.ok(gjKitsRes1.headers.has('x-cache'), 'X-Cache header must be returned');
+
+    // Second consecutive query: Must return X-Cache: HIT
     const gjKitsRes = await fetch(`${baseUrl}/api/v1/catalog/kits`, {
       headers: { 'X-Tenant-Slug': 'gunplajunkies' }
     });
     assert.equal(gjKitsRes.status, 200);
+    assert.equal(gjKitsRes.headers.get('x-cache'), 'HIT', 'Second query to /catalog/kits must return X-Cache: HIT');
+    assert.ok(gjKitsRes.headers.has('x-response-time'), 'X-Response-Time header must be present');
     const gjKits = await gjKitsRes.json();
     assert.ok(gjKits.items.length >= 4, 'GunplaJunkies should list Gunpla/Mecha kits');
     assert.ok(
@@ -950,7 +959,11 @@ async function runSmoketest() {
     assert.ok('workbench_tools' in dbStats.tables, 'workbench_tools table count must be monitored');
     assert.ok('tool_maintenance_logs' in dbStats.tables, 'tool_maintenance_logs table count must be monitored');
     assert.ok('commission_requests' in dbStats.tables, 'commission_requests table count must be monitored');
-    console.log(`[PASS] PostgreSQL persistence status endpoint verified (Engine: ${dbStats.engine}, Mode: ${dbStats.mode}, Monitored Tables: ${Object.keys(dbStats.tables).length}).`);
+    assert.ok(dbStats.cache && typeof dbStats.cache === 'object', 'cache object must be returned');
+    assert.ok(['Redis 7', 'in-memory-lru'].includes(dbStats.cache.engine), `Invalid cache engine: ${dbStats.cache.engine}`);
+    assert.equal(typeof dbStats.cache.hits, 'number');
+    assert.equal(typeof dbStats.cache.misses, 'number');
+    console.log(`[PASS] PostgreSQL persistence status endpoint verified (Engine: ${dbStats.engine}, Mode: ${dbStats.mode}, Monitored Tables: ${Object.keys(dbStats.tables).length}, Cache: ${dbStats.cache.engine}).`);
 
     // 25. DT9 - Google OAuth SSO & Interactive Auth Modal on Web Frontends
     console.log('\n--- Checking DT9: Google OAuth SSO Integration & Web Auth Modals ---');

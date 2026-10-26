@@ -20,6 +20,7 @@ import {
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
 import { fetchAndParseScalematesKit } from './scalemates-parser';
+import { cacheMiddleware, invalidateKitsCache, invalidatePaintsCache } from '../../core/cache';
 
 export const catalogRouter = Router();
 
@@ -36,7 +37,7 @@ export const catalogRouter = Router();
  *   - search: string
  *   - limit: number (default 20, max 100)
  */
-catalogRouter.get('/kits', (req: Request, res: Response) => {
+catalogRouter.get('/kits', cacheMiddleware({ ttlSeconds: 60, prefix: 'catalog:kits' }), (req: Request, res: Response) => {
   const db = getDb();
   const tenant = req.tenant;
 
@@ -99,7 +100,7 @@ catalogRouter.get('/kits', (req: Request, res: Response) => {
 /**
  * GET /api/v1/catalog/kits/:id
  */
-catalogRouter.get('/kits/:id', (req: Request, res: Response) => {
+catalogRouter.get('/kits/:id', cacheMiddleware({ ttlSeconds: 60, prefix: 'catalog:kits' }), (req: Request, res: Response) => {
   const db = getDb();
   const kit = db.kits.find(k => k.id === req.params.id);
 
@@ -303,6 +304,7 @@ catalogRouter.post('/kits', (req: Request, res: Response) => {
 
   db.kits.push(newKit);
   saveDb(db);
+  invalidateKitsCache().catch(() => {});
 
   return res.status(201).json(newKit);
 });
@@ -384,6 +386,7 @@ catalogRouter.post('/kits/import-scalemates', async (req: Request, res: Response
 
     db.kits.push(newKit);
     saveDb(db);
+    invalidateKitsCache().catch(() => {});
 
     const responsePayload: ScalematesImportResponse = {
       kit: newKit,
@@ -418,7 +421,7 @@ catalogRouter.post('/kits/import-scalemates', async (req: Request, res: Response
  *   - finish: PaintFinish
  *   - search: string
  */
-catalogRouter.get('/paints', (req: Request, res: Response) => {
+catalogRouter.get('/paints', cacheMiddleware({ ttlSeconds: 120, prefix: 'catalog:paints' }), (req: Request, res: Response) => {
   const db = getDb();
   const brandParam = req.query.brand as string | undefined;
   const lineParam = req.query.line as string | undefined;
@@ -500,6 +503,7 @@ catalogRouter.post('/paints', (req: Request, res: Response) => {
 
   db.paints.push(newPaint);
   saveDb(db);
+  invalidatePaintsCache().catch(() => {});
 
   return res.status(201).json(newPaint);
 });
@@ -511,7 +515,7 @@ catalogRouter.post('/paints', (req: Request, res: Response) => {
 /**
  * GET /api/v1/catalog/brands
  */
-catalogRouter.get('/brands', (_req: Request, res: Response) => {
+catalogRouter.get('/brands', cacheMiddleware({ ttlSeconds: 120, prefix: 'catalog:brands' }), (_req: Request, res: Response) => {
   const db = getDb();
   const brandMap = new Map<string, { kitCount: number; categories: Set<ScaleCategory> }>();
 
