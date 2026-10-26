@@ -14,6 +14,7 @@ import {
   ShopRecord,
   renderPrivacyPolicy,
   renderTermsOfService,
+  renderInstitutionalSuspensionPage,
   generateManifest,
   generateServiceWorker,
   generateAppIconSvg,
@@ -303,8 +304,40 @@ function resolveOpenGraphMetadata(req: Request, data: AppShellData, currentConfi
   };
 }
 
+async function fetchTenantProfile(): Promise<any> {
+  try {
+    const api = getApiUrl();
+    const res = await fetch(`${api}/api/v1/tenants/plamoscale`, {
+      headers: { 'X-Tenant-Slug': 'plamoscale' }
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn('[PlamoScale Web] Could not fetch tenant profile:', err);
+  }
+  return null;
+}
+
 // App Shell Main Entry Point
 app.get('*', async (req: Request, res: Response) => {
+  const tenantProfile = await fetchTenantProfile();
+  if (tenantProfile && tenantProfile.status && tenantProfile.status !== 'active') {
+    const saToken = req.query.sa_token || req.headers['x-super-admin-bypass'] || (req.headers.cookie && req.headers.cookie.includes('gunpla_sa_bypass=true'));
+    if (!saToken) {
+      const html = renderInstitutionalSuspensionPage(
+        tenantProfile.name || config.tenantName,
+        tenantProfile.primaryDomain || tenantProfile.domain || 'plamoscale.com',
+        tenantProfile.status,
+        tenantProfile.suspensionReason || 'Mantenimiento programado y actualización de la plataforma.',
+        tenantProfile.contactEmail || 'contacto@plamoscale.com',
+        OTHER_TENANT_URL,
+        'Gunpla Collector'
+      );
+      res.status(503);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.send(html);
+    }
+  }
+
   const data = await fetchTenantData();
   const currentConfig: AppShellConfig = {
     ...config,

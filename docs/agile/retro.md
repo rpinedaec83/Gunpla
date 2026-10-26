@@ -2,6 +2,37 @@
 
 Completed work belongs here.
 
+## Session -- 2026-10-26 | Goal: Super Admin Community Governance, Onboarding with Resend API Key & Suspension
+Start: 00:10 | End: 00:38 | Duration: 0h 28m
+
+### DT31 -- Panel de Gobernanza de Comunidades, Onboarding con Resend API Key y Pantalla Institucional de Suspension | eMOE: 3 CU | aMOE: 3 CU
+What was done:
+- Designed and implemented Super Admin Community Governance and Master Shops management modules in `#view-admin`:
+  - Added `#admin-subtab-btn-tenants` and `#admin-subtab-btn-mastershops` navigation buttons, rendered and visible exclusively when the authenticated user is Super Admin (`rpinedaec83@gmail.com` or `roles.includes('super_admin')`).
+  - Added direct quick access link in user dropdown menu: `🛡️ Gobernanza Global (Super Admin)`.
+  - Implemented community management view (`#admin-subtab-tenants`) with interactive cards displaying tenant slug, primary domain, status badges (`active`, `suspended`, `archived`), dedicated Resend API key status, official contact email, brand color swatches, and scale categories.
+  - Implemented one-click action buttons: `⚙️ Configurar`, `⏸️ Suspender`, `▶️ Reactivar`, and `📦 Archivar`.
+  - Implemented `#modal-admin-create-tenant` allowing Super Admin to onboard new clubs or edit existing ones, including custom brand colors (primary, accent, surface), category selection, and optional dedicated **Resend API Key** for tenant-specific transactional emails.
+  - Implemented `#modal-admin-tenant-status` with operation status select and custom reason / public notice textarea.
+  - Implemented `#modal-admin-master-shop` and Master Shops client logic allowing Super Admin to create (`POST /api/v1/shops`), update (`PATCH /api/v1/shops/:id`), or delete (`DELETE /api/v1/shops/:id`) shops in the global repository directly from the UI.
+- Implemented Friendly Institutional Suspension Page (`renderInstitutionalSuspensionPage`):
+  - Returns friendly branded maintenance/archived screen with status badges, explanatory message, data security guarantee ("Resguardo de Informacion de Taller"), contact email link, active sister community shortcut, and emergency Super Admin bypass login form.
+  - Added server-side suspension check in both `apps/plamoscale-web/src/server.ts` and `apps/gunplajunkies-web/src/server.ts` returning HTTP 503 with the institutional suspension page when tenant status is not active, while allowing bypass via query param `?sa_token=`, header `x-super-admin-bypass`, or cookie `gunpla_sa_bypass`.
+- Backend API Hardening:
+  - Updated `apps/api/src/slices/tenants/tenants.slice.ts` so `GET /api/v1/tenants` sanitizes `resendApiKey` for public users while exposing `resendConfigured: boolean` and masked `resendApiKey: re_••••xxxx` for Super Admin.
+  - Restricted setting `resendApiKey` in `POST /api/v1/tenants` to Super Admin (rejecting unauthorized regular builders with 403 Forbidden).
+  - Supported both `domain` and `primaryDomain`, and `suspensionReason` and `reason` in status transitions.
+- Testing & Verification:
+  - Created unit test suite in `tests/unit/superadmin-community-governance.test.mjs` (10 passing tests).
+  - Extended end-to-end smoketest in `scripts/smoketest.mjs` with Step 38 verifying tenant privacy audit, unauthorized onboarding rejection (403), Super Admin onboarding with dedicated Resend API key, unauthorized suspension rejection (403), Super Admin suspension, institutional page generation, reactivation, and Master Shop CRUD.
+  - Verified: all 194 unit tests and 38 smoketest steps passing 100% green.
+Issues hit:
+- In `scripts/smoketest.mjs`, duplicate variable declarations from earlier steps caused SyntaxError; resolved by scoping variables with unique descriptive prefixes (`dt31...`).
+Decisions made:
+- Kept the institutional suspension page fully self-contained with no external CSS/JS dependencies so that it renders reliably even if assets or database services are undergoing maintenance.
+Lessons learned:
+- Providing an emergency bypass authentication box directly within the suspension page allows administrators to inspect and un-suspend a portal without having to manipulate database states via CLI.
+
 ## Session -- 2026-10-25 | Goal: Community Admin Panel & Marketplace Moderation
 Start: 23:08 | End: 23:25 | Duration: 0h 17m
 

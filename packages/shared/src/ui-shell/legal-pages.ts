@@ -320,3 +320,274 @@ export function renderTermsOfService(tenantName: string, domain: string, contact
 </body>
 </html>`;
 }
+
+/**
+ * Friendly Institutional Page for Suspended or Archived Communities
+ */
+export function renderInstitutionalSuspensionPage(
+  tenantName: string,
+  domain: string,
+  status: string,
+  reason?: string,
+  contactEmail?: string,
+  alternativeUrl?: string,
+  alternativeName?: string
+): string {
+  const isArchived = status === 'archived';
+  const badgeColor = isArchived ? '#ef4444' : '#eab308';
+  const badgeBg = isArchived ? 'rgba(239, 68, 68, 0.15)' : 'rgba(234, 179, 8, 0.15)';
+  const badgeBorder = isArchived ? 'rgba(239, 68, 68, 0.4)' : 'rgba(234, 179, 8, 0.4)';
+  const statusLabel = isArchived ? 'Comunidad Archivada' : 'Portal en Pausa Administrativa';
+  const safeContact = contactEmail || 'rpinedaec83@gmail.com';
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${statusLabel} — ${tenantName}</title>
+  <style>
+    :root {
+      --bg: #080c14;
+      --card: #111827;
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --accent: #06b6d4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+    .institutional-box {
+      max-width: 640px;
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .institutional-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: ${badgeColor};
+      background: ${badgeBg};
+      border: 1px solid ${badgeBorder};
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      margin-bottom: 1.5rem;
+    }
+    .portal-title {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.75rem;
+      line-height: 1.25;
+    }
+    .portal-desc {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-bottom: 1.75rem;
+      line-height: 1.6;
+    }
+    .reason-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.75rem;
+      text-align: left;
+    }
+    .reason-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: ${badgeColor};
+      margin-bottom: 0.35rem;
+    }
+    .reason-text {
+      font-size: 0.88rem;
+      color: #f1f5f9;
+      font-style: italic;
+    }
+    .data-guarantee {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      text-align: left;
+      font-size: 0.82rem;
+      color: #a7f3d0;
+    }
+    .actions-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .btn-action {
+      display: inline-block;
+      width: 100%;
+      padding: 0.85rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-primary-action {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+    }
+    .btn-primary-action:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+    .contact-note {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 1.5rem;
+    }
+    .contact-note a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .admin-toggle-link {
+      font-size: 0.72rem;
+      color: #64748b;
+      cursor: pointer;
+      margin-top: 1.5rem;
+      display: inline-block;
+      text-decoration: underline;
+    }
+    .admin-toggle-link:hover { color: #94a3b8; }
+    #admin-login-box {
+      display: none;
+      margin-top: 1.25rem;
+      padding: 1.25rem;
+      border-top: 1px solid var(--border);
+      text-align: left;
+    }
+    .admin-input {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="institutional-box">
+    <div class="institutional-badge">
+      <span>${isArchived ? 'ARCHIVADO' : 'EN MANTENIMIENTO'}</span>
+      <span>${statusLabel}</span>
+    </div>
+
+    <h1 class="portal-title">${tenantName}</h1>
+
+    <p class="portal-desc">
+      El acceso a este portal de comunidad se encuentra momentáneamente restringido por disposición administrativa o labores de mantenimiento programado en la plataforma.
+    </p>
+
+    <div class="reason-box">
+      <div class="reason-label">Motivo Registrado:</div>
+      <div class="reason-text">
+        ${reason ? String(reason) : 'Labores técnicas de balanceo de catálogos y mantenimiento preventivo de servidores.'}
+      </div>
+    </div>
+
+    <div class="data-guarantee">
+      <span>🛡️</span>
+      <div>
+        <strong>Resguardo de Información de Taller:</strong> Todos los inventarios de maquetas (Stash), bitácoras paso a paso y fórmulas de pinturas se encuentran almacenados y asegurados con copias de seguridad de nivel empresarial.
+      </div>
+    </div>
+
+    <div class="actions-row">
+      ${
+        alternativeUrl
+          ? `<a href="${alternativeUrl}" class="btn-action btn-primary-action">Explorar Comunidad Alternativa (${alternativeName || 'Portal Activo'}) &rarr;</a>`
+          : ''
+      }
+    </div>
+
+    <p class="contact-note">
+      Para coordinaciones de reapertura o asistencia técnica, comunícate con la administración central al correo:
+      <br>
+      <a href="mailto:${safeContact}"><strong>${safeContact}</strong></a>
+    </p>
+
+    <span class="admin-toggle-link" onclick="document.getElementById('admin-login-box').style.display = 'block'">
+      ¿Eres el Administrador Todopoderoso? Acceso de Super Admin
+    </span>
+
+    <div id="admin-login-box">
+      <div style="font-size: 0.8rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem;">Acceso de Super Administrador</div>
+      <p style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.75rem;">Ingresa tus credenciales para administrar y reactivar el portal.</p>
+      <input id="sa-email" class="admin-input" type="text" placeholder="Correo (rpinedaec83@gmail.com)" value="rpinedaec83@gmail.com" />
+      <input id="sa-pass" class="admin-input" type="password" placeholder="Contraseña de Super Admin" />
+      <button class="btn-action btn-primary-action" onclick="handleSuperAdminBypass()" style="padding: 0.5rem 1rem; font-size: 0.82rem;">Autenticar y Acceder</button>
+      <div id="sa-err" style="color: #f87171; font-size: 0.75rem; margin-top: 0.5rem; display: none;"></div>
+    </div>
+  </div>
+
+  <script>
+    async function handleSuperAdminBypass() {
+      const email = document.getElementById('sa-email').value;
+      const pass = document.getElementById('sa-pass').value;
+      const err = document.getElementById('sa-err');
+      err.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/v1/auth/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: email, password: pass })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          err.textContent = data.detail || 'Credenciales inválidas.';
+          err.style.display = 'block';
+          return;
+        }
+        localStorage.setItem('${domain}_sso_token', data.token);
+        localStorage.setItem('${domain}_sso_user', JSON.stringify(data.user));
+        document.cookie = 'gunpla_sa_token=' + data.token + '; path=/; max-age=86400';
+        window.location.reload();
+      } catch (e) {
+        err.textContent = 'Error de conexión con la API.';
+        err.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>`;
+}

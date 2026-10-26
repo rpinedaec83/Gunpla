@@ -4,12 +4,10 @@ Active tasks only. This is a burn-down list, not a history log.
 
 ## Current Phase
 
-Name: Post-DT30 Ready / Next Phase Planning
-Goal: DT30 completed. Awaiting user direction or next phase definition.
+Name: PVT Community Governance, Resend Onboarding and Institutional Portal Suspension
+Goal: Complete DT31 to provide Super Admin community lifecycle controls, Resend API key onboarding for new clubs, and friendly institutional suspension pages.
 
 ## Active Tasks
-
-(No active tasks in current burn-down list. Ready for next task.)
 
 ## Reset
 

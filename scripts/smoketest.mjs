@@ -25,6 +25,7 @@ const { createApp } = require('../apps/api/dist/server.js');
 const { seedPlatformDatabase } = require('../apps/api/dist/seed/seed-legacy.js');
 const { app: plamoWebApp } = require('../apps/plamoscale-web/dist/server.js');
 const { app: gunplaWebApp } = require('../apps/gunplajunkies-web/dist/server.js');
+const sharedPkg = require('../packages/shared/dist/index.js');
 
 async function runSmoketest() {
   console.log('--- Running DT1 Vertical Slice Smoketest ---');
@@ -3359,7 +3360,214 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT30 Community Admin Panel & Marketplace Moderation verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN + WORKBENCH-TOOLS + LANDING-PAGE + TENANT-AUTH-ISOLATION-SUPERADMIN + MASTER-SHOPS-TENANT-TRUSTED + COMMUNITY-ADMIN-MODERATION CHECKS PASSED ===');
+    // 38. DT31 - Super Admin Community Governance, Onboarding with Resend API Key & Suspension
+    console.log('\n--- Verifying DT31 Super Admin Community Governance, Onboarding & Suspension ---');
+
+    // 1. Web Frontends include Super Admin governance subtabs and modals
+    const govCheckRes = await fetch(`${gunplaUrl}/`);
+    assert.equal(govCheckRes.status, 200);
+    const govCheckHtml = await govCheckRes.text();
+    assert.ok(govCheckHtml.includes('id="admin-subtab-btn-tenants"'), 'Must render tenants subtab button');
+    assert.ok(govCheckHtml.includes('id="admin-subtab-btn-mastershops"'), 'Must render mastershops subtab button');
+    assert.ok(govCheckHtml.includes('id="admin-subtab-tenants"'), 'Must render tenants subtab content');
+    assert.ok(govCheckHtml.includes('id="admin-subtab-mastershops"'), 'Must render master shops subtab content');
+    assert.ok(govCheckHtml.includes('id="modal-admin-create-tenant"'), 'Must render tenant onboarding modal');
+    assert.ok(govCheckHtml.includes('id="modal-admin-tenant-status"'), 'Must render tenant status transition modal');
+    assert.ok(govCheckHtml.includes('id="modal-admin-master-shop"'), 'Must render master shop modal');
+    assert.ok(govCheckHtml.includes('loadAdminTenants'), 'Must include loadAdminTenants client function');
+    assert.ok(govCheckHtml.includes('loadAdminMasterShops'), 'Must include loadAdminMasterShops client function');
+
+    // 2. Tenants endpoint privacy audit (GET /api/v1/tenants):
+    // Public/unauthenticated request:
+    const publicTenantsRes = await fetch(`${baseUrl}/api/v1/tenants`);
+    assert.equal(publicTenantsRes.status, 200);
+    const publicTenants = await publicTenantsRes.json();
+    assert.ok(publicTenants.items.length >= 2, 'Should return at least gunplajunkies and plamoscale');
+    for (const t of publicTenants.items) {
+      assert.equal(t.resendApiKey, undefined, 'Public access must NOT expose resendApiKey');
+    }
+
+    // Super Admin request:
+    const saTenantsRes = await fetch(`${baseUrl}/api/v1/tenants`, {
+      headers: { Authorization: `Bearer ${superAdminToken}` }
+    });
+    assert.equal(saTenantsRes.status, 200);
+    const saTenants = await saTenantsRes.json();
+    const gunplaTenant = saTenants.items.find(t => t.slug === 'gunplajunkies');
+    assert.ok(gunplaTenant, 'Must find gunplajunkies tenant in list');
+    assert.equal(typeof gunplaTenant.resendConfigured, 'boolean', 'Super Admin should see resendConfigured status');
+
+    // 3. Unauthorized community onboarding by regular user (quattro) trying to set custom Resend API Key -> 403 Forbidden
+    const unauthCreateTenantRes = await fetch(`${baseUrl}/api/v1/tenants`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${quattroData.token}`
+      },
+      body: JSON.stringify({
+        slug: 'hacker-club',
+        name: 'Hacker Club',
+        primaryDomain: 'hacker.pe',
+        contactEmail: 'hacker@pe.com',
+        resendApiKey: 're_hacker_stolen_key'
+      })
+    });
+    assert.equal(unauthCreateTenantRes.status, 403, 'Regular builder cannot configure dedicated Resend API key');
+
+    // 4. Authorized community onboarding by Super Admin (rpineda) with dedicated Resend API Key
+    const newTenantSlug = 'clubgunplatrujillo';
+    const createTenantRes = await fetch(`${baseUrl}/api/v1/tenants`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${superAdminToken}`
+      },
+      body: JSON.stringify({
+        slug: newTenantSlug,
+        name: 'Club Gunpla Trujillo',
+        primaryDomain: 'trujillo.gunpla.pe',
+        contactEmail: 'contacto@trujillo.gunpla.pe',
+        tagline: 'Comunidad de modelistas del norte peruano',
+        resendApiKey: 're_trujillo_live_secret_key_889900',
+        allowedCategories: ['gunpla-mecha', 'military', 'figures'],
+        themeConfig: {
+          primaryColor: '#059669',
+          accentColor: '#10b981',
+          surfaceColor: '#064e3b'
+        }
+      })
+    });
+    assert.equal(createTenantRes.status, 201, 'Super Admin should create new tenant');
+    const createdTenantGov = await createTenantRes.json();
+    assert.equal(createdTenantGov.slug, newTenantSlug);
+    assert.equal(createdTenantGov.status, 'active');
+    assert.equal(createdTenantGov.resendConfigured, true);
+    assert.ok(createdTenantGov.resendApiKey.startsWith('re_'), 'Super Admin should receive masked resendApiKey');
+
+    // 5. Unauthorized status change by regular user -> 403 Forbidden
+    const unauthStatusRes = await fetch(`${baseUrl}/api/v1/tenants/${newTenantSlug}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${quattroData.token}`
+      },
+      body: JSON.stringify({ status: 'suspended', reason: 'Hack attempt' })
+    });
+    assert.equal(unauthStatusRes.status, 403, 'Regular builder cannot suspend tenant');
+
+    // 6. Authorized suspension by Super Admin
+    const dt31SuspendRes = await fetch(`${baseUrl}/api/v1/tenants/${newTenantSlug}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${superAdminToken}`
+      },
+      body: JSON.stringify({
+        status: 'suspended',
+        reason: 'Mantenimiento preventivo regional en la sede Trujillo.'
+      })
+    });
+    assert.equal(dt31SuspendRes.status, 200, 'Super Admin should suspend tenant');
+    const dt31SuspendedTenant = await dt31SuspendRes.json();
+    assert.equal(dt31SuspendedTenant.status, 'suspended');
+    assert.equal(dt31SuspendedTenant.suspensionReason, 'Mantenimiento preventivo regional en la sede Trujillo.');
+
+    // 7. Verify Institutional Suspension Page generation
+    const { renderInstitutionalSuspensionPage } = sharedPkg;
+    const suspensionHtml = renderInstitutionalSuspensionPage(
+      dt31SuspendedTenant.name,
+      dt31SuspendedTenant.domain || dt31SuspendedTenant.primaryDomain,
+      dt31SuspendedTenant.status,
+      dt31SuspendedTenant.suspensionReason,
+      dt31SuspendedTenant.contactEmail,
+      'https://gunplajunkies.com',
+      'GunplaJunkies'
+    );
+    assert.ok(suspensionHtml.includes('Portal en Pausa Administrativa'), 'Must render friendly maintenance badge');
+    assert.ok(suspensionHtml.includes('Mantenimiento preventivo regional en la sede Trujillo.'), 'Must render suspension reason');
+    assert.ok(suspensionHtml.includes('Resguardo de Información de Taller'), 'Must render data safety guarantee');
+    assert.ok(suspensionHtml.includes('id="admin-login-box"'), 'Must render emergency super admin bypass box');
+
+    // 8. Authorized reactivation by Super Admin
+    const dt31ReactivateRes = await fetch(`${baseUrl}/api/v1/tenants/${newTenantSlug}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${superAdminToken}`
+      },
+      body: JSON.stringify({ status: 'active' })
+    });
+    assert.equal(dt31ReactivateRes.status, 200, 'Super Admin should reactivate tenant');
+    const dt31ReactivatedTenant = await dt31ReactivateRes.json();
+    assert.equal(dt31ReactivatedTenant.status, 'active');
+
+    // 9. Master Shops Global Management:
+    // Unauthorized creation attempt by regular user -> 403 Forbidden
+    const unauthShopCreateRes = await fetch(`${baseUrl}/api/v1/shops`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${quattroData.token}`
+      },
+      body: JSON.stringify({
+        name: 'Unauth Shop',
+        city: 'Lima',
+        country: 'Peru'
+      })
+    });
+    assert.equal(unauthShopCreateRes.status, 403, 'Regular builder cannot create master shops');
+
+    // Authorized creation by Super Admin
+    const createShopRes = await fetch(`${baseUrl}/api/v1/shops`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${superAdminToken}`
+      },
+      body: JSON.stringify({
+        name: 'Trujillo Hobby Center',
+        city: 'Trujillo',
+        country: 'Perú',
+        website: 'https://trujillohobby.pe',
+        catalogUrl: 'https://trujillohobby.pe/tienda',
+        rating: 4.9,
+        brands: ['Bandai', 'Tamiya', 'Mr. Hobby'],
+        description: 'Tienda especializada en el norte del país con stock oficial Bandai Spirits.',
+        shipsInternational: true
+      })
+    });
+    assert.equal(createShopRes.status, 201, 'Super Admin should create master shop');
+    const createdShop = await createShopRes.json();
+    assert.equal(createdShop.name, 'Trujillo Hobby Center');
+
+    // Authorized update by Super Admin
+    const updateShopRes = await fetch(`${baseUrl}/api/v1/shops/${createdShop.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${superAdminToken}`
+      },
+      body: JSON.stringify({
+        rating: 5.0,
+        description: 'Tienda oficial número 1 en La Libertad.'
+      })
+    });
+    assert.equal(updateShopRes.status, 200, 'Super Admin should update master shop');
+    const updatedShop = await updateShopRes.json();
+    assert.equal(updatedShop.rating, 5.0);
+
+    // Authorized deletion by Super Admin
+    const deleteShopRes = await fetch(`${baseUrl}/api/v1/shops/${createdShop.id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${superAdminToken}`
+      }
+    });
+    assert.equal(deleteShopRes.status, 200, 'Super Admin should delete master shop');
+
+    console.log('[PASS] DT31 Super Admin Community Governance, Onboarding & Suspension verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN + WORKBENCH-TOOLS + LANDING-PAGE + TENANT-AUTH-ISOLATION-SUPERADMIN + MASTER-SHOPS-TENANT-TRUSTED + COMMUNITY-ADMIN-MODERATION + SUPERADMIN-COMMUNITY-GOVERNANCE CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

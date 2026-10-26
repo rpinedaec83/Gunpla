@@ -2927,5 +2927,258 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Modal Administracion: Alta / Onboarding de Comunidad / Club (Super Admin) -->
+<div id="modal-admin-create-tenant" class="custom-modal" onclick="closeAdminCreateTenantModal(event)">
+  <div class="auth-box" style="max-width: 680px; width: 92%; max-height: 90vh; overflow-y: auto; background: #0f172a; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeAdminCreateTenantModal()" style="position: absolute; top: 1rem; right: 1.25rem; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">&times;</span>
+    <h2 id="modal-admin-tenant-title" style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">
+      🛡️ Onboarding de Nuevo Club / Comunidad
+    </h2>
+    <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
+      Registra una nueva comunidad con portal independiente, aislamiento de cuentas, paleta de colores y credenciales de correo dedicadas.
+    </p>
+
+    <form onsubmit="submitAdminTenant(event)">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1rem;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+            Nombre del Club / Portal *
+          </label>
+          <input type="text" id="admin-tenant-name" class="auth-input" style="width: 100%;" placeholder="Ej. Club Gunpla Perú" oninput="autoSuggestAdminTenantSlug(this.value)" required>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+            Identificador Slug Único *
+          </label>
+          <input type="text" id="admin-tenant-slug" class="auth-input" style="width: 100%;" placeholder="ej. gunplaperu" required>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1rem;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+            Dominio Principal *
+          </label>
+          <input type="text" id="admin-tenant-domain" class="auth-input" style="width: 100%;" placeholder="ej. gunplaperu.com" required>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+            Correo de Contacto Oficial *
+          </label>
+          <input type="email" id="admin-tenant-contact-email" class="auth-input" style="width: 100%;" placeholder="contacto@gunplaperu.com" required>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Eslogan / Tagline de la Comunidad
+        </label>
+        <input type="text" id="admin-tenant-tagline" class="auth-input" style="width: 100%;" placeholder="Comunidad Oficial de Constructores Mecha y Gunpla en Perú">
+      </div>
+
+      <div style="margin-bottom: 1.25rem; background: rgba(139, 92, 246, 0.08); border: 1px dashed rgba(139, 92, 246, 0.3); border-radius: 8px; padding: 1rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #c084fc;">
+            🔑 Resend API Key Dedicada (Opcional)
+          </label>
+          <span style="font-size: 0.7rem; color: #94a3b8;">Emails transaccionales del club</span>
+        </div>
+        <p style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.5rem;">
+          Si este club cuenta con su propia cuenta de Resend (para enviar desde su propio dominio), ingresa su clave. De lo contrario, heredará la clave global de la plataforma.
+        </p>
+        <input type="password" id="admin-tenant-resend-key" class="auth-input" style="width: 100%;" placeholder="re_••••••••••••••••••••••••">
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Paleta de Colores de Marca
+        </label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+          <div>
+            <span style="font-size: 0.72rem; color: #94a3b8;">Primario:</span>
+            <input type="color" id="admin-tenant-color-primary" value="#ef4444" style="width: 100%; height: 36px; border: none; border-radius: 6px; cursor: pointer; background: transparent;">
+          </div>
+          <div>
+            <span style="font-size: 0.72rem; color: #94a3b8;">Acento:</span>
+            <input type="color" id="admin-tenant-color-accent" value="#06b6d4" style="width: 100%; height: 36px; border: none; border-radius: 6px; cursor: pointer; background: transparent;">
+          </div>
+          <div>
+            <span style="font-size: 0.72rem; color: #94a3b8;">Superficie:</span>
+            <input type="color" id="admin-tenant-color-surface" value="#0f172a" style="width: 100%; height: 36px; border: none; border-radius: 6px; cursor: pointer; background: transparent;">
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1.5rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.5rem;">
+          Categorías de Modelismo Habilitadas
+        </label>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.5rem;">
+          <label style="font-size: 0.75rem; color: #e2e8f0; display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+            <input type="checkbox" name="admin-cat" value="gunpla-mecha" checked> Gunpla & Mecha
+          </label>
+          <label style="font-size: 0.75rem; color: #e2e8f0; display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+            <input type="checkbox" name="admin-cat" value="military"> Militar / Armor
+          </label>
+          <label style="font-size: 0.75rem; color: #e2e8f0; display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+            <input type="checkbox" name="admin-cat" value="aviation"> Aviación
+          </label>
+          <label style="font-size: 0.75rem; color: #e2e8f0; display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+            <input type="checkbox" name="admin-cat" value="automotive"> Automotriz
+          </label>
+          <label style="font-size: 0.75rem; color: #e2e8f0; display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+            <input type="checkbox" name="admin-cat" value="figures"> Figuras
+          </label>
+          <label style="font-size: 0.75rem; color: #e2e8f0; display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+            <input type="checkbox" name="admin-cat" value="scifi"> Sci-Fi
+          </label>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button type="button" class="filter-pill" onclick="closeAdminCreateTenantModal()" style="font-size: 0.82rem; padding: 0.45rem 1rem;">
+          Cancelar
+        </button>
+        <button type="submit" id="btn-submit-admin-tenant" class="btn-primary" style="font-size: 0.85rem; padding: 0.5rem 1.25rem; background: #8b5cf6;">
+          Guardar Comunidad
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Administracion: Gestion de Estado y Suspension de Comunidad (Super Admin) -->
+<div id="modal-admin-tenant-status" class="custom-modal" onclick="closeAdminTenantStatusModal(event)">
+  <div class="auth-box" style="max-width: 500px; width: 90%; background: #0f172a; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeAdminTenantStatusModal()" style="position: absolute; top: 1rem; right: 1.25rem; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">&times;</span>
+    <h2 style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem;">
+      ⚖️ Estado de Servicio del Portal
+    </h2>
+    <p id="admin-status-tenant-banner" style="font-size: 0.82rem; color: var(--accent); margin-bottom: 1.25rem;"></p>
+
+    <form onsubmit="submitAdminTenantStatus(event)">
+      <input type="hidden" id="admin-status-slug">
+
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Nuevo Estado de Operación *
+        </label>
+        <select id="admin-status-select" class="auth-input" style="width: 100%;" onchange="onAdminStatusSelectChange(this.value)">
+          <option value="active">🟢 Activo (Servicio Normal)</option>
+          <option value="suspended">🟡 Suspendido / En Pausa (Muestra Pantalla Institucional)</option>
+          <option value="archived">🔴 Archivado (Acceso Solo Lectura / Histórico)</option>
+        </select>
+      </div>
+
+      <div id="admin-status-reason-group" style="margin-bottom: 1.5rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Motivo o Comunicado Institucional para los Visitantes
+        </label>
+        <textarea id="admin-status-reason" class="auth-input" style="width: 100%; min-height: 80px;" placeholder="Ej. Mantenimiento programado de servidores y balance de catálogos..."></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button type="button" class="filter-pill" onclick="closeAdminTenantStatusModal()" style="font-size: 0.82rem; padding: 0.45rem 1rem;">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-primary" style="font-size: 0.85rem; padding: 0.5rem 1.25rem;">
+          Actualizar Estado
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Administracion: Gestion de Tienda en Catalogo Maestro (Super Admin) -->
+<div id="modal-admin-master-shop" class="custom-modal" onclick="closeAdminMasterShopModal(event)">
+  <div class="auth-box" style="max-width: 600px; width: 92%; max-height: 90vh; overflow-y: auto; background: #0f172a; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeAdminMasterShopModal()" style="position: absolute; top: 1rem; right: 1.25rem; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">&times;</span>
+    <h2 id="modal-admin-master-shop-title" style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">
+      🏪 Tienda en Catálogo Maestro Global
+    </h2>
+    <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 1.25rem;">
+      Agrega o edita comercios del repositorio global de modelismo para todas las comunidades.
+    </p>
+
+    <form onsubmit="submitAdminMasterShop(event)">
+      <input type="hidden" id="admin-mshop-id">
+
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Nombre del Comercio / Tienda *
+        </label>
+        <input type="text" id="admin-mshop-name" class="auth-input" style="width: 100%;" placeholder="Ej. HobbyLink Japan" required>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+            Ciudad *
+          </label>
+          <input type="text" id="admin-mshop-city" class="auth-input" style="width: 100%;" placeholder="Ej. Lima" required>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+            País *
+          </label>
+          <input type="text" id="admin-mshop-country" class="auth-input" style="width: 100%;" placeholder="Ej. Perú" required>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+            Sitio Web Oficial
+          </label>
+          <input type="url" id="admin-mshop-website" class="auth-input" style="width: 100%;" placeholder="https://tienda.com">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+            Enlace a Catálogo / Tienda
+          </label>
+          <input type="url" id="admin-mshop-catalog" class="auth-input" style="width: 100%;" placeholder="https://tienda.com/catalogo">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+            Calificación Inicial (1 a 5)
+          </label>
+          <input type="number" id="admin-mshop-rating" class="auth-input" style="width: 100%;" min="1" max="5" step="0.1" value="5">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+            Marcas Soportadas (separadas por coma)
+          </label>
+          <input type="text" id="admin-mshop-brands" class="auth-input" style="width: 100%;" placeholder="Bandai, Tamiya, Mr. Hobby">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;">
+          Descripción del Comercio
+        </label>
+        <textarea id="admin-mshop-desc" class="auth-input" style="width: 100%; min-height: 60px;" placeholder="Distribuidor oficial de kits y pinturas con envíos a nivel nacional."></textarea>
+      </div>
+
+      <div style="margin-bottom: 1.5rem;">
+        <label style="font-size: 0.8rem; color: #cbd5e1; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+          <input type="checkbox" id="admin-mshop-ships" checked> Realiza Envíos a Domicilio / Internacionales
+        </label>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button type="button" class="filter-pill" onclick="closeAdminMasterShopModal()" style="font-size: 0.82rem; padding: 0.45rem 1rem;">
+          Cancelar
+        </button>
+        <button type="submit" id="btn-submit-admin-master-shop" class="btn-primary" style="font-size: 0.85rem; padding: 0.5rem 1.25rem; background: #10b981;">
+          Guardar en Catálogo Maestro
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 `;
 }

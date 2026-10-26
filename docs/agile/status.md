@@ -4,12 +4,29 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT30 Community Admin Panel & Marketplace Moderation, DT29 Master Shops Catalog, Tenant Trusted Shops & Community Discount Codes, DT28 Multi-Tenant Auth Isolation & Super Admin, DT27 Public Landing Page with News & Collector Showcase, Native Android App M1 & AND-05 Stash API Live on Device, DT26 Redis 7 Caching, PostgreSQL 16 Persistence)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + DT20-DT30 + Native Android App (`apps/mobile-android`). 184 backend/web unit tests + mobile unit tests passing. Full smoketest green (37 steps).
-- Current branch or release line: `feature/dt30-community-admin-panel`
-- Last meaningful update: 2026-10-25
+- Stage: **PVT (DT31 Panel de Gobernanza de Comunidades, Onboarding con Resend API Key y Pantalla Institucional de Suspension, DT30 Community Admin Panel & Marketplace Moderation, DT29 Master Shops Catalog, Tenant Trusted Shops & Community Discount Codes, DT28 Multi-Tenant Auth Isolation & Super Admin, DT27 Public Landing Page with News & Collector Showcase, Native Android App M1 & AND-05 Stash API Live on Device, DT26 Redis 7 Caching, PostgreSQL 16 Persistence)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + DT20-DT31 + Native Android App (`apps/mobile-android`). 194 backend/web unit tests + mobile unit tests passing. Full smoketest green (38 steps).
+- Current branch or release line: `feature/dt31-community-governance`
+- Last meaningful update: 2026-10-26
 
 ## Live Capabilities
+
+- **Panel de Gobernanza de Comunidades, Onboarding con Resend API Key y Pantalla Institucional de Suspension (DT31):**
+  - **Subtabs Exclusivos de Super Admin en `#view-admin`:**
+    - Subtabs `#admin-subtab-tenants` y `#admin-subtab-mastershops` protegidos y mostrados exclusivamente para el Super Admin (`rpinedaec83@gmail.com` / rol `super_admin`).
+    - Enlace de acceso rapido destacado en violeta en el menu desplegable de usuario: `🛡️ Gobernanza Global (Super Admin)`.
+  - **Supervision y Gobernanza de Comunidades:**
+    - Visualizacion del listado completo de comunidades con identificador slug, dominio principal, paleta de colores de marca, escalas permitidas y estado de servicio (`active`, `suspended`, `archived`).
+    - Auditoria de Resend API Key: indicador en tiempo real de si la comunidad cuenta con clave de correo transaccional dedicada o hereda la global (`resendConfigured`), con enmascaramiento seguro (`re_••••xxxx`) para Super Admin y supresion total para usuarios publicos.
+  - **Onboarding de Nuevos Clubes y Portales (`#modal-admin-create-tenant`):**
+    - Formulario de alta para nuevos clubes con slug autogenerado a partir del nombre, dominio principal, email de contacto oficial, eslogan, paleta de colores interactiva (primario, acento, superficie), categorias de modelismo habilitadas y campo opcional para Resend API Key dedicada.
+  - **Transicion de Estados y Motivos de Suspension (`#modal-admin-tenant-status`):**
+    - Modal para pausar/suspender, reactivar o archivar comunidades con campo de motivo o comunicado institucional para los visitantes.
+  - **Gestor del Catalogo Maestro Global de Tiendas (`#modal-admin-master-shop`):**
+    - Creacion (`POST /api/v1/shops`), edicion (`PATCH /api/v1/shops/:id`) y eliminacion (`DELETE /api/v1/shops/:id`) directa desde la interfaz para Super Admin.
+  - **Pantalla Institucional de Suspension y Mantenimiento (`renderInstitutionalSuspensionPage`):**
+    - Renderizado automatico con codigo HTTP 503 cuando un portal se encuentra en estado `suspended` o `archived`.
+    - Presentacion amigable con distintivos oficiales, comunicado explicativo, garantia de resguardo de datos (Stash, bitacoras y pinturas aseguradas), enlaces a comunidades hermanas activas y formulario de autenticacion con bypass para Super Admin.
 
 - **Panel de Administracion de Comunidad y Moderacion de Bazar en Web (DT30):**
   - **Acceso Exclusivo y Proteccion de Roles:**

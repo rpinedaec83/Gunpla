@@ -2562,6 +2562,11 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
         currentUser.username === 'rpineda'
       );
 
+      const isSuperAdmin = currentUser && (
+        (currentUser.email && currentUser.email.toLowerCase() === 'rpinedaec83@gmail.com') ||
+        (currentUser.roles && currentUser.roles.includes('super_admin'))
+      );
+
       document.querySelectorAll('.btn-judge-entry').forEach(btn => {
         btn.style.display = isJudge ? 'inline-flex' : 'none';
       });
@@ -2570,6 +2575,11 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
       if (navThemeBtn) navThemeBtn.style.display = isTenantAdminOrAdmin ? 'flex' : 'none';
       const navAdminBtn = document.getElementById('nav-community-admin');
       if (navAdminBtn) navAdminBtn.style.display = isTenantAdminOrAdmin ? 'flex' : 'none';
+
+      const subtabTenantsBtn = document.getElementById('admin-subtab-btn-tenants');
+      if (subtabTenantsBtn) subtabTenantsBtn.style.display = isSuperAdmin ? 'inline-block' : 'none';
+      const subtabMasterShopsBtn = document.getElementById('admin-subtab-btn-mastershops');
+      if (subtabMasterShopsBtn) subtabMasterShopsBtn.style.display = isSuperAdmin ? 'inline-block' : 'none';
 
       container.innerHTML = 
         '<div class="user-profile-badge" onclick="toggleUserDropdown(event)">' +
@@ -2581,6 +2591,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
               '<div style="font-size: 0.8rem; font-weight: 700; color: #fff;">' + (currentUser.displayName || currentUser.username) + '</div>' +
               '<div style="font-size: 0.72rem; color: #94a3b8;">' + (currentUser.email || '') + '</div>' +
             '</div>' +
+            (isSuperAdmin ? '<a class="user-dropdown-item" style="color: #c084fc; font-weight: 600;" onclick="switchTab(&quot;admin&quot;); switchAdminSubtab(&quot;tenants&quot;);">🛡️ Gobernanza Global (Super Admin)</a>' : '') +
             (isTenantAdminOrAdmin ? '<a class="user-dropdown-item" onclick="switchTab(&quot;admin&quot;)">🛡️ Administrar Comunidad</a>' : '') +
             (isTenantAdminOrAdmin ? '<a class="user-dropdown-item" onclick="openTenantThemeModal()">🎨 Personalizar Tema del Portal</a>' : '') +
             '<a class="user-dropdown-item" onclick="openNewTenantModal()">🏛️ Crear Nuevo Club / Portal</a>' +
@@ -2595,6 +2606,11 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
       if (navThemeBtn) navThemeBtn.style.display = 'none';
       const navAdminBtn = document.getElementById('nav-community-admin');
       if (navAdminBtn) navAdminBtn.style.display = 'none';
+
+      const subtabTenantsBtn = document.getElementById('admin-subtab-btn-tenants');
+      if (subtabTenantsBtn) subtabTenantsBtn.style.display = 'none';
+      const subtabMasterShopsBtn = document.getElementById('admin-subtab-btn-mastershops');
+      if (subtabMasterShopsBtn) subtabMasterShopsBtn.style.display = 'none';
 
       document.querySelectorAll('.btn-judge-entry').forEach(btn => {
         btn.style.display = 'none';
@@ -9888,9 +9904,11 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
      ========================================================================== */
 
   let adminLoadedNews = [];
+  let adminLoadedTenants = [];
+  let adminLoadedMasterShops = [];
 
   function switchAdminSubtab(subtabId) {
-    const subtabs = ['shops', 'news', 'photos', 'bazar'];
+    const subtabs = ['shops', 'news', 'photos', 'bazar', 'tenants', 'mastershops'];
     subtabs.forEach(st => {
       const btn = document.getElementById('admin-subtab-btn-' + st);
       const content = document.getElementById('admin-subtab-' + st);
@@ -9907,6 +9925,8 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     if (subtabId === 'news') loadAdminNews();
     if (subtabId === 'photos') loadAdminPhotos();
     if (subtabId === 'bazar') loadAdminBazarListings();
+    if (subtabId === 'tenants') loadAdminTenants();
+    if (subtabId === 'mastershops') loadAdminMasterShops();
   }
 
   function loadCommunityAdminData() {
@@ -9914,6 +9934,14 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     loadAdminNews();
     loadAdminPhotos();
     loadAdminBazarListings();
+    const isSuperAdmin = currentUser && (
+      (currentUser.email && currentUser.email.toLowerCase() === 'rpinedaec83@gmail.com') ||
+      (currentUser.roles && currentUser.roles.includes('super_admin'))
+    );
+    if (isSuperAdmin) {
+      loadAdminTenants();
+      loadAdminMasterShops();
+    }
   }
 
   async function loadAdminShops() {
@@ -10500,6 +10528,526 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
       }
     } catch (err) {
       alert('Error de conexión al eliminar aviso');
+    }
+  }
+
+  /* ==========================================================================
+     GLOBAL TENANT GOVERNANCE & ONBOARDING (DT31)
+     ========================================================================== */
+
+  async function loadAdminTenants() {
+    const listEl = document.getElementById('admin-tenants-list');
+    const countEl = document.getElementById('admin-tenants-count');
+    if (!currentToken) return;
+
+    try {
+      const res = await fetch('/api/v1/tenants', {
+        headers: {
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': config.tenantSlug
+        }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      adminLoadedTenants = data.items || [];
+      if (countEl) countEl.textContent = adminLoadedTenants.length;
+
+      if (!listEl) return;
+      if (adminLoadedTenants.length === 0) {
+        listEl.innerHTML = '<p style="color: #94a3b8; font-size: 0.85rem; grid-column: 1 / -1;">No hay comunidades registradas.</p>';
+        return;
+      }
+
+      listEl.innerHTML = adminLoadedTenants.map(t => {
+        const status = t.status || 'active';
+        let statusBadge = '<span style="font-size: 0.72rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(34, 197, 94, 0.2); color: #4ade80; font-weight: 600;">🟢 Activo</span>';
+        if (status === 'suspended') {
+          statusBadge = '<span style="font-size: 0.72rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(234, 179, 8, 0.2); color: #facc15; font-weight: 600;">🟡 Suspendido / En Pausa</span>';
+        } else if (status === 'archived') {
+          statusBadge = '<span style="font-size: 0.72rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(239, 68, 68, 0.2); color: #f87171; font-weight: 600;">🔴 Archivado</span>';
+        }
+
+        const resendStatus = t.resendConfigured
+          ? '<span style="color: #4ade80; font-weight: 600;">🟢 Configurada (' + escapeHtml(t.resendApiKey || 're_••••') + ')</span>'
+          : '<span style="color: #94a3b8;">⚠️ Hereda cuenta global</span>';
+
+        const theme = t.themeConfig || {};
+        const primaryCol = theme.primaryColor || '#ef4444';
+        const accentCol = theme.accentColor || '#06b6d4';
+
+        return (
+          '<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">' +
+            '<div>' +
+              '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">' +
+                '<div>' +
+                  '<h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.5rem;">' +
+                    escapeHtml(t.name) +
+                    '<span style="font-size: 0.72rem; color: #94a3b8; font-weight: 400; background: rgba(255,255,255,0.06); padding: 0.15rem 0.4rem; border-radius: 4px;">' + escapeHtml(t.slug) + '</span>' +
+                  '</h4>' +
+                  '<div style="font-size: 0.8rem; color: #38bdf8; margin-top: 0.25rem;">🌐 ' + escapeHtml(t.primaryDomain || t.domain) + '</div>' +
+                '</div>' +
+                '<div>' + statusBadge + '</div>' +
+              '</div>' +
+
+              (t.tagline ? '<p style="font-size: 0.8rem; color: #cbd5e1; margin: 0.5rem 0; font-style: italic;">&ldquo;' + escapeHtml(t.tagline) + '&rdquo;</p>' : '') +
+
+              (status === 'suspended' && t.suspensionReason ? (
+                '<div style="margin: 0.6rem 0; font-size: 0.75rem; background: rgba(234, 179, 8, 0.1); border-left: 3px solid #facc15; padding: 0.4rem 0.6rem; color: #fde047;">' +
+                  '<strong>Motivo de suspensión:</strong> ' + escapeHtml(t.suspensionReason) +
+                '</div>'
+              ) : '') +
+
+              '<div style="font-size: 0.75rem; color: #94a3b8; margin: 0.6rem 0; display: flex; flex-direction: column; gap: 0.3rem;">' +
+                '<div>✉️ Contacto: <span style="color: #cbd5e1;">' + escapeHtml(t.contactEmail || 'N/A') + '</span></div>' +
+                '<div>📧 Resend API Key: ' + resendStatus + '</div>' +
+                '<div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.2rem;">' +
+                  '<span>Paleta:</span>' +
+                  '<span style="display: inline-block; width: 14px; height: 14px; border-radius: 3px; background: ' + primaryCol + ';" title="Primario"></span>' +
+                  '<span style="display: inline-block; width: 14px; height: 14px; border-radius: 3px; background: ' + accentCol + ';" title="Acento"></span>' +
+                  '<span style="margin-left: 0.5rem; color: #64748b;">Escalas: ' + (t.allowedCategories ? t.allowedCategories.join(', ') : 'todas') + '</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+
+            '<div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.07);">' +
+              '<button type="button" class="filter-pill" onclick="openAdminEditTenantModal(&quot;' + t.slug + '&quot;)" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; cursor: pointer;">' +
+                '⚙️ Configurar' +
+              '</button>' +
+              (status === 'active' ? (
+                '<button type="button" class="filter-pill" onclick="openAdminTenantStatusModal(&quot;' + t.slug + '&quot;, &quot;' + escapeHtml(t.name) + '&quot;, &quot;suspended&quot;)" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; color: #facc15; border-color: rgba(234, 179, 8, 0.4); cursor: pointer;">' +
+                  '⏸️ Suspender' +
+                '</button>'
+              ) : (
+                '<button type="button" class="filter-pill" onclick="openAdminTenantStatusModal(&quot;' + t.slug + '&quot;, &quot;' + escapeHtml(t.name) + '&quot;, &quot;active&quot;)" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; color: #4ade80; border-color: rgba(34, 197, 94, 0.4); cursor: pointer;">' +
+                  '▶️ Reactivar' +
+                '</button>'
+              )) +
+              (status !== 'archived' ? (
+                '<button type="button" class="filter-pill" onclick="openAdminTenantStatusModal(&quot;' + t.slug + '&quot;, &quot;' + escapeHtml(t.name) + '&quot;, &quot;archived&quot;)" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; color: #f87171; border-color: rgba(239, 68, 68, 0.4); cursor: pointer;">' +
+                  '📦 Archivar' +
+                '</button>'
+              ) : '') +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+    } catch (err) {
+      console.warn('Error loading admin tenants:', err);
+    }
+  }
+
+  let adminEditingTenantSlug = null;
+
+  function autoSuggestAdminTenantSlug(name) {
+    if (adminEditingTenantSlug) return;
+    const slugInput = document.getElementById('admin-tenant-slug');
+    if (!slugInput) return;
+    const slug = name.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    slugInput.value = slug;
+  }
+
+  function openAdminCreateTenantModal() {
+    adminEditingTenantSlug = null;
+    const modal = document.getElementById('modal-admin-create-tenant');
+    if (!modal) return;
+    const titleEl = document.getElementById('modal-admin-tenant-title');
+    if (titleEl) titleEl.textContent = '🛡️ Onboarding de Nuevo Club / Comunidad';
+    const slugInput = document.getElementById('admin-tenant-slug');
+    if (slugInput) {
+      slugInput.value = '';
+      slugInput.removeAttribute('readonly');
+      slugInput.style.opacity = '1';
+    }
+    document.getElementById('admin-tenant-name').value = '';
+    document.getElementById('admin-tenant-domain').value = '';
+    document.getElementById('admin-tenant-contact-email').value = '';
+    document.getElementById('admin-tenant-tagline').value = '';
+    document.getElementById('admin-tenant-resend-key').value = '';
+    document.getElementById('admin-tenant-resend-key').placeholder = 're_••••••••••••••••••••••••';
+    document.getElementById('admin-tenant-color-primary').value = '#ef4444';
+    document.getElementById('admin-tenant-color-accent').value = '#06b6d4';
+    document.getElementById('admin-tenant-color-surface').value = '#0f172a';
+    document.querySelectorAll('input[name="admin-cat"]').forEach(cb => cb.checked = true);
+    const submitBtn = document.getElementById('btn-submit-admin-tenant');
+    if (submitBtn) submitBtn.textContent = 'Crear Comunidad';
+    modal.classList.add('active');
+  }
+
+  function openAdminEditTenantModal(slug) {
+    const tenant = adminLoadedTenants.find(t => t.slug === slug);
+    if (!tenant) return;
+    adminEditingTenantSlug = slug;
+    const modal = document.getElementById('modal-admin-create-tenant');
+    if (!modal) return;
+    const titleEl = document.getElementById('modal-admin-tenant-title');
+    if (titleEl) titleEl.textContent = '⚙️ Configurar Comunidad: ' + tenant.name;
+    const slugInput = document.getElementById('admin-tenant-slug');
+    if (slugInput) {
+      slugInput.value = tenant.slug;
+      slugInput.setAttribute('readonly', 'true');
+      slugInput.style.opacity = '0.6';
+    }
+    document.getElementById('admin-tenant-name').value = tenant.name || '';
+    document.getElementById('admin-tenant-domain').value = tenant.primaryDomain || tenant.domain || '';
+    document.getElementById('admin-tenant-contact-email').value = tenant.contactEmail || '';
+    document.getElementById('admin-tenant-tagline').value = tenant.tagline || '';
+    const resendInput = document.getElementById('admin-tenant-resend-key');
+    resendInput.value = '';
+    resendInput.placeholder = tenant.resendConfigured ? (tenant.resendApiKey || 'Configurada (Ingresa nueva para cambiar)') : 're_••••••••••••••••••••••••';
+
+    const theme = tenant.themeConfig || {};
+    document.getElementById('admin-tenant-color-primary').value = theme.primaryColor || '#ef4444';
+    document.getElementById('admin-tenant-color-accent').value = theme.accentColor || '#06b6d4';
+    document.getElementById('admin-tenant-color-surface').value = theme.surfaceColor || '#0f172a';
+
+    const cats = tenant.allowedCategories || [];
+    document.querySelectorAll('input[name="admin-cat"]').forEach(cb => {
+      cb.checked = cats.length === 0 || cats.includes(cb.value);
+    });
+
+    const submitBtn = document.getElementById('btn-submit-admin-tenant');
+    if (submitBtn) submitBtn.textContent = 'Guardar Cambios';
+    modal.classList.add('active');
+  }
+
+  function closeAdminCreateTenantModal(e) {
+    if (!e || e.target.id === 'modal-admin-create-tenant' || e.target.classList.contains('auth-close') || e.target.tagName === 'BUTTON') {
+      const modal = document.getElementById('modal-admin-create-tenant');
+      if (modal) modal.classList.remove('active');
+      adminEditingTenantSlug = null;
+    }
+  }
+
+  async function submitAdminTenant(e) {
+    e.preventDefault();
+    if (!currentToken) return alert('Debes iniciar sesión con rol de Super Administrador.');
+    const name = document.getElementById('admin-tenant-name').value.trim();
+    const slug = document.getElementById('admin-tenant-slug').value.trim();
+    const primaryDomain = document.getElementById('admin-tenant-domain').value.trim();
+    const contactEmail = document.getElementById('admin-tenant-contact-email').value.trim();
+    const tagline = document.getElementById('admin-tenant-tagline').value.trim();
+    const resendApiKey = document.getElementById('admin-tenant-resend-key').value.trim();
+    const primaryColor = document.getElementById('admin-tenant-color-primary').value;
+    const accentColor = document.getElementById('admin-tenant-color-accent').value;
+    const surfaceColor = document.getElementById('admin-tenant-color-surface').value;
+
+    const allowedCategories = [];
+    document.querySelectorAll('input[name="admin-cat"]:checked').forEach(cb => {
+      allowedCategories.push(cb.value);
+    });
+
+    const body = {
+      name,
+      primaryDomain,
+      contactEmail,
+      tagline,
+      themeConfig: { primaryColor, accentColor, surfaceColor },
+      allowedCategories
+    };
+    if (resendApiKey) {
+      body.resendApiKey = resendApiKey;
+    }
+
+    try {
+      let res;
+      if (adminEditingTenantSlug) {
+        res = await fetch('/api/v1/tenants/' + adminEditingTenantSlug, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + currentToken,
+            'X-Tenant-Slug': config.tenantSlug
+          },
+          body: JSON.stringify(body)
+        });
+      } else {
+        body.slug = slug;
+        res = await fetch('/api/v1/tenants', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + currentToken,
+            'X-Tenant-Slug': config.tenantSlug
+          },
+          body: JSON.stringify(body)
+        });
+      }
+
+      if (!res.ok) {
+        const err = await res.json();
+        return alert(err.detail || err.title || 'Error al guardar comunidad');
+      }
+
+      closeAdminCreateTenantModal();
+      loadAdminTenants();
+      showShareToast(adminEditingTenantSlug ? '🛡️ Comunidad actualizada con éxito' : '🏛️ Nueva comunidad creada con éxito');
+    } catch (err) {
+      alert('Error de conexión al guardar la comunidad');
+    }
+  }
+
+  function openAdminTenantStatusModal(slug, name, targetStatus) {
+    const modal = document.getElementById('modal-admin-tenant-status');
+    if (!modal) return;
+    document.getElementById('admin-status-slug').value = slug;
+    const banner = document.getElementById('admin-status-tenant-banner');
+    if (banner) banner.textContent = 'Comunidad seleccionada: ' + name + ' (' + slug + ')';
+    const sel = document.getElementById('admin-status-select');
+    if (sel) sel.value = targetStatus;
+    onAdminStatusSelectChange(targetStatus);
+    const reasonEl = document.getElementById('admin-status-reason');
+    if (reasonEl) reasonEl.value = '';
+    modal.classList.add('active');
+  }
+
+  function closeAdminTenantStatusModal(e) {
+    if (!e || e.target.id === 'modal-admin-tenant-status' || e.target.classList.contains('auth-close') || e.target.tagName === 'BUTTON') {
+      const modal = document.getElementById('modal-admin-tenant-status');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  function onAdminStatusSelectChange(val) {
+    const reasonGrp = document.getElementById('admin-status-reason-group');
+    if (reasonGrp) {
+      reasonGrp.style.display = (val === 'suspended' || val === 'archived') ? 'block' : 'none';
+    }
+  }
+
+  async function submitAdminTenantStatus(e) {
+    e.preventDefault();
+    if (!currentToken) return alert('Debes iniciar sesión con rol de Super Administrador.');
+    const slug = document.getElementById('admin-status-slug').value;
+    const status = document.getElementById('admin-status-select').value;
+    const reason = document.getElementById('admin-status-reason').value.trim();
+
+    try {
+      const res = await fetch('/api/v1/tenants/' + slug + '/status', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': config.tenantSlug
+        },
+        body: JSON.stringify({ status, reason })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        return alert(err.detail || err.title || 'Error al cambiar estado de comunidad');
+      }
+
+      closeAdminTenantStatusModal();
+      loadAdminTenants();
+      showShareToast('⚖️ Estado de comunidad ' + slug + ' actualizado a ' + status);
+    } catch (err) {
+      alert('Error de conexión al actualizar estado');
+    }
+  }
+
+  /* ==========================================================================
+     GLOBAL MASTER SHOPS CATALOG LOGIC (DT31)
+     ========================================================================== */
+
+  async function loadAdminMasterShops() {
+    const listEl = document.getElementById('admin-master-shops-list');
+    const countEl = document.getElementById('admin-master-shops-count');
+    if (!currentToken) return;
+
+    try {
+      const res = await fetch('/api/v1/shops', {
+        headers: {
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': config.tenantSlug
+        }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      adminLoadedMasterShops = data.items || [];
+      if (countEl) countEl.textContent = adminLoadedMasterShops.length;
+
+      if (!listEl) return;
+      if (adminLoadedMasterShops.length === 0) {
+        listEl.innerHTML = '<p style="color: #94a3b8; font-size: 0.85rem; grid-column: 1 / -1;">No hay comercios registrados en el catálogo maestro global.</p>';
+        return;
+      }
+
+      listEl.innerHTML = adminLoadedMasterShops.map(shop => {
+        return (
+          '<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">' +
+            '<div>' +
+              '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">' +
+                '<h4 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #fff;">' + escapeHtml(shop.name) + '</h4>' +
+                '<span style="font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-weight: 600;">⭐ ' + (shop.rating || 5) + '/5</span>' +
+              '</div>' +
+              '<div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.5rem;">' +
+                '📍 ' + escapeHtml(shop.city) + ', ' + escapeHtml(shop.country) +
+                (shop.shipsInternational !== false ? ' • 🚚 Envíos disponibles' : ' • 🏬 Solo tienda física') +
+              '</div>' +
+              (shop.description ? '<p style="font-size: 0.78rem; color: #cbd5e1; margin: 0.4rem 0;">' + escapeHtml(shop.description) + '</p>' : '') +
+              (shop.brands && shop.brands.length ? (
+                '<div style="font-size: 0.72rem; color: #a855f7; margin-bottom: 0.5rem;">' +
+                  '🏷️ ' + escapeHtml(shop.brands.join(', ')) +
+                '</div>'
+              ) : '') +
+              '<div style="font-size: 0.75rem; color: #38bdf8; display: flex; gap: 0.75rem;">' +
+                (shop.website ? '<a href="' + escapeHtml(shop.website) + '" target="_blank" rel="noopener" style="color: #38bdf8;">🌐 Sitio Web</a>' : '') +
+                (shop.catalogUrl ? '<a href="' + escapeHtml(shop.catalogUrl) + '" target="_blank" rel="noopener" style="color: #4ade80;">🛒 Catálogo</a>' : '') +
+              '</div>' +
+            '</div>' +
+
+            '<div style="display: flex; gap: 0.5rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.07);">' +
+              '<button type="button" class="filter-pill" onclick="openAdminEditMasterShopModal(&quot;' + shop.id + '&quot;)" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; cursor: pointer;">' +
+                '✏️ Editar' +
+              '</button>' +
+              '<button type="button" class="filter-pill" onclick="deleteAdminMasterShop(&quot;' + shop.id + '&quot;, &quot;' + escapeHtml(shop.name) + '&quot;)" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; color: #f87171; border-color: rgba(239, 68, 68, 0.4); cursor: pointer;">' +
+                '🗑️ Eliminar' +
+              '</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+    } catch (err) {
+      console.warn('Error loading master shops:', err);
+    }
+  }
+
+  function openAdminMasterShopModal() {
+    const modal = document.getElementById('modal-admin-master-shop');
+    if (!modal) return;
+    const title = document.getElementById('modal-admin-master-shop-title');
+    if (title) title.textContent = '🏪 Nueva Tienda en Catálogo Maestro Global';
+    document.getElementById('admin-mshop-id').value = '';
+    document.getElementById('admin-mshop-name').value = '';
+    document.getElementById('admin-mshop-city').value = '';
+    document.getElementById('admin-mshop-country').value = '';
+    document.getElementById('admin-mshop-website').value = '';
+    document.getElementById('admin-mshop-catalog').value = '';
+    document.getElementById('admin-mshop-rating').value = '5';
+    document.getElementById('admin-mshop-brands').value = '';
+    document.getElementById('admin-mshop-desc').value = '';
+    document.getElementById('admin-mshop-ships').checked = true;
+    const btn = document.getElementById('btn-submit-admin-master-shop');
+    if (btn) btn.textContent = 'Guardar en Catálogo Maestro';
+    modal.classList.add('active');
+  }
+
+  function openAdminEditMasterShopModal(shopId) {
+    const shop = adminLoadedMasterShops.find(s => s.id === shopId);
+    if (!shop) return;
+    const modal = document.getElementById('modal-admin-master-shop');
+    if (!modal) return;
+    const title = document.getElementById('modal-admin-master-shop-title');
+    if (title) title.textContent = '✏️ Editar Tienda: ' + shop.name;
+    document.getElementById('admin-mshop-id').value = shop.id;
+    document.getElementById('admin-mshop-name').value = shop.name || '';
+    document.getElementById('admin-mshop-city').value = shop.city || '';
+    document.getElementById('admin-mshop-country').value = shop.country || '';
+    document.getElementById('admin-mshop-website').value = shop.website || '';
+    document.getElementById('admin-mshop-catalog').value = shop.catalogUrl || '';
+    document.getElementById('admin-mshop-rating').value = shop.rating || 5;
+    document.getElementById('admin-mshop-brands').value = (shop.brands || []).join(', ');
+    document.getElementById('admin-mshop-desc').value = shop.description || '';
+    document.getElementById('admin-mshop-ships').checked = shop.shipsInternational !== false;
+    const btn = document.getElementById('btn-submit-admin-master-shop');
+    if (btn) btn.textContent = 'Actualizar Tienda';
+    modal.classList.add('active');
+  }
+
+  function closeAdminMasterShopModal(e) {
+    if (!e || e.target.id === 'modal-admin-master-shop' || e.target.classList.contains('auth-close') || e.target.tagName === 'BUTTON') {
+      const modal = document.getElementById('modal-admin-master-shop');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  async function submitAdminMasterShop(e) {
+    e.preventDefault();
+    if (!currentToken) return alert('Debes iniciar sesión con rol de Super Administrador.');
+    const shopId = document.getElementById('admin-mshop-id').value;
+    const name = document.getElementById('admin-mshop-name').value.trim();
+    const city = document.getElementById('admin-mshop-city').value.trim();
+    const country = document.getElementById('admin-mshop-country').value.trim();
+    const website = document.getElementById('admin-mshop-website').value.trim();
+    const catalogUrl = document.getElementById('admin-mshop-catalog').value.trim();
+    const rating = parseFloat(document.getElementById('admin-mshop-rating').value) || 5;
+    const brands = document.getElementById('admin-mshop-brands').value.split(',').map(b => b.trim()).filter(Boolean);
+    const description = document.getElementById('admin-mshop-desc').value.trim();
+    const shipsInternational = document.getElementById('admin-mshop-ships').checked;
+
+    const payload = {
+      name,
+      city,
+      country,
+      website,
+      catalogUrl,
+      rating,
+      brands,
+      description,
+      shipsInternational
+    };
+
+    try {
+      let res;
+      if (shopId) {
+        res = await fetch('/api/v1/shops/' + shopId, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + currentToken,
+            'X-Tenant-Slug': config.tenantSlug
+          },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        res = await fetch('/api/v1/shops', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + currentToken,
+            'X-Tenant-Slug': config.tenantSlug
+          },
+          body: JSON.stringify(payload)
+        });
+      }
+
+      if (!res.ok) {
+        const err = await res.json();
+        return alert(err.detail || err.title || 'Error al guardar tienda');
+      }
+
+      closeAdminMasterShopModal();
+      loadAdminMasterShops();
+      showShareToast(shopId ? '🏪 Tienda actualizada en catálogo maestro' : '🏪 Tienda agregada al catálogo maestro');
+    } catch (err) {
+      alert('Error de conexión al guardar tienda');
+    }
+  }
+
+  async function deleteAdminMasterShop(shopId, name) {
+    if (!confirm('¿Eliminar permanentemente la tienda "' + name + '" del catálogo maestro global?')) return;
+    if (!currentToken) return alert('Debes iniciar sesión con rol de Super Administrador.');
+
+    try {
+      const res = await fetch('/api/v1/shops/' + shopId, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': config.tenantSlug
+        }
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        return alert(err.detail || err.title || 'Error al eliminar tienda');
+      }
+
+      loadAdminMasterShops();
+      showShareToast('🗑️ Tienda eliminada del catálogo maestro');
+    } catch (err) {
+      alert('Error de conexión al eliminar tienda');
     }
   }
 

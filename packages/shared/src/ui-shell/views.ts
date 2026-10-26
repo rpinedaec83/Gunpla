@@ -1656,6 +1656,12 @@ export function renderViews(
           <button type="button" id="admin-subtab-btn-bazar" class="filter-pill" onclick="switchAdminSubtab('bazar')" style="font-size: 0.82rem; padding: 0.35rem 0.8rem; cursor: pointer;">
             ⚖️ Moderación de Bazar (<span id="admin-bazar-count">${(data.listings || []).length}</span>)
           </button>
+          <button type="button" id="admin-subtab-btn-tenants" class="filter-pill" onclick="switchAdminSubtab('tenants')" style="font-size: 0.82rem; padding: 0.35rem 0.8rem; cursor: pointer; display: none;">
+            🛡️ Comunidades & Clubes (<span id="admin-tenants-count">...</span>)
+          </button>
+          <button type="button" id="admin-subtab-btn-mastershops" class="filter-pill" onclick="switchAdminSubtab('mastershops')" style="font-size: 0.82rem; padding: 0.35rem 0.8rem; cursor: pointer; display: none;">
+            🌐 Catálogo Maestro Tiendas (<span id="admin-mastershops-count">...</span>)
+          </button>
         </div>
       </div>
 
@@ -1753,6 +1759,42 @@ export function renderViews(
         </div>
         <div id="admin-bazar-list" style="overflow-x: auto;">
           <p style="color: #94a3b8; font-size: 0.85rem;">Cargando avisos del bazar...</p>
+        </div>
+      </div>
+
+      <!-- Subtab 5: Gobernanza Global de Comunidades (Super Admin) -->
+      <div id="admin-subtab-tenants" class="admin-subtab-content" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Gobernanza Global de Comunidades & Clubes (<span id="admin-tenants-count">0</span>)</h3>
+            <p style="color: #94a3b8; font-size: 0.8rem; margin: 0.2rem 0 0 0;">
+              Supervisión de portales registrados, estados de servicio (Activo, Suspendido, Archivado) y auditoría de Resend API Key.
+            </p>
+          </div>
+          <button type="button" class="btn-primary" onclick="openAdminCreateTenantModal()" style="font-size: 0.82rem; padding: 0.45rem 0.9rem; background: #8b5cf6; border-color: #8b5cf6;">
+            + Onboarding de Nuevo Club / Comunidad
+          </button>
+        </div>
+        <div id="admin-tenants-list" style="display: flex; flex-direction: column; gap: 1rem;">
+          <p style="color: #94a3b8; font-size: 0.85rem;">Cargando comunidades registradas...</p>
+        </div>
+      </div>
+
+      <!-- Subtab 6: Catálogo Maestro Global de Tiendas (Super Admin) -->
+      <div id="admin-subtab-mastershops" class="admin-subtab-content" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Catálogo Maestro Global de Tiendas (<span id="admin-master-shops-count">0</span>)</h3>
+            <p style="color: #94a3b8; font-size: 0.8rem; margin: 0.2rem 0 0 0;">
+              Directorio unificado de tiendas de modelismo disponibles para que los administradores locales vinculen a sus comunidades.
+            </p>
+          </div>
+          <button type="button" class="btn-primary" onclick="openAdminMasterShopModal()" style="font-size: 0.82rem; padding: 0.45rem 0.9rem; background: #10b981; border-color: #10b981;">
+            + Agregar Tienda al Catálogo Maestro
+          </button>
+        </div>
+        <div id="admin-master-shops-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
+          <p style="color: #94a3b8; font-size: 0.85rem;">Cargando catálogo maestro...</p>
         </div>
       </div>
     </section>

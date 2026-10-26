@@ -1452,11 +1452,15 @@ communityRouter.post('/shops', requireAuth, requireSuperAdmin, (req: Request, re
     description,
     country,
     city,
+    website,
     websiteUrl,
     catalogUrl,
     whatsappUrl,
     instagramUrl,
     specialties,
+    brands,
+    rating,
+    shipsInternational,
     isVerified
   } = req.body || {};
 
@@ -1474,17 +1478,25 @@ communityRouter.post('/shops', requireAuth, requireSuperAdmin, (req: Request, re
   const db = getDb();
   if (!db.shops) db.shops = [];
 
+  const finalSpecialties = Array.isArray(specialties)
+    ? specialties.map(String)
+    : (Array.isArray(brands) ? brands.map(String) : []);
+
   const newShop: ShopRecord = {
     id: `shop-${Date.now()}-${String(name).toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30)}`,
     name: String(name).trim(),
     description: String(description).trim(),
     country: country ? String(country).trim() : 'Perú',
     city: city ? String(city).trim() : 'Lima',
-    websiteUrl: websiteUrl ? String(websiteUrl).trim() : undefined,
+    websiteUrl: (websiteUrl || website) ? String(websiteUrl || website).trim() : undefined,
+    website: (website || websiteUrl) ? String(website || websiteUrl).trim() : undefined,
     catalogUrl: catalogUrl ? String(catalogUrl).trim() : undefined,
     whatsappUrl: whatsappUrl ? String(whatsappUrl).trim() : undefined,
     instagramUrl: instagramUrl ? String(instagramUrl).trim() : undefined,
-    specialties: Array.isArray(specialties) ? specialties.map(String) : [],
+    specialties: finalSpecialties,
+    brands: Array.isArray(brands) ? brands.map(String) : finalSpecialties,
+    rating: typeof rating === 'number' ? rating : 5.0,
+    shipsInternational: shipsInternational !== false,
     isVerified: isVerified !== false
   };
 
@@ -1513,11 +1525,15 @@ communityRouter.patch('/shops/:id', requireAuth, requireSuperAdmin, (req: Reques
     description,
     country,
     city,
+    website,
     websiteUrl,
     catalogUrl,
     whatsappUrl,
     instagramUrl,
     specialties,
+    brands,
+    rating,
+    shipsInternational,
     isVerified
   } = req.body || {};
 
@@ -1525,11 +1541,18 @@ communityRouter.patch('/shops/:id', requireAuth, requireSuperAdmin, (req: Reques
   if (description !== undefined) shop.description = String(description).trim();
   if (country !== undefined) shop.country = String(country).trim();
   if (city !== undefined) shop.city = String(city).trim();
-  if (websiteUrl !== undefined) shop.websiteUrl = websiteUrl ? String(websiteUrl).trim() : undefined;
+  if (websiteUrl !== undefined || website !== undefined) {
+    const w = String(websiteUrl || website || '').trim();
+    shop.websiteUrl = w || undefined;
+    shop.website = w || undefined;
+  }
   if (catalogUrl !== undefined) shop.catalogUrl = catalogUrl ? String(catalogUrl).trim() : undefined;
   if (whatsappUrl !== undefined) shop.whatsappUrl = whatsappUrl ? String(whatsappUrl).trim() : undefined;
   if (instagramUrl !== undefined) shop.instagramUrl = instagramUrl ? String(instagramUrl).trim() : undefined;
   if (Array.isArray(specialties)) shop.specialties = specialties.map(String);
+  if (Array.isArray(brands)) shop.brands = brands.map(String);
+  if (rating !== undefined) shop.rating = Number(rating);
+  if (shipsInternational !== undefined) shop.shipsInternational = Boolean(shipsInternational);
   if (isVerified !== undefined) shop.isVerified = Boolean(isVerified);
 
   saveDb(db);

@@ -1015,10 +1015,14 @@ export interface ShopRecord {
   country: string;
   city: string;
   websiteUrl?: string;
+  website?: string;
   catalogUrl?: string;
   whatsappUrl?: string;
   instagramUrl?: string;
   specialties: string[];
+  brands?: string[];
+  rating?: number;
+  shipsInternational?: boolean;
   isVerified: boolean;
   stockItems?: ShopStockItem[];
 }
