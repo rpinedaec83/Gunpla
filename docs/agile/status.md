@@ -4,12 +4,28 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio, Smart Builder AI Assistant, Stash Insurance Valuation Report, Workshop Ambient Soundscapes, Airbrush PSI/Thinner Calculator, Parts Breakdown Subassembly Cards, Workbench Tool Inventory, PostgreSQL 16 Persistence & Redis 7 Caching Layer Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) + Pistas de Sonido y Soundscapes de Taller (DT21) + Calculadora de Dilución y Presión de Aerógrafo (DT22) + Generador de Fichas Técnicas & Manuales de Despiece (DT23) + Control de Inventario de Herramientas & Vida Útil de Cuchillas (DT24) + Endurecimiento de Persistencia Relacional PostgreSQL 16 (DT25) + Capa de Caching Redis 7 & Rendimiento VPS sub-2ms (DT26) + 4 Technical Debt resolutions verified via `npm test` (156 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt26-redis-caching` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- Native Android Jetpack Compose Mobile App M1 Verified on Physical Device, DT26 Redis 7 Caching, PostgreSQL 16 Relational Persistence, Full Monorepo Architecture)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + DT20-DT26 + Native Android App (`apps/mobile-android`) successfully installed and verified on physical Xiaomi Redmi device via ADB Wireless Debugging. 156 backend unit tests + mobile unit tests passing.
+- Current branch or release line: `feature/m1-android-app` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Aplicación Móvil Nativa Android (Jetpack Compose & Material 3 - M1):**
+  - **Arquitectura y Stack Moderno (`apps/mobile-android`):**
+    - Kotlin 2.0.21, Jetpack Compose Material 3, Android Gradle Plugin 8.7.3 (`compileSdk 36`, `targetSdk 36`, `minSdk 26`).
+    - Motor de serialización `kotlinx.serialization` y cliente HTTP `OkHttp 4.12.0` con soporte para tráfico de red local en LAN (`android:usesCleartextTraffic="true"`).
+  - **Soporte Multi-Tenant Nativo:**
+    - Selector dinámico de Tenant en barra superior (`GunplaJunkies` con paleta Cyan/Cyberpunk y `ScaleModelers` con paleta Navy/Naranja/Industrial).
+    - Persistencia de sesión y tenant activo en `SessionManager` vía `SharedPreferences`.
+  - **Módulos y Pantallas Implementadas:**
+    - **Mesa de Trabajo (Workbench):** Métricas de taller (herramientas, en proceso, vida útil de cuchillas), sincronización con API y arsenal inicial de modelismo.
+    - **Stash Personal:** Filtros por estado (*Todas*, *En Proceso*, *En Caja*), tarjetas con barras de progreso y escalas (1/144, 1/100, 1/35, 1/48).
+    - **Catálogo & Scalemates:** Búsqueda en tiempo real contra la API central (`http://192.168.1.190:8080`), paginación y visualización de marcas.
+    - **Perfil & 1-Click SSO:** Estado de autenticación JWT, botones de inicio rápido para Demo Builder y Admin, y configuración de endpoint API.
+  - **Verificación en Dispositivo Físico:**
+    - APK de depuración (11.9 MB) transferido e instalado exitosamente en smartphone Xiaomi Redmi Note (`M2101K7BG`) mediante Wireless Debugging (ADB sobre Wi-Fi).
+    - Ejecución a 60 FPS estables verificada mediante `dumpsys window` y capturas de pantalla de telemetría.
 
 - **Capa de Caching Redis 7 & Optimización de Rendimiento VPS (Low-Latency Cache Layer - DT26):**
   - **Infraestructura de Caching de Alta Velocidad (`gunpla-redis`):**

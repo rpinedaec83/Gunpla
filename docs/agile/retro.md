@@ -2,6 +2,30 @@
 
 Completed work belongs here.
 
+## Session -- 2026-10-25 | Goal: Native Mobile Android App (M1) & Physical Device Verification
+Start: 20:30 | End: 20:56 | Duration: 0h 26m
+
+### M1 -- Native Android Mobile App (Jetpack Compose & Material 3) Scaffolding & Device Verification | eMOE: 5 CU | aMOE: 5 CU
+What was done:
+- Installed Android CLI, OpenJDK 17, Android SDK platforms (`platforms/android-36`), build tools (`34.0.0`, `36.0.0`), and platform-tools (`adb`).
+- Scaffolded native Android project at `apps/mobile-android` utilizing Kotlin 2.0.21, Jetpack Compose Material 3, OkHttp 4.12.0, and kotlinx.serialization.
+- Implemented Multi-Tenant Architecture: top bar tenant selector toggling between `GunplaJunkies` (Cyan/Cyberpunk palette) and `ScaleModelers` (Navy/Orange industrial palette), persisted in SharedPreferences.
+- Implemented 4 core screens:
+  - `WorkbenchScreen`: Taller counters, workshop precision tools & blade wear indicators, sync button.
+  - `StashScreen`: Personal model stash with filter chips (Todas, En Proceso, En Caja) and progress indicators.
+  - `CatalogScreen`: Live Scalemates/master catalog search against the central API with scale and brand tags.
+  - `ProfileScreen`: JWT SSO session status, 1-click login presets, and API base URL configuration.
+- Configured cleartext HTTP support for LAN API communication (`http://192.168.1.190:8080`) in `AndroidManifest.xml`.
+- Successfully paired and connected to user's physical Xiaomi Redmi smartphone (`M2101K7BG`) via ADB Wireless Debugging.
+- Successfully built, installed `app-debug.apk` (11.9 MB), launched `com.gunpla.mobile/.MainActivity`, and verified 60 FPS smooth rendering and UI navigation on hardware.
+Issues hit:
+- Xiaomi MIUI/HyperOS security blocked the initial USB install with `INSTALL_FAILED_USER_RESTRICTED`. Resolved by activating "Install via USB" in Developer Options and confirming the on-device dialog.
+Decisions made:
+- Kept UI icons as lightweight native Compose emojis/symbols to eliminate 25MB of unnecessary font dependencies and achieve sub-3s compilation times.
+- Centralized network requests through `GunplaApiClient` using OkHttp and Kotlin Coroutines.
+Lessons learned:
+- Android Wireless Debugging separates the pairing port from the connection port; querying `adb mdns services` provides the exact ephemeral connect port automatically.
+
 ## Session -- 2026-10-23 | Goal: Atlas AI Bootstrap, Legacy Data Audit & CGR (MRD, PRD, ESD) Authoring
 Start: 20:11 | End: 20:33 | Duration: 0h 22m
 
