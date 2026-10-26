@@ -952,7 +952,7 @@ export async function loadStateFromPostgres(): Promise<PlatformDatabaseState | n
       } catch {}
       let expRes = { rows: [] };
       try {
-        expRes = await client.query('SELECT * FROM build_expenses ORDER BY date DESC');
+        expRes = await client.query('SELECT * FROM build_expenses ORDER BY created_at DESC');
       } catch {}
 
       const builds: BuildProjectRecord[] = buildsRes.rows.map((r) => {
