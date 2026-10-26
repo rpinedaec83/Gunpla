@@ -4,12 +4,12 @@ Active tasks only. This is a burn-down list, not a history log.
 
 ## Current Phase
 
-Name: Phase M2 -- Stash Personal y Escaner de Codigos de Barras
-Goal: Conectar el modulo de Stash de la aplicacion movil nativa Android (apps/mobile-android) a los endpoints reales de la API central, implementar filtrado reactivo, busqueda y actualizacion de estado.
+Name: Phase DT27 -- Landing Page Publica de Novedades y Taller
+Goal: Implementar la landing page de portada para Gunpla Collector y PlamoScale con noticias, vitrina comunitaria de coleccionistas y transicion fluida al Taller.
 
 ## Active Tasks
 
-(No active tasks currently in flight. Ready for next task in Phase M2.)
+(No active tasks currently in flight. Ready for next task in Phase DT27 or next Phase.)
 
 ## Reset
 

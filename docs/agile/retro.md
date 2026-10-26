@@ -2,8 +2,36 @@
 
 Completed work belongs here.
 
-## Session -- 2026-10-25 | Goal: Native Mobile Android App (M1) & Physical Device Verification
-Start: 20:30 | End: 21:12 | Duration: 0h 42m
+## Session -- 2026-10-25 | Goal: Public Community Landing Page & Workbench Portal Switcher
+Start: 21:35 | End: 21:55 | Duration: 0h 20m
+
+### DT27 -- Landing Page Publica con Noticias, Galeria de Coleccionistas y Acceso al Taller | eMOE: 3 CU | aMOE: 3 CU
+What was done:
+- Designed and implemented full-featured public Landing Page (`#view-landing`) in `packages/shared/src/ui-shell/views.ts` and `packages/shared/src/ui-shell/app-shell.ts`, enabled as the default active view for visitors arriving at Gunpla and PlamoScale.
+- Implemented dedicated Hero section with distinct branding per tenant:
+  - Gunpla Collector: Santuario Gunpla & Mecha, cyberpunk red/cyan palette, and portal badge.
+  - PlamoScale: Scale Modeling Mastery, navy/orange palette, and scale categories (Armor, Aviation, Auto).
+  - Platform metrics counter: catalog kits, paints, community showcase photos, detailed build logs, and active builders.
+- Curated tenant-specific news & editorial feed (`getLandingNewsArticles`):
+  - Gunpla: Bandai Spirits RG 2.0 releases, panel lining techniques, GBWC world cup criteria, and single-blade nipper care.
+  - PlamoScale: Tamiya 1/35 Panzer releases, weathering masterclass, photo-etch resin priming, and aviation diorama runways.
+  - Interactive article reader modal (`#modal-landing-article`) with full story and quick link to workshop.
+  - Category filter pills (Todas, Lanzamientos, Tecnicas, Herramientas, Eventos).
+- Implemented Community Collector Gallery section:
+  - Showcase photo cards with builder attribution, scale/grade badges, and pop-up lightbox viewer.
+  - Collector gallery sharing callout with direct "Compartir mi Galeria / Subir Fotos" button (`openCollectorShareModal`) connecting to build creation or 1-click SSO login.
+- Implemented Workshop Suite showcase:
+  - 4 interactive feature cards (Stash personal, Bitacoras paso a paso, Catalogo Scalemates, Rack de pinturas y calculador PSI).
+  - "Entrar al Taller" action buttons in hero, top utility bar (`#btn-topbar-enter-workshop`), feature cards, and banner.
+  - Added "Portada & Noticias" navigation link in left sidebar for immediate two-way navigation between landing and workshop.
+- Created unit tests in `tests/unit/landing-page.test.mjs` verifying tenant news isolation, HTML structure, client-side script validity via Node VM, and helper functions.
+- Updated `scripts/smoketest.mjs` with Step 34 verifying landing page elements, hero headlines, news articles, and workshop switchers across both web frontends.
+Issues hit:
+- Missing `c.rules` and `c.prizes` properties in sparse contest mock data caused optional chaining issue in views.ts; resolved by adding defensive array defaults `(c.rules || [])` and `(c.prizes || [])`.
+Decisions made:
+- Kept the landing page as an integrated app-shell view (`#view-landing`) rather than a disconnected static page, ensuring seamless instant transitions to the workshop without full page reloads, while providing a clear "Portada & Noticias" link in the sidebar to return at any time.
+Lessons learned:
+- Hiding standard breadcrumbs and generic page titles when in landing mode gives the landing hero section full visual focus while preserving breadcrumbs when switching to workshop modules.
 
 ### AND-05 -- Modulo de Stash con Filtros, Busqueda y Conexion al API Real | eMOE: 3 CU | aMOE: 3 CU
 What was done:

@@ -1,4 +1,4 @@
-import { renderViews } from './views';
+import { renderViews, getLandingNewsArticles } from './views';
 import { renderModals } from './modals';
 import {
   ScaleCategory,
@@ -1036,6 +1036,365 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData, og?: 
       .mobile-menu-btn { display: block; }
       .topbar-search-wrapper { display: none; }
     }
+
+    /* --- Landing Page & Portada Styles --- */
+    .landing-container {
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+      padding-bottom: 4rem;
+    }
+
+    .landing-hero {
+      background: linear-gradient(135deg, rgba(14, 19, 31, 0.95) 0%, rgba(10, 15, 26, 0.98) 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 3rem 2.5rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .landing-hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+      opacity: 0.12;
+      pointer-events: none;
+    }
+
+    .landing-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--accent);
+      margin-bottom: 1.25rem;
+    }
+
+    .landing-title {
+      font-size: 2.3rem;
+      line-height: 1.2;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 1rem;
+      max-width: 820px;
+    }
+
+    .landing-desc {
+      font-size: 1.02rem;
+      line-height: 1.6;
+      color: #94a3b8;
+      max-width: 740px;
+      margin-bottom: 2rem;
+    }
+
+    .landing-cta-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2.5rem;
+    }
+
+    .btn-landing-primary {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 0.75rem 1.6rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .btn-landing-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+      opacity: 0.95;
+    }
+
+    .btn-landing-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.75rem 1.3rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-landing-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--accent);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .landing-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 1rem;
+      padding-top: 1.75rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .landing-stat-box {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .landing-stat-val {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: #fff;
+      font-family: 'Chakra Petch', sans-serif;
+    }
+
+    .landing-stat-lbl {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      margin-top: 0.2rem;
+      font-weight: 600;
+    }
+
+    .landing-section {
+      margin-top: 1rem;
+    }
+
+    .landing-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .landing-section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .landing-section-subtitle {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      margin-top: 0.35rem;
+    }
+
+    .landing-news-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .landing-news-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .landing-news-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .landing-news-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.85rem;
+    }
+
+    .landing-news-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+    }
+
+    .landing-news-meta {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    .landing-news-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.35;
+      margin-bottom: 0.65rem;
+    }
+
+    .landing-news-summary {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.55;
+      flex: 1;
+      margin-bottom: 1.25rem;
+    }
+
+    .landing-news-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 0.85rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.8rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .landing-gallery-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .landing-gallery-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    .landing-gallery-thumb {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+      background: #020617;
+      transition: transform 0.3s ease;
+    }
+
+    .landing-gallery-card:hover .landing-gallery-thumb {
+      transform: scale(1.04);
+    }
+
+    .landing-gallery-info {
+      padding: 0.85rem 1rem;
+    }
+
+    .landing-share-callout {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%);
+      border: 1px dashed rgba(6, 182, 212, 0.35);
+      border-radius: 12px;
+      padding: 1.75rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      margin-top: 1.5rem;
+    }
+
+    .landing-feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .landing-feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.2s ease;
+    }
+
+    .landing-feature-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-3px);
+    }
+
+    .landing-feature-icon {
+      font-size: 1.1rem;
+      margin-bottom: 0.85rem;
+      letter-spacing: 0.05em;
+    }
+
+    .landing-feature-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+
+    .landing-feature-desc {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.55;
+      flex: 1;
+      margin-bottom: 1.25rem;
+    }
+
+    .landing-feature-btn {
+      align-self: flex-start;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .landing-feature-btn:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .landing-cta-banner {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2.5rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
   </style>
 </head>
 <body>
@@ -1069,7 +1428,11 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData, og?: 
 
     <nav class="sidebar-nav">
       <div class="nav-group-title">Exploración</div>
-      <a class="nav-item active" onclick="switchTab('showcase')">
+      <a class="nav-item active" onclick="switchTab('landing')">
+        <span>Portada & Noticias</span>
+        <span class="nav-badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80;">Inicio</span>
+      </a>
+      <a class="nav-item" onclick="switchTab('showcase')">
         <span>Galería Showcase</span>
         <span class="nav-badge">${data.mediaAssets.length}</span>
       </a>
@@ -1159,8 +1522,13 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData, og?: 
         <span>Crear Portal</span>
       </button>
 
+      <!-- Enter Workshop Button -->
+      <button class="btn-primary" id="btn-topbar-enter-workshop" onclick="enterWorkshop()" style="background: linear-gradient(135deg, var(--primary), var(--accent)); font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,0.35);">
+        <span>Entrar al Taller</span>
+      </button>
+
       <!-- Primary Action CTA -->
-      <button class="btn-primary" onclick="openNewBuildModal()">
+      <button class="filter-pill" onclick="openNewBuildModal()" style="font-size: 0.8rem; padding: 0.38rem 0.75rem;">
         <span>+ Nueva Bitácora</span>
       </button>
 
@@ -1214,18 +1582,18 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData, og?: 
   <!-- Main Work Area -->
   <main id="main-content">
     <!-- Breadcrumbs Context -->
-    <div class="breadcrumbs">
-      <a href="/">Inicio</a>
+    <div class="breadcrumbs" id="top-breadcrumbs" style="display: none;">
+      <a href="/" onclick="switchTab('landing'); return false;">Inicio</a>
       <span>/</span>
-      <span id="breadcrumb-current">Galería Showcase</span>
+      <span id="breadcrumb-current">Portada & Noticias</span>
     </div>
 
     <!-- Page Header -->
-    <div class="page-header">
+    <div class="page-header" id="top-page-header" style="display: none;">
       <div>
         <h1 class="page-title" id="page-header-title">
-          Galería Showcase
-          <span class="status-badge">92 Obras Migradas</span>
+          Portada & Noticias
+          <span class="status-badge">Comunidad Live</span>
         </h1>
         <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.4rem;">
           ${config.tenantTagline} — Obras maestras de los modelistas fundadores y la comunidad.
@@ -1243,6 +1611,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
 
 <script>
   window.__COMM_BUILDERS = ${JSON.stringify(data.commissionBuilders || [])};
+  window.__LANDING_ARTICLES = ${JSON.stringify(getLandingNewsArticles(isGunpla))};
 
   // -------------------------------------------------------------------------
   // PWA & Service Worker Registration / Offline Cache Engine
@@ -1314,6 +1683,7 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
 
     // Update breadcrumb and title
     const titles = {
+      landing: 'Portada & Noticias',
       showcase: 'Galería Showcase',
       builds: 'Bitácoras de Armado (Build Logs)',
       kits: 'Catálogo de Kits',
@@ -1327,14 +1697,27 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     };
 
     if (titles[tabId]) {
-      document.getElementById('breadcrumb-current').textContent = titles[tabId];
-      document.getElementById('page-header-title').firstChild.textContent = titles[tabId] + ' ';
+      const bc = document.getElementById('breadcrumb-current');
+      if (bc) bc.textContent = titles[tabId];
+      const pht = document.getElementById('page-header-title');
+      if (pht && pht.firstChild) pht.firstChild.textContent = titles[tabId] + ' ';
+    }
+
+    // Contextualize top header elements
+    const topBc = document.getElementById('top-breadcrumbs');
+    const topPh = document.getElementById('top-page-header');
+    if (tabId === 'landing') {
+      if (topBc) topBc.style.display = 'none';
+      if (topPh) topPh.style.display = 'none';
+    } else {
+      if (topBc) topBc.style.display = 'flex';
+      if (topPh) topPh.style.display = 'flex';
     }
 
     // Set active sidebar item
     document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
       const clickAttr = item.getAttribute('onclick') || '';
-      if (clickAttr.indexOf(tabId) !== -1) {
+      if (clickAttr.indexOf("'" + tabId + "'") !== -1 || clickAttr.indexOf('"' + tabId + '"') !== -1) {
         item.classList.add('active');
       }
     });
@@ -1346,6 +1729,68 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     if (tabId === 'workbench') {
       loadWorkbenchData();
     }
+  }
+
+  function enterWorkshop() {
+    switchTab('workbench');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function openCollectorShareModal() {
+    if (currentUser) {
+      openNewBuildModal();
+    } else {
+      openAuthModal();
+      const authTitle = document.querySelector('#auth-modal h2');
+      if (authTitle) {
+        authTitle.textContent = 'Inicia sesion para compartir tus maquetas en la vitrina';
+      }
+    }
+  }
+
+  function openLandingArticle(articleId) {
+    const articles = window.__LANDING_ARTICLES || [];
+    const item = articles.find(a => a.id === articleId);
+    if (!item) return;
+
+    const modal = document.getElementById('modal-landing-article');
+    if (!modal) return;
+
+    const tagEl = document.getElementById('article-modal-tag');
+    if (tagEl) {
+      tagEl.textContent = item.tag;
+      tagEl.style.cssText = 'background: ' + item.tagColor + '; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px; text-transform: uppercase;';
+    }
+    const metaEl = document.getElementById('article-modal-meta');
+    if (metaEl) metaEl.textContent = item.date + ' \u2022 ' + item.readTime + ' de lectura';
+    const titleEl = document.getElementById('article-modal-title');
+    if (titleEl) titleEl.textContent = item.title;
+    const contentEl = document.getElementById('article-modal-content');
+    if (contentEl) contentEl.textContent = item.content;
+
+    modal.classList.add('active');
+  }
+
+  function closeLandingArticleModal(e) {
+    if (!e || e.target.id === 'modal-landing-article' || (e.target.classList && e.target.classList.contains('auth-close')) || (e.target.tagName === 'BUTTON' && !e.target.classList.contains('btn-primary'))) {
+      const modal = document.getElementById('modal-landing-article');
+      if (modal) modal.classList.remove('active');
+    }
+  }
+
+  function filterLandingNews(cat, btn) {
+    document.querySelectorAll('.landing-news-pill').forEach(p => p.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    const cards = document.querySelectorAll('.landing-news-card');
+    cards.forEach(c => {
+      const cardCat = c.getAttribute('data-category') || '';
+      if (cat === 'all' || cardCat === cat) {
+        c.style.display = 'flex';
+      } else {
+        c.style.display = 'none';
+      }
+    });
   }
 
   function filterShowcase(categoryId, btn) {
@@ -9391,6 +9836,12 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
   window.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     setInterval(loadUserNotifications, 30000);
+    const hash = window.location.hash.replace('#', '');
+    if (hash && ['workbench', 'builds', 'kits', 'paints', 'showcase', 'marketplace', 'builders', 'contests', 'commissions', 'shops'].includes(hash)) {
+      switchTab(hash);
+    } else {
+      switchTab('landing');
+    }
   });
 </script>
 

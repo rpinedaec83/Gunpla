@@ -18,16 +18,374 @@ export interface ViewRenderHelpers {
   founders: UserRecord[];
 }
 
+export interface LandingNewsArticle {
+  id: string;
+  category: string;
+  tag: string;
+  tagColor: string;
+  date: string;
+  readTime: string;
+  title: string;
+  summary: string;
+  content: string;
+}
+
+export function getLandingNewsArticles(isGunpla: boolean): LandingNewsArticle[] {
+  return isGunpla
+    ? [
+        {
+          id: 'news-gunpla-rg2',
+          category: 'lanzamientos',
+          tag: 'Gunpla Oficial',
+          tagColor: 'rgba(239, 68, 68, 0.2); color: #f87171;',
+          date: '24 Oct 2026',
+          readTime: '4 min',
+          title: 'Bandai Spirits anuncia nuevas lineas RG 2.0 y reediciones Ver.Ka para 2026',
+          summary: 'La division Hobby de Bandai confirma el lanzamiento de tres nuevos modelos con estructura interna multi-bloque articulada y plastico pre-sombreado de inyeccion multicapa.',
+          content: 'Bandai Spirits ha revelado de forma oficial su calendario de lanzamientos para la temporada. Entre las novedades mas destacadas se encuentra la evolucion del estandar Real Grade hacia el formato RG 2.0, que elimina completamente los conectores fragiles de polietileno (poly-caps) en favor de aleaciones de resina termoplastica de alta friccion. Ademas, el maestro Katoki Hajime anuncio una nueva version Ver.Ka con calcas al agua exclusivas y doble sistema de apertura de compuertas para exhibicion de mantenimiento. Disponibles para pre-orden en tiendas autorizadas.'
+        },
+        {
+          id: 'news-gunpla-panel-lining',
+          category: 'tecnicas',
+          tag: 'Tutorial Armado',
+          tagColor: 'rgba(6, 182, 212, 0.2); color: #38bdf8;',
+          date: '22 Oct 2026',
+          readTime: '5 min',
+          title: 'Guia de Panel Lining: Capilares vs Gundam Markers sin quebrar el plastico',
+          summary: 'El diluyente de esmalte puede provocar microfracturas en el plastico ABS y poliestireno sin imprimar. Te explicamos como aplicar lavados seguros y sellado brillante previo.',
+          content: 'El perfilado de lineas (panel lining) es el paso fundamental para dar profundidad y escala a cualquier modelo Gunpla. Sin embargo, aplicar soluciones a base de solventes de esmalte sobre piezas sin sellar debilita las uniones internas de articulaciones fabricadas en plastico ABS. En esta guia recomendamos aplicar previamente una fina capa de barniz brillante acrilico (Gloss Clear), utilizar la accion capilar del pincel aplicador con toques breves de 0.5 segundos y limpiar los excesos con bastoncillos humedecidos en alcohol isopropilico o disolvente de bajo olor Enamel Odorless Thinner.'
+        },
+        {
+          id: 'news-gunpla-gbwc',
+          category: 'eventos',
+          tag: 'Certamen Mundial',
+          tagColor: 'rgba(245, 158, 11, 0.2); color: #fbbf24;',
+          date: '20 Oct 2026',
+          readTime: '3 min',
+          title: 'Gunpla Builders World Cup (GBWC): Calendario oficial y criterios del jurado',
+          summary: 'Apertura de inscripciones para el certamen internacional. Conoce los tres pilares evaluados: tecnica de pintura, concepto artistico y modificaciones estructurales (kitbashing).',
+          content: 'El comite organizador de GBWC ha publicado las bases de participacion para la edicion actual. Los participantes podran competir en las categorias Junior, Open y U-21. El jurado calificador valorara con un 40% la armonia del esquema de color y acabado de pintura, un 30% la originalidad de la pose dinamica y diorama de soporte, y un 30% el trabajo artesanal de corte, masillado y detalles en pla-plate (laminas de estireno). Prepara tu bitacora en nuestra plataforma para ensayar tu esquema antes de la entrega final.'
+        },
+        {
+          id: 'news-gunpla-nippers',
+          category: 'herramientas',
+          tag: 'Taller & Precision',
+          tagColor: 'rgba(16, 185, 129, 0.2); color: #34d399;',
+          date: '18 Oct 2026',
+          readTime: '4 min',
+          title: 'Mantenimiento de Alicates Single-Blade y Afilado de Cuchillas de Precision',
+          summary: 'Un alicate desafilado produce marcas de tension blanquecina (stress marks) en las piezas. Aprende a calibrar el tornillo de tope y lubricar la articulacion central.',
+          content: 'Los alicates de un solo filo (como los clasicos GodHand SPN-120 o Tamiya 74123) cortan el bebedero (runner) como una guillotina microscopica. Para mantener su filo impecable: nunca cortes plastico transparente ni bebederos gruesos de mas de 3mm con la punta fina; ajusta el tornillo de tope para que la hoja afilada no choque contra el yunque; y aplica una gota de aceite mineral cada dos semanas. Utiliza nuestro rastreador de vida util en la seccion de herramientas del taller para controlar el desgaste.'
+        }
+      ]
+    : [
+        {
+          id: 'news-plamo-releases',
+          category: 'lanzamientos',
+          tag: 'Escala Militar',
+          tagColor: 'rgba(59, 130, 246, 0.2); color: #60a5fa;',
+          date: '24 Oct 2026',
+          readTime: '4 min',
+          title: 'Nuevos Moldes 2026: Tamiya 1/35 Panzer y Eduard 1/48 Spitfire con fotograbados',
+          summary: 'Tamiya sorprende con un nuevo blindaje texturizado por electroerosion y orugas de suspension articulada, mientras Eduard incluye mascaras precortadas y cabina en resina 3D.',
+          content: 'El mercado del modelismo historico recibe grandes lanzamientos este trimestre. Tamiya renueva su iconica linea militar 1/35 incorporando soldaduras reales modeladas en 3D y piezas transparentes para opticas y periscopios. Por su parte, Eduard presenta su edicion ProfiPACK del Spitfire Mk.IX en escala 1/48, que incluye hoja de fotograbados coloreados de fabrica para el panel de instrumentos y calcas Cartograf de maxima precision.'
+        },
+        {
+          id: 'news-plamo-weathering',
+          category: 'tecnicas',
+          tag: 'Pintura & Weathering',
+          tagColor: 'rgba(249, 115, 22, 0.2); color: #fb923c;',
+          date: '22 Oct 2026',
+          readTime: '6 min',
+          title: 'Masterclass de Envejecido: Oxido, Chorretones de Grasa y Polvo Acumulado',
+          summary: 'Secretos para aplicar chipping con esponja, lavados de esmalte para lineas de remaches y fijacion de pigmentos minerales en trenes de rodaje.',
+          content: 'El envejecido realista requiere capas sucesivas y paciencia. Comenzamos con la tecnica de desconchones (chipping) en dos tonos: primero un tono base aclarado para marcar el raspado superficial y luego un marron oxido oscuro en el centro del golpe. A continuacion, se aplican trazos verticales de oleo diluido (streaking grime) difuminados hacia abajo con pincel humedo en White Spirit. Finalmente, los pigmentos se fijan con barniz mate o fijador especifico sin inundar la superficie.'
+        },
+        {
+          id: 'news-plamo-primer',
+          category: 'herramientas',
+          tag: 'Materiales',
+          tagColor: 'rgba(139, 92, 246, 0.2); color: #a78bfa;',
+          date: '19 Oct 2026',
+          readTime: '5 min',
+          title: 'Guia de Imprimacion para Resina y Fotograbado: Como evitar que la pintura salte',
+          summary: 'Las piezas metalicas carecen de porosidad. Aprende a aplicar decapado suave, Metal Primer acido y selladores de poliuretano para un agarre indestructible.',
+          content: 'Uno de los mayores dolores de cabeza en el modelismo a escala es despegar la cinta de enmascarar y descubrir que la pintura se ha venido con ella. Antes de pintar cualquier pieza de laton o fotograbado, es imprescindible lijar suavemente con grano 1000 para crear micro-anclajes y desengrasar con acetona o alcohol. Aplica una capa finisima de imprimacion mordiente para metales (Metal Primer) a presion media (18-20 PSI) antes del color definitivo.'
+        },
+        {
+          id: 'news-plamo-dioramas',
+          category: 'tecnicas',
+          tag: 'Escenografia',
+          tagColor: 'rgba(16, 185, 129, 0.2); color: #34d399;',
+          date: '17 Oct 2026',
+          readTime: '5 min',
+          title: 'Dioramas de Aviacion: Construccion de Pistas de Hormigon y Tierra Natural',
+          summary: 'Como utilizar carton pluma de alta densidad, pastas texturizadas y estireno para reproducir losas de aerodromo agrietadas con brea de dilatacion.',
+          content: 'Para crear una base creible de aviacion 1/48: corta losas cuadradas en placa de espuma rigida de poliestireno extruido (XPS), marca las juntas de dilatacion con un punzon fino y rellena las juntas con pintura negra brillante espesada con arena fina para simular el alquitran o brea de sellado. Aplica lavados de tonos grises y ocres para reflejar el desgaste climatico y manchas de aceite concentradas en la zona de aparcamiento del motor.'
+        }
+      ];
+}
+
 export function renderViews(
   config: AppShellConfig,
   data: AppShellData,
   helpers: ViewRenderHelpers
 ): string {
   const { escapeHtml, categoryPills, founders } = helpers;
+  const isGunpla = config.tenantSlug === 'gunplajunkies';
+  const newsArticles = getLandingNewsArticles(isGunpla);
+
+  const featuredGallery = (data.mediaAssets || []).slice(0, 8);
 
   return `
+    <!-- 0. PORTADA & LANDING PAGE (VISTA ACTIVA POR DEFECTO) -->
+    <section id="view-landing" class="view-section active">
+      <div class="landing-container">
+
+        <!-- HERO PRINCIPAL -->
+        <div class="landing-hero" id="landing-hero">
+          <div class="landing-badge">
+            <span>[+]</span>
+            <span>${isGunpla ? 'Portal Oficial Gunpla & Mecha' : 'Portal Oficial Modelismo a Escala'}</span>
+          </div>
+
+          <h1 class="landing-title">
+            ${
+              isGunpla
+                ? 'El Santuario de Gunpla: Noticias, Vitrina y Taller Virtual'
+                : 'PlamoScale: Noticias, Vitrina Comunitaria y Taller de Modelismo'
+            }
+          </h1>
+
+          <p class="landing-desc">
+            ${
+              isGunpla
+                ? 'Explora las novedades y lanzamientos de Bandai Spirits, admira las fotos de los coleccionistas de la comunidad y entra a tu taller digital para gestionar tu Stash, pinturas y bitacoras de armado.'
+                : 'Descubre noticias del modelismo militar, aviacion, autos y dioramas. Comparte tus obras terminadas y accede al taller virtual para planificar y controlar tus proyectos a escala.'
+            }
+          </p>
+
+          <div class="landing-cta-row">
+            <button class="btn-landing-primary" onclick="enterWorkshop()">
+              <span>Entrar al Taller</span>
+              <span>--></span>
+            </button>
+            <a href="#landing-news-section" class="btn-landing-secondary" onclick="document.getElementById('landing-news-section').scrollIntoView({ behavior: 'smooth' }); return false;">
+              <span>Noticias y Novedades</span>
+            </a>
+            <a href="#landing-gallery-section" class="btn-landing-secondary" onclick="document.getElementById('landing-gallery-section').scrollIntoView({ behavior: 'smooth' }); return false;">
+              <span>Galeria de Coleccionistas</span>
+            </a>
+            <button class="btn-landing-secondary" onclick="openCollectorShareModal()">
+              <span>[+] Compartir mis Fotos</span>
+            </button>
+          </div>
+
+          <!-- Metricas de Plataforma -->
+          <div class="landing-stats-grid">
+            <div class="landing-stat-box">
+              <span class="landing-stat-val">${data.kits.length}</span>
+              <span class="landing-stat-lbl">Kits en Catalogo</span>
+            </div>
+            <div class="landing-stat-box">
+              <span class="landing-stat-val">${data.paints.length}</span>
+              <span class="landing-stat-lbl">Pinturas & Swatches</span>
+            </div>
+            <div class="landing-stat-box">
+              <span class="landing-stat-val">${data.mediaAssets.length}</span>
+              <span class="landing-stat-lbl">Obras en Vitrina</span>
+            </div>
+            <div class="landing-stat-box">
+              <span class="landing-stat-val">${data.builds.length}</span>
+              <span class="landing-stat-lbl">Bitacoras de Armado</span>
+            </div>
+            <div class="landing-stat-box">
+              <span class="landing-stat-val">${data.builders.length}</span>
+              <span class="landing-stat-lbl">Modelistas Activos</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCION 1: NOTICIAS & COSAS INTERESANTES -->
+        <section id="landing-news-section" class="landing-section">
+          <div class="landing-section-header">
+            <div>
+              <h2 class="landing-section-title">Noticias & Cosas Interesantes</h2>
+              <p class="landing-section-subtitle">
+                Lanzamientos de la industria, guias de armado, tecnicas de pintura y novedades de la comunidad.
+              </p>
+            </div>
+            <div class="filter-pills-bar" style="margin-bottom: 0;">
+              <button class="filter-pill landing-news-pill active" onclick="filterLandingNews('all', this)">Todas</button>
+              <button class="filter-pill landing-news-pill" onclick="filterLandingNews('lanzamientos', this)">Lanzamientos</button>
+              <button class="filter-pill landing-news-pill" onclick="filterLandingNews('tecnicas', this)">Tecnicas</button>
+              <button class="filter-pill landing-news-pill" onclick="filterLandingNews('herramientas', this)">Herramientas</button>
+              <button class="filter-pill landing-news-pill" onclick="filterLandingNews('eventos', this)">Eventos</button>
+            </div>
+          </div>
+
+          <div class="landing-news-grid" id="landing-news-grid">
+            ${newsArticles
+              .map(
+                (art) => `
+              <article class="landing-news-card" data-category="${art.category}" onclick="openLandingArticle('${art.id}')">
+                <div class="landing-news-header">
+                  <span class="landing-news-tag" style="background: ${art.tagColor};">${art.tag}</span>
+                  <span class="landing-news-meta">${art.date} &bull; ${art.readTime}</span>
+                </div>
+                <h3 class="landing-news-title">${art.title}</h3>
+                <p class="landing-news-summary">${art.summary}</p>
+                <div class="landing-news-footer">
+                  <span>Leer articulo completo</span>
+                  <span>--></span>
+                </div>
+              </article>
+            `
+              )
+              .join('')}
+          </div>
+        </section>
+
+        <!-- SECCION 2: GALERIA DE COLECCIONISTAS & FOTOS DE LA COMUNIDAD -->
+        <section id="landing-gallery-section" class="landing-section">
+          <div class="landing-section-header">
+            <div>
+              <h2 class="landing-section-title">Galeria de los Coleccionistas</h2>
+              <p class="landing-section-subtitle">
+                Obras terminadas, vitrinas y proyectos en mesa compartidos por modelistas de la comunidad.
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+              <button class="btn-primary" onclick="openCollectorShareModal()">
+                <span>[+] Compartir mi Galeria</span>
+              </button>
+              <button class="filter-pill" onclick="switchTab('showcase')">
+                <span>Ver Vitrina Completa (${data.mediaAssets.length} Fotos)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Grid de Fotos de Coleccionistas -->
+          <div class="gallery-grid">
+            ${featuredGallery
+              .map(
+                (m) => `
+              <div class="landing-gallery-card" onclick="openLightbox('${m.fullUrl}', '${m.title.replace(/'/g, "\\'")}', '@${m.builderUsername}')">
+                <div style="overflow: hidden; height: 200px; background: #020617;">
+                  <img class="landing-gallery-thumb" src="${m.thumbUrl}" alt="${escapeHtml(m.altText || m.title)}" loading="lazy" />
+                </div>
+                <div class="landing-gallery-info">
+                  <div style="font-size: 0.92rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.25rem;">
+                    ${m.title}
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #94a3b8;">
+                    <span>Por <strong>@${m.builderUsername}</strong></span>
+                    <span style="font-size: 0.7rem; color: var(--accent); font-weight: 600; text-transform: uppercase;">${m.category}</span>
+                  </div>
+                </div>
+              </div>
+            `
+              )
+              .join('')}
+          </div>
+
+          <!-- Banner para Invitar a Compartir Galerias -->
+          <div class="landing-share-callout">
+            <div>
+              <div style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem;">
+                Quieres ver tus maquetas en la portada?
+              </div>
+              <div style="font-size: 0.88rem; color: #94a3b8; max-width: 650px;">
+                Sube las fotos de tus modelos terminados o en proceso, documenta tus recetas de pintura y comparte tu pasion con otros coleccionistas.
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+              <button class="btn-landing-primary" onclick="openCollectorShareModal()">
+                <span>Subir Fotos a la Galeria</span>
+              </button>
+              <button class="btn-landing-secondary" onclick="switchTab('showcase')">
+                <span>Explorar Showcase</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECCION 3: HERRAMIENTAS DE TU TALLER DIGITAL -->
+        <section id="landing-workshop-section" class="landing-section">
+          <div class="landing-section-header">
+            <div>
+              <h2 class="landing-section-title">Tu Taller Digital de Modelismo</h2>
+              <p class="landing-section-subtitle">
+                Una suite completa de herramientas para organizar tu stash, registrar tus montajes y calcular tus mezclas de pintura.
+              </p>
+            </div>
+            <button class="btn-primary" onclick="enterWorkshop()">
+              <span>Entrar al Taller</span>
+            </button>
+          </div>
+
+          <div class="landing-feature-grid">
+            <div class="landing-feature-card">
+              <div class="landing-feature-icon" style="font-family: 'Chakra Petch', sans-serif; font-weight: 700; color: var(--accent);">[STASH]</div>
+              <h3 class="landing-feature-title">Banco de Trabajo & Stash</h3>
+              <p class="landing-feature-desc">
+                Gestiona maquetas sin armar, kits en proceso y vitrina terminada. Seguimiento de horas invertidas, valor de inventario y vida util de cuchillas.
+              </p>
+              <button class="landing-feature-btn" onclick="enterWorkshop()">Gestionar Stash --></button>
+            </div>
+
+            <div class="landing-feature-card">
+              <div class="landing-feature-icon" style="font-family: 'Chakra Petch', sans-serif; font-weight: 700; color: var(--accent);">[BITACORAS]</div>
+              <h3 class="landing-feature-title">Bitacoras Paso a Paso (WIP)</h3>
+              <p class="landing-feature-desc">
+                Documenta despiece, imprimacion, tecnicas de sombreado, calcas y barnices con fotografias en alta resolucion y recetas de pintura asociadas.
+              </p>
+              <button class="landing-feature-btn" onclick="switchTab('builds')">Ver Bitacoras --></button>
+            </div>
+
+            <div class="landing-feature-card">
+              <div class="landing-feature-icon" style="font-family: 'Chakra Petch', sans-serif; font-weight: 700; color: var(--accent);">[CATALOGO]</div>
+              <h3 class="landing-feature-title">Catalogo Central & Scalemates</h3>
+              <p class="landing-feature-desc">
+                Busqueda de kits oficiales, marcas lideres y escaneo de codigos de barra JAN/EAN con sincronizacion automatica de especificaciones.
+              </p>
+              <button class="landing-feature-btn" onclick="switchTab('kits')">Explorar Catalogo --></button>
+            </div>
+
+            <div class="landing-feature-card">
+              <div class="landing-feature-icon" style="font-family: 'Chakra Petch', sans-serif; font-weight: 700; color: var(--accent);">[PINTURAS]</div>
+              <h3 class="landing-feature-title">Rack de Pinturas & Calculador PSI</h3>
+              <p class="landing-feature-desc">
+                Control de existencias de pinturas (Mr. Color, Tamiya, Vallejo), carta de equivalencias entre marcas y calculadora de dilucion para aerografo.
+              </p>
+              <button class="landing-feature-btn" onclick="switchTab('paints')">Ver Pinturas --></button>
+            </div>
+          </div>
+
+          <!-- Banner CTA Final de Ingreso -->
+          <div class="landing-cta-banner" style="margin-top: 2rem;">
+            <h3 style="font-size: 1.5rem; font-weight: 800; color: #fff;">
+              Todo listo para comenzar en tu taller?
+            </h3>
+            <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 650px;">
+              Ingresa para tener a mano todas las herramientas que hemos desarrollado: inventario de kits, despiece tecnico, calculadora de aerografo y mas.
+            </p>
+            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+              <button class="btn-landing-primary" onclick="enterWorkshop()" style="font-size: 1.05rem; padding: 0.85rem 2rem;">
+                <span>Entrar al Taller Ahora</span>
+              </button>
+              <button class="btn-landing-secondary" onclick="openAuthModal()">
+                <span>Iniciar Sesion 1-Click</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </section>
+
     <!-- 1. SHOWCASE TAB -->
-    <section id="view-showcase" class="view-section active">
+    <section id="view-showcase" class="view-section">
       <!-- Category Filter Pills -->
       <div class="filter-pills-bar">
         ${categoryPills
@@ -837,7 +1195,7 @@ export function renderViews(
                     <span>📜</span> Reglas de Participación:
                   </div>
                   <ul style="padding-left: 1.25rem; font-size: 0.82rem; color: #94a3b8; line-height: 1.6;">
-                    ${c.rules.map((r) => `<li>${r}</li>`).join('')}
+                    ${(c.rules || []).map((r) => `<li>${r}</li>`).join('')}
                   </ul>
                 </div>
                 <div style="padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border-color);">
@@ -845,7 +1203,7 @@ export function renderViews(
                     <span>🎁</span> Premios & Reconocimientos:
                   </div>
                   <ul style="padding-left: 1.25rem; font-size: 0.82rem; color: #94a3b8; line-height: 1.6;">
-                    ${c.prizes.map((p) => `<li>${p}</li>`).join('')}
+                    ${(c.prizes || []).map((p) => `<li>${p}</li>`).join('')}
                   </ul>
                 </div>
               </div>

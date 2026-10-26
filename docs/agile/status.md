@@ -4,12 +4,28 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- Native Android Mobile App M1 & AND-05 Stash API Live on Physical Device, DT26 Redis 7 Caching, PostgreSQL 16 Relational Persistence, Full Monorepo Architecture)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + DT20-DT26 + Native Android App (`apps/mobile-android`) with real Stash API integration (AND-05) successfully installed and verified on physical Xiaomi Redmi device via ADB Wireless Debugging. 156 backend unit tests + mobile unit tests passing.
-- Current branch or release line: `feature/and-05-stash-management` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT27 Public Landing Page with News & Collector Showcase, Native Android App M1 & AND-05 Stash API Live on Device, DT26 Redis 7 Caching, PostgreSQL 16 Persistence)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + DT20-DT27 + Native Android App (`apps/mobile-android`). 165 backend/web unit tests + mobile unit tests passing. Full smoketest green.
+- Current branch or release line: `feature/dt27-portal-landing-page` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Landing Page Publica con Noticias, Galeria de Coleccionistas y Acceso al Taller (DT27):**
+  - **Experiencia de Portada Activa por Defecto (`#view-landing`):**
+    - Portada integral para visitantes que acceden a `gunplajunkies.com` y `plamoscale.com` con identidad visual tematica y metricas de plataforma en vivo.
+    - Hero principal con llamada a la accion destacada "Entrar al Taller", busqueda, boton 1-Click SSO y enlace bidireccional "Portada & Noticias" en la barra lateral.
+  - **Feed de Noticias y Novedades del Modelismo (`#landing-news-section`):**
+    - Contenido curado por tenant con selector de categorias (Lanzamientos, Tecnicas, Herramientas, Eventos).
+    - Articulos de Gunpla: Lanzamientos Bandai Spirits RG 2.0 / Ver.Ka, guia de Panel Lining sin quebrar el plastico, bases de GBWC y mantenimiento de alicates single-blade.
+    - Articulos de PlamoScale: Nuevos moldes 1/35 Tamiya y 1/48 Eduard, masterclass de envejecido/weathering, imprimacion mordiente de fotograbados y pistas para dioramas.
+    - Modal de lectura completa (`#modal-landing-article`) con transicion directa al Taller.
+  - **Muro y Vitrina de Coleccionistas (`#landing-gallery-section`):**
+    - Mosaico de fotografias de alta resolucion con autor, grado/escala y visor lightbox.
+    - Bloque de accion "Compartir mi Galeria / Subir Fotos" (`openCollectorShareModal`) conectado a la creacion de bitacoras y autenticacion.
+  - **Showcase de Herramientas del Taller (`#landing-workshop-section`):**
+    - Tarjetas interactivas de Stash, Bitacoras paso a paso, Catalogo Central Scalemates y Rack de Pinturas con calculador PSI.
+    - Boton "Entrar al Taller Ahora" para conmutar inmediatamente a la suite completa de modelismo.
 
 - **Aplicación Móvil Nativa Android (Jetpack Compose & Material 3 - M1):**
   - **Arquitectura y Stack Moderno (`apps/mobile-android`):**

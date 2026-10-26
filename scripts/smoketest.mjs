@@ -2995,7 +2995,45 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT24 Workbench Tool Inventory & Blade Wear Tracker verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN + WORKBENCH-TOOLS CHECKS PASSED ===');
+    // -------------------------------------------------------------------------
+    // 34. DT27 - Public Community Landing Page & Workbench Portal Switcher
+    // -------------------------------------------------------------------------
+    console.log('\n--- Verifying DT27 Public Community Landing Page & Workbench Switcher ---');
+
+    // 1. Fetch PlamoScale front page
+    const plamoLandingRes = await fetch(`${plamoUrl}/`);
+    assert.equal(plamoLandingRes.status, 200);
+    const plamoLandingHtml = await plamoLandingRes.text();
+
+    assert.ok(plamoLandingHtml.includes('id="view-landing" class="view-section active"'), 'PlamoScale must render active landing view');
+    assert.ok(plamoLandingHtml.includes('id="landing-hero"'), 'PlamoScale must render landing hero');
+    assert.ok(plamoLandingHtml.includes('id="landing-news-section"'), 'PlamoScale must render landing news section');
+    assert.ok(plamoLandingHtml.includes('id="landing-gallery-section"'), 'PlamoScale must render landing gallery section');
+    assert.ok(plamoLandingHtml.includes('id="landing-workshop-section"'), 'PlamoScale must render landing workshop section');
+    assert.ok(plamoLandingHtml.includes('btn-topbar-enter-workshop'), 'PlamoScale must render enter workshop button in topbar');
+    assert.ok(plamoLandingHtml.includes('id="modal-landing-article"'), 'PlamoScale must render landing article modal');
+    assert.ok(plamoLandingHtml.includes('Nuevos Moldes 2026: Tamiya 1/35 Panzer'), 'PlamoScale must render curated scale modeling news');
+
+    // 2. Fetch GunplaJunkies front page
+    const gunplaLandingRes = await fetch(`${gunplaUrl}/`);
+    assert.equal(gunplaLandingRes.status, 200);
+    const gunplaLandingHtml = await gunplaLandingRes.text();
+
+    assert.ok(gunplaLandingHtml.includes('id="view-landing" class="view-section active"'), 'GunplaJunkies must render active landing view');
+    assert.ok(gunplaLandingHtml.includes('id="landing-hero"'), 'GunplaJunkies must render landing hero');
+    assert.ok(gunplaLandingHtml.includes('El Santuario de Gunpla: Noticias, Vitrina y Taller Virtual'), 'GunplaJunkies must render Gunpla hero headline');
+    assert.ok(gunplaLandingHtml.includes('Bandai Spirits anuncia nuevas lineas RG 2.0'), 'GunplaJunkies must render curated Gunpla news');
+    assert.ok(gunplaLandingHtml.includes('btn-topbar-enter-workshop'), 'GunplaJunkies must render enter workshop button in topbar');
+
+    // 3. Verify JavaScript functions for interactive workshop transition and gallery sharing
+    assert.ok(gunplaLandingHtml.includes('function enterWorkshop('), 'Must define enterWorkshop function');
+    assert.ok(gunplaLandingHtml.includes('function openCollectorShareModal('), 'Must define openCollectorShareModal function');
+    assert.ok(gunplaLandingHtml.includes('function openLandingArticle('), 'Must define openLandingArticle function');
+    assert.ok(gunplaLandingHtml.includes('function filterLandingNews('), 'Must define filterLandingNews function');
+
+    console.log('[PASS] DT27 Public Community Landing Page & Workbench Switcher verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN + WORKBENCH-TOOLS + LANDING-PAGE CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

@@ -2723,7 +2723,7 @@ export function renderModals(
     <!-- Footer Actions -->
     <div style="padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.95); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
       <div style="font-size: 0.75rem; color: #94a3b8;">
-        💡 Regla de oro del modelista: Nunca fuerces un alicate ni uses una cuchilla desafilada en plásticos transparentes.
+        Regla de oro del modelista: Nunca fuerces un alicate ni uses una cuchilla desafilada en plasticos transparentes.
       </div>
       <button type="button" class="btn-primary" onclick="closeToolsInventoryModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">
         Cerrar
@@ -2732,8 +2732,31 @@ export function renderModals(
   </div>
 </div>
 
-
-
+<!-- Modal Lector de Articulo de Noticias (Landing Page) -->
+<div id="modal-landing-article" class="custom-modal" onclick="closeLandingArticleModal(event)">
+  <div class="auth-box" style="max-width: 680px; width: 90%; background: #0f172a; border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem;" onclick="event.stopPropagation()">
+    <span class="auth-close" onclick="closeLandingArticleModal()" style="position: absolute; top: 1rem; right: 1.25rem; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">&times;</span>
+    <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.85rem;">
+      <span id="article-modal-tag" class="landing-news-tag" style="background: rgba(239, 68, 68, 0.2); color: #f87171; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 4px; text-transform: uppercase;">Noticia</span>
+      <span id="article-modal-meta" style="font-size: 0.75rem; color: #64748b;">24 Oct 2026</span>
+    </div>
+    <h2 id="article-modal-title" style="font-size: 1.35rem; font-weight: 700; color: #fff; margin-bottom: 1.25rem; line-height: 1.35; font-family: 'Chakra Petch', sans-serif;">
+      Titulo del Articulo
+    </h2>
+    <div id="article-modal-content" style="color: #cbd5e1; font-size: 0.92rem; line-height: 1.7; margin-bottom: 1.75rem; max-height: 380px; overflow-y: auto; padding-right: 0.5rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 1rem;">
+      Cargando contenido...
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 1.2rem; flex-wrap: wrap; gap: 0.75rem;">
+      <button type="button" class="filter-pill" onclick="closeLandingArticleModal()" style="font-size: 0.82rem; padding: 0.45rem 1rem;">
+        Cerrar
+      </button>
+      <button type="button" class="btn-primary" onclick="closeLandingArticleModal(); enterWorkshop();" style="font-size: 0.85rem; padding: 0.5rem 1.2rem; background: linear-gradient(135deg, var(--primary), var(--accent));">
+        <span>Ir a mi Taller</span>
+        <span>--></span>
+      </button>
+    </div>
+  </div>
+</div>
 
 `;
 }
