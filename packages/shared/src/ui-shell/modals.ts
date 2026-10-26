@@ -2635,6 +2635,103 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Modal: Workbench Tools & Blade Wear Tracker (DT24) -->
+<div id="modal-workbench-tools" onclick="closeToolsInventoryModal(event)" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 1rem;">
+  <div onclick="event.stopPropagation()" style="background: #0b1329; border: 1px solid #1e293b; border-radius: 12px; width: 100%; max-width: 900px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);">
+    <!-- Header -->
+    <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.95);">
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <span style="font-size: 1.4rem;">✂️</span>
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Gestión de Herramientas & Cuchillas</h3>
+          <p style="font-size: 0.75rem; color: #94a3b8; margin: 0;">Control de cortes y alerta de cambio de filo para evitar estrés en el plástico</p>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <button id="btn-toggle-tool-drawer" type="button" class="btn-primary" onclick="toggleAddToolDrawer()" style="font-size: 0.78rem; padding: 0.4rem 0.85rem; background: #eab308; color: #000; font-weight: 600; border: none;">
+          + Nueva Herramienta
+        </button>
+        <span class="auth-close" onclick="closeToolsInventoryModal()" style="font-size: 1.5rem; cursor: pointer; color: #94a3b8; line-height: 1;">&times;</span>
+      </div>
+    </div>
+
+    <!-- Add Tool Form Drawer (Collapsible) -->
+    <div id="tool-add-form-drawer" style="display: none; background: #0f172a; padding: 1rem 1.5rem; border-bottom: 1px solid #334155;">
+      <h4 style="font-size: 0.88rem; font-weight: 600; color: #facc15; margin: 0 0 0.75rem 0;">Registrar Herramienta en Taller</h4>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 0.75rem;">
+        <div>
+          <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.2rem;">Nombre de Herramienta *</label>
+          <input id="tool-input-name" type="text" placeholder="Ej: GodHand Ultimate Nipper SPN-120" style="width: 100%; padding: 0.4rem 0.6rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.8rem;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.2rem;">Marca</label>
+          <input id="tool-input-brand" type="text" placeholder="Ej: GodHand, Olfa, Tamiya, BMC" style="width: 100%; padding: 0.4rem 0.6rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.8rem;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.2rem;">Categoría *</label>
+          <select id="tool-input-category" style="width: 100%; padding: 0.4rem 0.6rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.8rem;">
+            <option value="nippers">✂️ Alicates de Corte (Nippers)</option>
+            <option value="knives">🗡️ Cuchilla de Precisión / Bisturí</option>
+            <option value="chisels">📐 Cincel de Paneles (Scribing Chisel)</option>
+            <option value="abrasives">🪨 Abrasivos / Limas Nanoglass</option>
+            <option value="airbrush">🎨 Aerógrafo</option>
+            <option value="rotary-drill">⚙️ Mototool / Taladro Manual</option>
+            <option value="general">🛠️ Otra Herramienta</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.2rem;">Modelo / Especificación</label>
+          <input id="tool-input-model" type="text" placeholder="Ej: Filo único 0.15mm / AK-4" style="width: 100%; padding: 0.4rem 0.6rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.8rem;" />
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1.2rem;">
+          <input id="tool-input-track-wear" type="checkbox" checked style="accent-color: #eab308; cursor: pointer; width: 16px; height: 16px;" />
+          <label for="tool-input-track-wear" style="font-size: 0.75rem; color: #cbd5e1; cursor: pointer;">Monitorear Desgaste de Filo</label>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.2rem;">Cortes Máx. Recomendados</label>
+          <input id="tool-input-max-cuts" type="number" min="50" max="5000" value="500" style="width: 100%; padding: 0.4rem 0.6rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.8rem;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.2rem;">SKU Cuchilla / Repuesto</label>
+          <input id="tool-input-blade-sku" type="text" placeholder="Ej: Olfa KB-4/30 / Sab 0.2mm" style="width: 100%; padding: 0.4rem 0.6rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.8rem;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.2rem;">Cuchillas en Stock de Repuesto</label>
+          <input id="tool-input-spare-blades" type="number" min="0" max="200" value="5" style="width: 100%; padding: 0.4rem 0.6rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.8rem;" />
+        </div>
+      </div>
+
+      <div style="margin-bottom: 0.75rem;">
+        <label style="display: block; font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.2rem;">Notas de Uso y Mantenimiento</label>
+        <input id="tool-input-notes" type="text" placeholder="Ej: Aceitar articulación periódicamente con aceite mineral. Solo cortar PS suave." style="width: 100%; padding: 0.4rem 0.6rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.8rem;" />
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <button type="button" class="filter-pill" onclick="toggleAddToolDrawer()" style="font-size: 0.75rem;">Cancelar</button>
+        <button id="btn-save-workbench-tool" type="button" class="btn-primary" onclick="submitNewWorkbenchTool()" style="font-size: 0.75rem; padding: 0.35rem 0.85rem; background: #eab308; color: #000; font-weight: 600; border: none;">Guardar Herramienta</button>
+      </div>
+    </div>
+
+    <!-- Tools Modal Content Body -->
+    <div id="tool-modal-cards-container" style="padding: 1.25rem 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.85rem; min-height: 250px;">
+      <p style="color: #94a3b8; font-size: 0.85rem; text-align: center; padding: 2rem;">Cargando inventario de herramientas...</p>
+    </div>
+
+    <!-- Footer Actions -->
+    <div style="padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.95); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+      <div style="font-size: 0.75rem; color: #94a3b8;">
+        💡 Regla de oro del modelista: Nunca fuerces un alicate ni uses una cuchilla desafilada en plásticos transparentes.
+      </div>
+      <button type="button" class="btn-primary" onclick="closeToolsInventoryModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>
+
 
 
 

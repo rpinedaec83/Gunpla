@@ -3377,6 +3377,10 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
 
     const targetBtn = document.getElementById('wb-subtab-btn-' + subtab);
     if (targetBtn) targetBtn.classList.add('active');
+
+    if (subtab === 'tools') {
+      loadWorkbenchTools();
+    }
   }
 
   // --- Barcode Scanner & Instant Stash Registration Engine ---
@@ -6749,6 +6753,350 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     window.open('/api/v1/builds/' + encodeURIComponent(currentSubassemblyBuildId) + '/subassemblies/export', '_blank');
   }
 
+  // --- DT24: Workbench Tool Inventory & Blade Wear Tracker ---
+  let workbenchToolsData = [];
+  let workbenchToolsSummary = null;
+  let currentToolFilter = 'all';
+
+  async function openToolsInventoryModal(openDrawer) {
+    if (!currentUser) {
+      openAuthModal();
+      return;
+    }
+    const m = document.getElementById('modal-workbench-tools');
+    if (!m) return;
+    m.style.display = 'flex';
+    m.classList.add('active');
+
+    const drawer = document.getElementById('tool-add-form-drawer');
+    if (drawer) {
+      drawer.style.display = openDrawer ? 'block' : 'none';
+    }
+
+    await loadWorkbenchTools();
+  }
+
+  function closeToolsInventoryModal(e) {
+    if (!e || e.target.id === 'modal-workbench-tools' || (e.target.tagName === 'SPAN' && e.target.textContent === '×') || !e.target) {
+      const m = document.getElementById('modal-workbench-tools');
+      if (m) {
+        m.classList.remove('active');
+        m.style.display = 'none';
+      }
+    }
+  }
+
+  function toggleAddToolDrawer() {
+    const drawer = document.getElementById('tool-add-form-drawer');
+    if (drawer) {
+      drawer.style.display = drawer.style.display === 'none' ? 'block' : 'none';
+    }
+  }
+
+  function filterWorkbenchTools(category) {
+    currentToolFilter = category;
+    const filterIds = ['all', 'nippers', 'knives', 'chisels', 'abrasives', 'airbrush'];
+    filterIds.forEach(f => {
+      const btn = document.getElementById('tool-filter-' + f);
+      if (btn) {
+        if (f === category) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      }
+    });
+    renderWorkbenchToolsGrid();
+  }
+
+  async function loadWorkbenchTools() {
+    if (!currentUser) return;
+    const authHeaders = {
+      'Authorization': 'Bearer ' + currentToken,
+      'X-Tenant-Slug': '${config.tenantSlug}'
+    };
+
+    try {
+      const res = await fetch('/api/v1/workbench/tools', { headers: authHeaders });
+      if (!res.ok) throw new Error('Error al cargar herramientas');
+      const data = await res.json();
+      workbenchToolsData = data.items || [];
+      workbenchToolsSummary = data.summary || {};
+      window.__WB_TOOLS = workbenchToolsData;
+      window.__WB_TOOLS_SUMMARY = workbenchToolsSummary;
+
+      // Update KPI counters
+      const kpiActive = document.getElementById('tools-kpi-active-count');
+      const kpiWorn = document.getElementById('tools-kpi-worn-count');
+      const kpiReplace = document.getElementById('tools-kpi-replace-count');
+      const kpiBlades = document.getElementById('tools-kpi-blades-consumed');
+
+      if (kpiActive) kpiActive.textContent = workbenchToolsSummary.activeToolsCount || 0;
+      if (kpiWorn) kpiWorn.textContent = workbenchToolsSummary.wornToolsCount || 0;
+      if (kpiReplace) kpiReplace.textContent = workbenchToolsSummary.needsReplacementCount || 0;
+      if (kpiBlades) kpiBlades.textContent = workbenchToolsSummary.totalBladesConsumedAllTime || 0;
+
+      // Update wear badge on workbench tab
+      const wearBadge = document.getElementById('wb-tools-wear-badge');
+      if (wearBadge) {
+        const warningCount = (workbenchToolsSummary.wornToolsCount || 0) + (workbenchToolsSummary.needsReplacementCount || 0);
+        if (warningCount > 0) {
+          wearBadge.textContent = warningCount;
+          wearBadge.style.display = 'inline-block';
+        } else {
+          wearBadge.style.display = 'none';
+        }
+      }
+
+      renderWorkbenchToolsGrid();
+    } catch (err) {
+      console.error('Error fetching workbench tools:', err);
+    }
+  }
+
+  function renderWorkbenchToolsGrid() {
+    const mainGrid = document.getElementById('wb-tools-grid');
+    const modalContainer = document.getElementById('tool-modal-cards-container');
+
+    const filtered = (currentToolFilter === 'all')
+      ? workbenchToolsData
+      : workbenchToolsData.filter(t => t.category === currentToolFilter);
+
+    const conditionColors = {
+      new: '#22c55e',
+      excellent: '#10b981',
+      good: '#38bdf8',
+      fair: '#f59e0b',
+      worn: '#f97316',
+      needs_replacement: '#ef4444'
+    };
+
+    const conditionLabels = {
+      new: 'Nuevo',
+      excellent: 'Excelente',
+      good: 'Bueno',
+      fair: 'Aceptable',
+      worn: 'Desgastado',
+      needs_replacement: 'Reemplazo Urgente'
+    };
+
+    const categoryIcons = {
+      'nippers': '✂️',
+      'knives': '🗡️',
+      'chisels': '📐',
+      'abrasives': '🪨',
+      'airbrush': '🎨',
+      'rotary-drill': '⚙️',
+      'general': '🛠️'
+    };
+
+    const emptyHtml = '<div style="grid-column: 1 / -1; background: rgba(255,255,255,0.02); border: 1px dashed var(--border-color); border-radius: 10px; padding: 2.5rem 1.5rem; text-align: center;">' +
+      '<div style="font-size: 2rem; margin-bottom: 0.5rem;">✂️</div>' +
+      '<h4 style="font-size: 1rem; color: #fff; margin-bottom: 0.3rem;">No hay herramientas en esta categoría</h4>' +
+      '<p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 1rem;">Registra tus alicates, bisturís y cinceles para monitorear su filo.</p>' +
+      '<button class="btn-primary" onclick="openToolsInventoryModal(true)" style="background: #eab308; color: #000; font-weight: 600; border: none; font-size: 0.8rem; padding: 0.4rem 0.8rem;">+ Registrar Herramienta</button>' +
+      '</div>';
+
+    const cardsHtml = filtered.length === 0 ? emptyHtml : filtered.map(function(tool) {
+      const wear = tool.wearResult || {};
+      const wearPct = typeof wear.wearPercentage === 'number' ? wear.wearPercentage : 0;
+      const cond = wear.conditionSuggestion || tool.condition || 'good';
+      const condColor = conditionColors[cond] || '#38bdf8';
+      const condLabel = conditionLabels[cond] || cond;
+      const catIcon = categoryIcons[tool.category] || '🛠️';
+      const isDull = !!wear.isDullWarning;
+      const toolWear = tool.wear || {};
+      const isWearTracked = !!toolWear.enabled;
+      const cutsCount = toolWear.currentCutsCount || 0;
+      const maxCuts = toolWear.maxRecommendedCuts || 0;
+      const remainingCuts = Math.max(0, maxCuts - cutsCount);
+
+      let barColor = '#22c55e';
+      if (wearPct >= 80) barColor = '#ef4444';
+      else if (wearPct >= 60) barColor = '#f97316';
+      else if (wearPct >= 40) barColor = '#f59e0b';
+
+      const dullAlertBanner = isDull
+        ? '<div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 6px; padding: 0.45rem 0.65rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: #fca5a5;">' +
+            '<span>⚠️</span> <strong>¡Filo gastado!</strong> ' + (wear.alertMessage || 'Riesgo de marcas de estrés o pellizcos en el plástico.') +
+          '</div>'
+        : '';
+
+      const bladeTypeBadge = toolWear.bladeType
+        ? '<span style="font-size: 0.68rem; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 0.1rem 0.4rem; border-radius: 4px;">Cuchilla: ' + escapeHtml(toolWear.bladeType) + '</span>'
+        : '';
+
+      return '<div style="background: var(--card-bg); border: 1px solid ' + (isDull ? 'rgba(239, 68, 68, 0.5)' : 'var(--border-color)') + '; border-radius: 10px; padding: 1.1rem; display: flex; flex-direction: column; justify-content: space-between; position: relative;">' +
+        '<div>' +
+          '<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">' +
+            '<div style="display: flex; align-items: center; gap: 0.45rem;">' +
+              '<span style="font-size: 1.3rem;">' + catIcon + '</span>' +
+              '<div>' +
+                '<h4 style="font-size: 0.92rem; font-weight: 700; color: #fff; margin: 0; line-height: 1.2;">' + escapeHtml(tool.name) + '</h4>' +
+                '<div style="font-size: 0.72rem; color: #94a3b8;">' + (tool.brand ? escapeHtml(tool.brand) + ' • ' : '') + (tool.modelNumber ? escapeHtml(tool.modelNumber) : '') + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<span style="font-size: 0.68rem; font-weight: 700; color: ' + condColor + '; background: ' + condColor + '18; border: 1px solid ' + condColor + '40; padding: 0.15rem 0.45rem; border-radius: 4px; white-space: nowrap;">' + condLabel + '</span>' +
+          '</div>' +
+
+          dullAlertBanner +
+
+          (isWearTracked ? (
+            '<div style="margin: 0.75rem 0;">' +
+              '<div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #94a3b8; margin-bottom: 0.25rem;">' +
+                '<span>Uso: <strong>' + cutsCount + '</strong> / ' + (maxCuts || '∞') + ' cortes</span>' +
+                '<span style="color: ' + barColor + '; font-weight: 700;">' + wearPct + '% desgaste</span>' +
+              '</div>' +
+              '<div style="background: rgba(255,255,255,0.08); height: 7px; border-radius: 9999px; overflow: hidden;">' +
+                '<div style="background: ' + barColor + '; width: ' + Math.min(100, wearPct) + '%; height: 100%; transition: width 0.3s ease;"></div>' +
+              '</div>' +
+              '<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.3rem;">' +
+                '<span style="font-size: 0.68rem; color: #64748b;">Restantes: ~' + remainingCuts + ' cortes</span>' +
+                bladeTypeBadge +
+              '</div>' +
+            '</div>'
+          ) : '<div style="font-size: 0.72rem; color: #64748b; margin: 0.5rem 0;">Herramienta fija (sin conteo de cuchilla)</div>') +
+
+          (tool.notes ? '<div style="font-size: 0.72rem; color: #94a3b8; font-style: italic; margin-bottom: 0.75rem; background: rgba(0,0,0,0.2); padding: 0.35rem 0.5rem; border-radius: 4px;">💬 ' + escapeHtml(tool.notes) + '</div>' : '') +
+        '</div>' +
+
+        '<div style="padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; gap: 0.4rem; flex-wrap: wrap;">' +
+          (isWearTracked ? (
+            '<div style="display: flex; gap: 0.3rem;">' +
+              '<button type="button" class="filter-pill" data-tool-id="' + tool.id + '" onclick="logToolCuts(this.dataset.toolId, 25)" style="font-size: 0.68rem; padding: 0.2rem 0.45rem;" title="Registrar 25 cortes">+25 Cortes</button>' +
+              '<button type="button" class="filter-pill" data-tool-id="' + tool.id + '" onclick="logToolCuts(this.dataset.toolId, 100)" style="font-size: 0.68rem; padding: 0.2rem 0.45rem;" title="Registrar 100 cortes">+100</button>' +
+            '</div>'
+          ) : '<div></div>') +
+          '<div style="display: flex; gap: 0.35rem;">' +
+            '<button type="button" class="btn-primary" data-tool-id="' + tool.id + '" onclick="replaceToolBlade(this.dataset.toolId)" style="font-size: 0.68rem; padding: 0.25rem 0.55rem; background: #0284c7; border: none;" title="Renovar cuchilla o reafilar filo">🔄 Cambiar Cuchilla</button>' +
+            '<button type="button" class="filter-pill" data-tool-id="' + tool.id + '" onclick="deleteTool(this.dataset.toolId)" style="font-size: 0.68rem; padding: 0.25rem 0.45rem; color: #ef4444; border-color: rgba(239,68,68,0.3);" title="Eliminar herramienta">🗑️</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    if (mainGrid) mainGrid.innerHTML = cardsHtml;
+    if (modalContainer) modalContainer.innerHTML = cardsHtml;
+  }
+
+  async function logToolCuts(toolId, cutsIncrement) {
+    if (!toolId) return;
+    try {
+      const res = await fetch('/api/v1/workbench/tools/' + encodeURIComponent(toolId), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': '${config.tenantSlug}'
+        },
+        body: JSON.stringify({ cutsIncrement: cutsIncrement, sessionsIncrement: 1 })
+      });
+      if (!res.ok) throw new Error('Error al actualizar cortes');
+      await loadWorkbenchTools();
+    } catch (err) {
+      console.error('Error logging tool cuts:', err);
+      alert('No se pudo registrar el uso de la herramienta.');
+    }
+  }
+
+  async function replaceToolBlade(toolId) {
+    if (!toolId) return;
+    const notes = prompt('¿Deseas registrar alguna nota sobre el cambio de cuchilla? (opcional)', 'Cuchilla nueva instalada');
+    if (notes === null) return;
+
+    try {
+      const res = await fetch('/api/v1/workbench/tools/' + encodeURIComponent(toolId) + '/replace-blade', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': '${config.tenantSlug}'
+        },
+        body: JSON.stringify({ notes: notes || undefined })
+      });
+      if (!res.ok) throw new Error('Error al registrar reemplazo');
+      alert('✂️ ¡Cuchilla renovada con éxito! El contador de desgaste ha sido reiniciado.');
+      await loadWorkbenchTools();
+    } catch (err) {
+      console.error('Error replacing tool blade:', err);
+      alert('Error al registrar reemplazo de cuchilla.');
+    }
+  }
+
+  async function deleteTool(toolId) {
+    if (!toolId) return;
+    if (!confirm('¿Eliminar esta herramienta de tu taller?')) return;
+
+    try {
+      const res = await fetch('/api/v1/workbench/tools/' + encodeURIComponent(toolId), {
+        method: 'DELETE',
+        headers: {
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': '${config.tenantSlug}'
+        }
+      });
+      if (!res.ok) throw new Error('Error al eliminar herramienta');
+      await loadWorkbenchTools();
+    } catch (err) {
+      console.error('Error deleting tool:', err);
+      alert('Error al eliminar la herramienta.');
+    }
+  }
+
+  async function submitNewWorkbenchTool() {
+    const nameInput = document.getElementById('tool-input-name');
+    const brandInput = document.getElementById('tool-input-brand');
+    const catInput = document.getElementById('tool-input-category');
+    const modelInput = document.getElementById('tool-input-model');
+    const wearInput = document.getElementById('tool-input-track-wear');
+    const maxCutsInput = document.getElementById('tool-input-max-cuts');
+    const skuInput = document.getElementById('tool-input-blade-sku');
+    const spareInput = document.getElementById('tool-input-spare-blades');
+    const notesInput = document.getElementById('tool-input-notes');
+
+    const name = nameInput ? nameInput.value.trim() : '';
+    if (!name) {
+      alert('Por favor ingresa el nombre de la herramienta');
+      return;
+    }
+
+    const payload = {
+      name: name,
+      brand: brandInput && brandInput.value.trim() ? brandInput.value.trim() : 'Genérico',
+      category: catInput ? catInput.value : 'general',
+      modelNumber: modelInput ? modelInput.value.trim() || undefined : undefined,
+      wearEnabled: wearInput ? wearInput.checked : true,
+      maxRecommendedCuts: maxCutsInput ? parseInt(maxCutsInput.value, 10) || 300 : 300,
+      bladeType: skuInput ? skuInput.value.trim() || undefined : undefined,
+      notes: notesInput ? notesInput.value.trim() || undefined : undefined
+    };
+
+    try {
+      const res = await fetch('/api/v1/workbench/tools', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken,
+          'X-Tenant-Slug': '${config.tenantSlug}'
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Error al registrar herramienta');
+      
+      if (nameInput) nameInput.value = '';
+      if (brandInput) brandInput.value = '';
+      if (modelInput) modelInput.value = '';
+      if (skuInput) skuInput.value = '';
+      if (notesInput) notesInput.value = '';
+
+      toggleAddToolDrawer();
+      await loadWorkbenchTools();
+    } catch (err) {
+      console.error('Error creating tool:', err);
+      alert('Error al registrar la herramienta.');
+    }
+  }
+
   // --- Bulk Import Tool Engine (CSV / TSV / Excel for Stash & Paint Rack) ---
   let currentBulkImportTab = 'stash';
 
@@ -7652,6 +8000,28 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
         } else {
           commBadge.style.display = 'none';
         }
+      }
+
+      // 6. Fetch Tools Summary for Wear Badge
+      try {
+        const toolsRes = await fetch(apiBase + '/api/v1/workbench/tools', { headers: authHeaders });
+        if (toolsRes.ok) {
+          const toolsData = await toolsRes.json();
+          window.__WB_TOOLS = toolsData.items || [];
+          window.__WB_TOOLS_SUMMARY = toolsData.summary || {};
+          const wornOrReplace = (toolsData.summary ? ((toolsData.summary.wornCount || 0) + (toolsData.summary.needsReplacementCount || 0)) : 0);
+          const wearBadge = document.getElementById('wb-tools-wear-badge');
+          if (wearBadge) {
+            if (wornOrReplace > 0) {
+              wearBadge.textContent = wornOrReplace;
+              wearBadge.style.display = 'inline-block';
+            } else {
+              wearBadge.style.display = 'none';
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Error fetching workbench tools summary:', err);
       }
 
       // Update Metrics

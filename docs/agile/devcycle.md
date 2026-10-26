@@ -9,7 +9,7 @@ Goal: Transition persistence to PostgreSQL 16 (`gunpla-db`), ensuring ACID relat
 
 ## Active Tasks
 
-None. Ready for next devtask.
+None currently active. All 3 workbench feature requests (DT22 Airbrush Dilution & PSI Calculator, DT23 Parts Breakdown & Assembly Step Cards, and DT24 Workbench Tool Inventory & Blade Wear Tracker) have been completed, tested, and deployed to LXC 190.
 
 ## Reset
 

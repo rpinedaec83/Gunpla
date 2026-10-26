@@ -4,9 +4,10 @@ Future work queue. Keep this separate from the active burn-down.
 
 ## Next Candidates (Phase 2 -- DVT Pilot & Community Expansion)
 
-- **Calculadora de Dilucion y Presion de Aerografo (Airbrush PSI & Thinner Ratio Calculator):** Asistente tecnico interactivo que calcula la relacion exacta pintura:diluyente segun quimica (laca, acrilico, poliuretano), tamano de boquilla (0.2mm, 0.3mm, 0.5mm) y presion ideal del compresor (PSI / Bar) para evitar efecto piel de naranja y pulverizado seco.
-- **Generador de Fichas Tecnicas & Manuales de Despiece (Parts Breakdown & Assembly Step Cards):** Exportador imprimible y digital de diagramas de ensamblaje con recetas de color por pieza para maquetas personalizadas.
-- **Control de Inventario de Herramientas & Vida Util de Cuchillas (Workbench Tool Inventory & Blade Wear Tracker):** Registro de alicates de precision monofilamento, aerografos, y contador de cortes para reemplazo de hojas de bisturi antes de causar marcas de tension.
+- All 3 Workbench Feature Requests have been promoted, implemented, and verified in PVT:
+  - `[COMPLETED]` **Calculadora de Dilucion y Presion de Aerografo (DT22):** Asistente tecnico interactivo con 5 quimicas, diametros de aguja 0.15mm a 0.5mm, compensacion climatica y alertas.
+  - `[COMPLETED]` **Generador de Fichas Tecnicas & Manuales de Despiece (DT23):** Plantillas anatomicas de subensambles por genero, matriz de 5 fases, y exportador imprimible A4 de tarjetas de bandeja con guias de corte.
+  - `[COMPLETED]` **Control de Inventario de Herramientas & Vida Util de Cuchillas (DT24):** Inventario de herramientas por categoria, dial de vida util, contador de cortes, alertas de filo desgastado y renovacion de cuchillas.
 
 ## Android Mobile Application Backlog (apps/mobile-android)
 

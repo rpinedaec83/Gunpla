@@ -406,6 +406,85 @@ export const openApiSpec = {
         }
       }
     },
+    '/api/v1/workbench/tools': {
+      get: {
+        tags: ['Workbench Tools'],
+        summary: 'List tools in workbench inventory with wear calculation and status summary',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'category', in: 'query', required: false, schema: { type: 'string' } },
+          { name: 'status', in: 'query', required: false, schema: { type: 'string' } },
+          { name: 'condition', in: 'query', required: false, schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': { description: 'Tools list with wear analysis' },
+          '401': { description: 'Unauthorized' }
+        }
+      },
+      post: {
+        tags: ['Workbench Tools'],
+        summary: 'Add tool to workbench inventory with wear parameters',
+        security: [{ BearerAuth: [] }],
+        responses: {
+          '201': { description: 'Tool created' },
+          '400': { description: 'Validation error' },
+          '401': { description: 'Unauthorized' }
+        }
+      }
+    },
+    '/api/v1/workbench/tools/{id}': {
+      get: {
+        tags: ['Workbench Tools'],
+        summary: 'Get single tool details with wear calculations and maintenance history',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': { description: 'Tool details' },
+          '404': { description: 'Tool not found' }
+        }
+      },
+      patch: {
+        tags: ['Workbench Tools'],
+        summary: 'Update tool properties or log cuts/sessions incremental usage',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': { description: 'Tool updated' },
+          '404': { description: 'Tool not found' }
+        }
+      },
+      delete: {
+        tags: ['Workbench Tools'],
+        summary: 'Remove tool from workbench inventory',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': { description: 'Tool removed' },
+          '404': { description: 'Tool not found' }
+        }
+      }
+    },
+    '/api/v1/workbench/tools/{id}/replace-blade': {
+      post: {
+        tags: ['Workbench Tools'],
+        summary: 'Log blade replacement, reset wear cuts counter to 0, and record maintenance history',
+        security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': { description: 'Blade replaced and wear reset' },
+          '400': { description: 'Tool wear tracking not enabled' },
+          '404': { description: 'Tool not found' }
+        }
+      }
+    },
     '/api/v1/workbench/import/stash': {
       post: {
         tags: ['Workbench'],

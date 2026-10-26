@@ -2867,7 +2867,116 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT23 Parts Breakdown & Assembly Subassembly Cards verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN CHECKS PASSED ===');
+    // =========================================================================
+    // DT24: Workbench Tool Inventory & Blade Wear Tracker
+    // =========================================================================
+    console.log('\n--- Verifying DT24 Workbench Tool Inventory & Blade Wear Tracker ---');
+
+    // 1. Fetch workbench tools (auto-populates 4 starter tools for user)
+    const toolsListRes = await fetch(`${baseUrl}/api/v1/workbench/tools`, {
+      headers: { Authorization: `Bearer ${googleSsoData.token}` }
+    });
+    assert.equal(toolsListRes.status, 200, 'GET /api/v1/workbench/tools must return 200');
+    const toolsListData = await toolsListRes.json();
+    assert.ok(Array.isArray(toolsListData.items), 'items must be an array');
+    assert.ok(toolsListData.items.length >= 4, 'Must have at least 4 starter tools');
+    assert.ok(toolsListData.summary.activeToolsCount >= 4, 'summary active count should be >= 4');
+    assert.ok(toolsListData.items[0].wearResult, 'each tool should have wearResult computed');
+
+    // 2. Register custom tool (POST /api/v1/workbench/tools)
+    const createToolRes = await fetch(`${baseUrl}/api/v1/workbench/tools`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        name: 'SAB Panel Line Chisel 0.2mm',
+        brand: 'SAB',
+        category: 'chisels',
+        modelNumber: 'SAB-020',
+        wearEnabled: true,
+        maxRecommendedCuts: 300,
+        bladeType: 'Tungsten Carbide 0.2mm',
+        notes: 'Cincel de carburo de tungsteno para re-panelado fino.'
+      })
+    });
+    assert.equal(createToolRes.status, 201, 'POST /api/v1/workbench/tools must return 201');
+    const createdToolData = await createToolRes.json();
+    const newToolId = createdToolData.item.id;
+    assert.ok(newToolId, 'Created tool must have an id');
+    assert.equal(createdToolData.item.name, 'SAB Panel Line Chisel 0.2mm');
+    assert.equal(createdToolData.item.wearResult.wearPercentage, 0);
+    assert.equal(createdToolData.item.wearResult.isDullWarning, false);
+
+    // 3. Inspect single tool (GET /api/v1/workbench/tools/:id)
+    const singleToolRes = await fetch(`${baseUrl}/api/v1/workbench/tools/${newToolId}`, {
+      headers: { Authorization: `Bearer ${googleSsoData.token}` }
+    });
+    assert.equal(singleToolRes.status, 200, 'GET /api/v1/workbench/tools/:id must return 200');
+    const singleToolData = await singleToolRes.json();
+    assert.equal(singleToolData.item.id, newToolId);
+    assert.equal(singleToolData.item.category, 'chisels');
+
+    // 4. Log usage / cuts increment to trigger wear warning (PATCH /api/v1/workbench/tools/:id)
+    const logCutsRes = await fetch(`${baseUrl}/api/v1/workbench/tools/${newToolId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        cutsIncrement: 260,
+        sessionsIncrement: 4
+      })
+    });
+    assert.equal(logCutsRes.status, 200, 'PATCH /api/v1/workbench/tools/:id must return 200');
+    const logCutsData = await logCutsRes.json();
+    assert.equal(logCutsData.item.wear.currentCutsCount, 260);
+    assert.ok(logCutsData.item.wearResult.wearPercentage >= 80, 'Wear percentage should be >= 80%');
+    assert.equal(logCutsData.item.wearResult.isDullWarning, true, 'Wear >= 80% must trigger isDullWarning');
+    assert.equal(logCutsData.item.wearResult.conditionSuggestion, 'worn');
+
+    // 5. Replace blade / reset wear (POST /api/v1/workbench/tools/:id/replace-blade)
+    const replaceBladeRes = await fetch(`${baseUrl}/api/v1/workbench/tools/${newToolId}/replace-blade`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${googleSsoData.token}`
+      },
+      body: JSON.stringify({
+        notes: 'Punta reafilada con piedra de diamante'
+      })
+    });
+    assert.equal(replaceBladeRes.status, 200, 'POST /api/v1/workbench/tools/:id/replace-blade must return 200');
+    const replaceBladeData = await replaceBladeRes.json();
+    assert.equal(replaceBladeData.item.wear.currentCutsCount, 0, 'Cuts count must reset to 0');
+    assert.equal(replaceBladeData.item.wear.totalBladesConsumed, 1, 'Blades consumed must increment');
+    assert.equal(replaceBladeData.item.wearResult.wearPercentage, 0);
+    assert.equal(replaceBladeData.item.wearResult.isDullWarning, false);
+    assert.ok(replaceBladeData.item.maintenanceLog.length >= 1, 'Maintenance log must contain entry');
+
+    // 6. Delete tool (DELETE /api/v1/workbench/tools/:id)
+    const deleteToolRes = await fetch(`${baseUrl}/api/v1/workbench/tools/${newToolId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${googleSsoData.token}` }
+    });
+    assert.equal(deleteToolRes.status, 200, 'DELETE /api/v1/workbench/tools/:id must return 200');
+    const deleteToolData = await deleteToolRes.json();
+    assert.equal(deleteToolData.removedId, newToolId);
+
+    // 7. Verify Web Shell UI elements in PlamoScale frontend
+    assert.ok(plamoWebShellHtml.includes('id="btn-open-tools-inventory"'), 'PlamoScale must render tools inventory button in toolbar');
+    assert.ok(plamoWebShellHtml.includes('id="wb-subtab-btn-tools"'), 'PlamoScale must render wb-subtab-btn-tools');
+    assert.ok(plamoWebShellHtml.includes('id="wb-subtab-tools"'), 'PlamoScale must render wb-subtab-tools section');
+    assert.ok(plamoWebShellHtml.includes('id="tools-kpi-active-count"'), 'PlamoScale must render tools-kpi-active-count');
+    assert.ok(plamoWebShellHtml.includes('id="tools-kpi-worn-count"'), 'PlamoScale must render tools-kpi-worn-count');
+    assert.ok(plamoWebShellHtml.includes('id="modal-workbench-tools"'), 'PlamoScale must render modal-workbench-tools');
+    assert.ok(plamoWebShellHtml.includes('id="btn-save-workbench-tool"'), 'PlamoScale must render btn-save-workbench-tool');
+
+    console.log('[PASS] DT24 Workbench Tool Inventory & Blade Wear Tracker verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN + WORKBENCH-TOOLS CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

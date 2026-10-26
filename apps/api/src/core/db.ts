@@ -19,7 +19,8 @@ import {
   ShopStockItem,
   NotificationItem,
   PushSubscriptionRecord,
-  GroupBuildRecord
+  GroupBuildRecord,
+  WorkbenchToolItem
 } from '@gunpla/shared';
 import { isPostgresConfigured, syncStateToPostgres } from './postgres';
 
@@ -43,6 +44,7 @@ export interface PlatformDatabaseState {
   notifications: NotificationItem[];
   pushSubscriptions: PushSubscriptionRecord[];
   groupBuilds: GroupBuildRecord[];
+  tools?: WorkbenchToolItem[];
   lastSeededAt: string | null;
 }
 

@@ -784,3 +784,33 @@ Decisions made:
 Lessons learned:
 - Combining ambient workshop soundscapes directly with a Pomodoro session countdown encourages healthy building habits (e.g. taking breaks to stretch, avoiding eyestrain and cleaning airbrush nozzles).
 Usage: Moderate -- self-estimated
+
+### DT24 -- Workbench Tool Inventory & Blade Wear Tracker (Control de Inventario de Herramientas & Vida Útil de Cuchillas) | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Designed shared data models and wear calculation functions in `packages/shared/src/index.ts`:
+  - `ToolCategory` ('nippers', 'knives', 'chisels', 'abrasives', 'airbrush', 'rotary-drill', 'general'), `ToolCondition`, `ToolStatus`, `ToolWearTracker`, `ToolMaintenanceLogEntry`, `WorkbenchToolItem`, `CreateWorkbenchToolDto`, `UpdateWorkbenchToolDto`, `ToolWearCalculationResult`, `WorkbenchToolsSummary`.
+  - Pure calculation engine `calculateToolWear`: Computes usage %, remaining lifespan %, condition classification ('new', 'good', 'fair', 'worn', 'needs_replacement'), and triggers `isDullWarning: true` when wear >= 80% to protect polystyrene from pinch stress and gouging.
+  - Summary aggregation `calculateWorkbenchToolsSummary`: Computes active, worn, replacement counts, category distribution, and all-time blades consumed.
+  - Starter toolkit generator `getStarterToolsForUser`: Provides 4 essential modeling tools for new users (GodHand SPN-120, Olfa AK-4, Gunprimer Raser Plus, Mr. Hobby Procon Boy WA 0.3mm).
+- Implemented backend API slice `apps/api/src/slices/workbench-tools/tools.slice.ts` mounted at `/api/v1/workbench/tools`:
+  - `GET /api/v1/workbench/tools`: Returns inventory with live wear status and summary KPIs; auto-populates starter arsenal on first visit.
+  - `POST /api/v1/workbench/tools`: Registers new tool with wear tracking parameters.
+  - `GET /api/v1/workbench/tools/:id`: Detailed tool inspection and maintenance history.
+  - `PATCH /api/v1/workbench/tools/:id`: Incremental cuts and sessions usage logging (`cutsIncrement`, `sessionsIncrement`).
+  - `POST /api/v1/workbench/tools/:id/replace-blade`: Renews blade, resets cuts count to 0, increments consumed blades, and logs maintenance record.
+  - `DELETE /api/v1/workbench/tools/:id`: Removes tool from workbench.
+- Updated OpenAPI 3.1 contract in `docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`.
+- Implemented UI Shell (UXP-01):
+  - Toolbar button `#btn-open-tools-inventory` in Workbench header.
+  - Workbench Subtab `#wb-subtab-tools` with KPI metrics strip (`#tools-kpi-active-count`, `#tools-kpi-worn-count`, `#tools-kpi-replace-count`, `#tools-kpi-blades-consumed`) and category filters.
+  - Modal `#modal-workbench-tools` with collapsible registration drawer `#tool-add-form-drawer`, tool cards with color-coded wear bars, quick usage buttons (+25, +100 cortes), blade renewal action, and wear warning badge `#wb-tools-wear-badge`.
+- Authored isolated unit test suite `tests/unit/workbench-tools.test.mjs` (4 tests: constants, wear math, KPI summary, starter arsenal). Total platform tests: 151 passed.
+- Extended regression smoketest `scripts/smoketest.mjs` with full CRUD, cuts increments, wear alerts, blade renewal, and UI element verification.
+- Deployed and verified on Proxmox LXC 190 (`192.168.1.190:8080`, `:3000`, `:3001`).
+Issues hit:
+- In `app-shell.ts`, inline `onclick="logToolCuts(\'...\')"` caused quote parsing issues in the browser script; resolved robustly by using HTML5 dataset attributes (`data-tool-id` and `logToolCuts(this.dataset.toolId, 25)`).
+Decisions made:
+- Providing an automatic starter tool arsenal (GodHand, Olfa, Gunprimer, Mr. Hobby) on first visit gives new modelers immediate out-of-the-box value and demonstrates proper tool maintenance standards without requiring manual data entry.
+Lessons learned:
+- Setting the dull blade warning threshold at 80% matches real-world scale modeling best practices, alerting modelers before micro-burrs and edge deformation cause white stress marks or plastic tear on delicate parts.
+Usage: Moderate -- self-estimated

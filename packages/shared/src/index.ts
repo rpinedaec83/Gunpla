@@ -3180,6 +3180,377 @@ export function generateSubassemblyWorksheetHtml(params: {
 </html>`;
 }
 
+// ============================================================================
+// DT24: Workbench Tool Inventory & Blade Wear Tracker
+// ============================================================================
+export type ToolCategory =
+  | 'nippers'
+  | 'knives'
+  | 'chisels'
+  | 'abrasives'
+  | 'airbrush'
+  | 'rotary-drill'
+  | 'general';
+
+export const TOOL_CATEGORIES: ToolCategory[] = [
+  'nippers',
+  'knives',
+  'chisels',
+  'abrasives',
+  'airbrush',
+  'rotary-drill',
+  'general'
+];
+
+export const TOOL_CATEGORY_LABELS: Record<ToolCategory, string> = {
+  'nippers': 'Alicates de Corte (Single/Double Blade)',
+  'knives': 'Cúteres & Cuchillas de Precisión (Design Knife)',
+  'chisels': 'Buriles de Grabado (Panel Line Chisels)',
+  'abrasives': 'Lijas & Limas (Glass / Sponge / Sticks)',
+  'airbrush': 'Aerógrafos & Boquillas',
+  'rotary-drill': 'Taladros Manuales & Brocas',
+  'general': 'Herramientas Generales (Pinzas, Tapetes)'
+};
+
+export type ToolCondition = 'new' | 'good' | 'fair' | 'worn' | 'needs_replacement';
+export type ToolStatus = 'active' | 'in_use' | 'maintenance' | 'retired';
+
+export interface ToolWearTracker {
+  enabled: boolean;
+  bladeType?: string;
+  currentCutsCount: number;
+  maxRecommendedCuts: number;
+  sessionsCount: number;
+  lastBladeReplacedAt?: string;
+  totalBladesConsumed: number;
+}
+
+export interface ToolMaintenanceLogEntry {
+  id: string;
+  type: 'blade_replacement' | 'lubrication' | 'sharpening' | 'deep_clean' | 'alignment' | 'general';
+  notes: string;
+  performedAt: string;
+}
+
+export interface WorkbenchToolItem {
+  id: string;
+  userId: string;
+  name: string;
+  brand: string;
+  category: ToolCategory;
+  modelNumber?: string;
+  purchasePrice?: number;
+  purchaseCurrency?: string;
+  acquiredAt?: string;
+  status: ToolStatus;
+  condition: ToolCondition;
+  wear: ToolWearTracker;
+  maintenanceLog: ToolMaintenanceLogEntry[];
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateWorkbenchToolDto {
+  name: string;
+  brand: string;
+  category: ToolCategory;
+  modelNumber?: string;
+  purchasePrice?: number;
+  purchaseCurrency?: string;
+  acquiredAt?: string;
+  status?: ToolStatus;
+  condition?: ToolCondition;
+  wearEnabled?: boolean;
+  bladeType?: string;
+  maxRecommendedCuts?: number;
+  notes?: string;
+}
+
+export interface UpdateWorkbenchToolDto {
+  name?: string;
+  brand?: string;
+  category?: ToolCategory;
+  modelNumber?: string;
+  purchasePrice?: number;
+  purchaseCurrency?: string;
+  status?: ToolStatus;
+  condition?: ToolCondition;
+  notes?: string;
+  cutsIncrement?: number;
+  sessionsIncrement?: number;
+}
+
+export interface ToolWearCalculationResult {
+  wearPercentage: number;
+  remainingLifespanPct: number;
+  conditionSuggestion: ToolCondition;
+  isDullWarning: boolean;
+  alertMessage?: string;
+  recommendedAction?: string;
+}
+
+export interface WorkbenchToolsSummary {
+  totalTools: number;
+  activeToolsCount: number;
+  byCategory: Record<ToolCategory, number>;
+  wornToolsCount: number;
+  needsReplacementCount: number;
+  totalBladesConsumedAllTime: number;
+}
+
+export function calculateToolWear(
+  tool: WorkbenchToolItem | { wear: ToolWearTracker; condition?: ToolCondition }
+): ToolWearCalculationResult {
+  if (!tool.wear || !tool.wear.enabled || !tool.wear.maxRecommendedCuts || tool.wear.maxRecommendedCuts <= 0) {
+    return {
+      wearPercentage: 0,
+      remainingLifespanPct: 100,
+      conditionSuggestion: (tool.condition as ToolCondition) || 'good',
+      isDullWarning: false
+    };
+  }
+
+  const cuts = Math.max(0, tool.wear.currentCutsCount || 0);
+  const max = tool.wear.maxRecommendedCuts;
+  const wearPercentage = Math.min(100, Math.round((cuts / max) * 100));
+  const remainingLifespanPct = Math.max(0, 100 - wearPercentage);
+
+  if (wearPercentage >= 100) {
+    return {
+      wearPercentage,
+      remainingLifespanPct,
+      conditionSuggestion: 'needs_replacement',
+      isDullWarning: true,
+      alertMessage: `¡Filo agotado (${cuts}/${max} cortes)! La cuchilla está mellada o sin filo, lo que provocará marcas de estrés blanco o aplastamiento en el plástico.`,
+      recommendedAction: 'Reemplazar cuchilla o afilar de inmediato'
+    };
+  }
+
+  if (wearPercentage >= 80) {
+    return {
+      wearPercentage,
+      remainingLifespanPct,
+      conditionSuggestion: 'worn',
+      isDullWarning: true,
+      alertMessage: `Desgaste avanzado (${cuts}/${max} cortes, ${remainingLifespanPct}% vida restante). El filo está perdiendo precisión en cortes finos.`,
+      recommendedAction: 'Preparar cuchilla de repuesto'
+    };
+  }
+
+  if (wearPercentage >= 50) {
+    return {
+      wearPercentage,
+      remainingLifespanPct,
+      conditionSuggestion: 'fair',
+      isDullWarning: false,
+      recommendedAction: 'Filo óptimo para corte general de compuertas'
+    };
+  }
+
+  if (wearPercentage >= 20) {
+    return {
+      wearPercentage,
+      remainingLifespanPct,
+      conditionSuggestion: 'good',
+      isDullWarning: false,
+      recommendedAction: 'Filo afilado y preciso'
+    };
+  }
+
+  return {
+    wearPercentage,
+    remainingLifespanPct,
+    conditionSuggestion: 'new',
+    isDullWarning: false,
+    recommendedAction: 'Cuchilla nueva con filo de máxima precisión'
+  };
+}
+
+export function calculateWorkbenchToolsSummary(tools: WorkbenchToolItem[]): WorkbenchToolsSummary {
+  const byCategory: Record<ToolCategory, number> = {
+    'nippers': 0,
+    'knives': 0,
+    'chisels': 0,
+    'abrasives': 0,
+    'airbrush': 0,
+    'rotary-drill': 0,
+    'general': 0
+  };
+
+  let activeToolsCount = 0;
+  let wornToolsCount = 0;
+  let needsReplacementCount = 0;
+  let totalBladesConsumedAllTime = 0;
+
+  tools.forEach(t => {
+    if (byCategory[t.category] !== undefined) {
+      byCategory[t.category]++;
+    } else {
+      byCategory['general']++;
+    }
+
+    if (t.status === 'active' || t.status === 'in_use') {
+      activeToolsCount++;
+    }
+
+    if (t.wear && t.wear.enabled) {
+      totalBladesConsumedAllTime += t.wear.totalBladesConsumed || 0;
+      const wearRes = calculateToolWear(t);
+      if (wearRes.wearPercentage >= 100) {
+        needsReplacementCount++;
+      } else if (wearRes.wearPercentage >= 80) {
+        wornToolsCount++;
+      }
+    }
+  });
+
+  return {
+    totalTools: tools.length,
+    activeToolsCount,
+    byCategory,
+    wornToolsCount,
+    needsReplacementCount,
+    totalBladesConsumedAllTime
+  };
+}
+
+export function getStarterToolsForUser(userId: string): WorkbenchToolItem[] {
+  const now = new Date().toISOString();
+  return [
+    {
+      id: `tool-${userId.slice(-6)}-1`,
+      userId,
+      name: 'GodHand SPN-120 Ultimate Nipper (Alicate Single-Blade)',
+      brand: 'GodHand',
+      category: 'nippers',
+      modelNumber: 'SPN-120',
+      purchasePrice: 58.00,
+      purchaseCurrency: 'USD',
+      acquiredAt: '2025-11-10',
+      status: 'active',
+      condition: 'good',
+      wear: {
+        enabled: true,
+        bladeType: 'GodHand Single Blade Ultra-Thin (Filo Único)',
+        currentCutsCount: 85,
+        maxRecommendedCuts: 400,
+        sessionsCount: 14,
+        lastBladeReplacedAt: '2025-11-10T00:00:00.000Z',
+        totalBladesConsumed: 0
+      },
+      maintenanceLog: [
+        {
+          id: 'maint-1',
+          type: 'lubrication',
+          notes: 'Lubricación de resorte y perno con aceite mineral antióxido.',
+          performedAt: '2026-01-15T10:00:00.000Z'
+        }
+      ],
+      notes: 'Usar exclusivamente en compuertas de plástico blando (PS/PE), jamás en policarbonato transparente ni metal.',
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: `tool-${userId.slice(-6)}-2`,
+      userId,
+      name: 'Olfa AK-4 Art Knife Pro (Cúter de Precisión)',
+      brand: 'Olfa',
+      category: 'knives',
+      modelNumber: 'AK-4',
+      purchasePrice: 16.50,
+      purchaseCurrency: 'USD',
+      acquiredAt: '2025-08-20',
+      status: 'active',
+      condition: 'good',
+      wear: {
+        enabled: true,
+        bladeType: 'Olfa KB4-S (Cuchilla de Precisión 30°)',
+        currentCutsCount: 75,
+        maxRecommendedCuts: 200,
+        sessionsCount: 18,
+        lastBladeReplacedAt: '2026-02-01T00:00:00.000Z',
+        totalBladesConsumed: 3
+      },
+      maintenanceLog: [
+        {
+          id: 'maint-2',
+          type: 'blade_replacement',
+          notes: 'Cambio de cuchilla mellada tras recortar planchas de estireno.',
+          performedAt: '2026-02-01T00:00:00.000Z'
+        }
+      ],
+      notes: 'Mango ergonómico antideslizante con balance de peso para desbaste de nubs.',
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: `tool-${userId.slice(-6)}-3`,
+      userId,
+      name: 'Gunprimer Raser Plus (Lima de Nanovidrio Templado)',
+      brand: 'Gunprimer',
+      category: 'abrasives',
+      modelNumber: 'R-GP-P1',
+      purchasePrice: 24.00,
+      purchaseCurrency: 'USD',
+      acquiredAt: '2025-12-05',
+      status: 'active',
+      condition: 'new',
+      wear: {
+        enabled: false,
+        bladeType: 'Superficie de Vidrio Templado Nano-Grabado',
+        currentCutsCount: 0,
+        maxRecommendedCuts: 0,
+        sessionsCount: 22,
+        totalBladesConsumed: 0
+      },
+      maintenanceLog: [
+        {
+          id: 'maint-3',
+          type: 'deep_clean',
+          notes: 'Lavado con agua tibia, jabón neutro y paño de microfibra.',
+          performedAt: '2026-02-10T15:00:00.000Z'
+        }
+      ],
+      notes: 'Deja acabado semibrillo directamente sin lijas intermedias. Limpiar polvo con cinta adhesiva.',
+      createdAt: now,
+      updatedAt: now
+    },
+    {
+      id: `tool-${userId.slice(-6)}-4`,
+      userId,
+      name: 'Mr. Hobby Procon Boy WA 0.3mm (Aerógrafo Doble Acción)',
+      brand: 'Mr. Hobby',
+      category: 'airbrush',
+      modelNumber: 'PS-289',
+      purchasePrice: 95.00,
+      purchaseCurrency: 'USD',
+      acquiredAt: '2025-06-14',
+      status: 'active',
+      condition: 'good',
+      wear: {
+        enabled: false,
+        bladeType: 'Boquilla de 0.3mm con Copa de 10ml y Válvula MAC',
+        currentCutsCount: 0,
+        maxRecommendedCuts: 0,
+        sessionsCount: 45,
+        totalBladesConsumed: 0
+      },
+      maintenanceLog: [
+        {
+          id: 'maint-4',
+          type: 'deep_clean',
+          notes: 'Despiece completo y limpieza ultrasónica del canal de pintura.',
+          performedAt: '2026-02-20T18:00:00.000Z'
+        }
+      ],
+      notes: 'Aerógrafo insignia para capas base y sombreados finos en 1/144 y 1/100.',
+      createdAt: now,
+      updatedAt: now
+    }
+  ];
+}
+
 export * from './ui-shell/app-shell';
 export * from './ui-shell/views';
 export * from './ui-shell/modals';

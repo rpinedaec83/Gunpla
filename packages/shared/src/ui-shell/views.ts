@@ -447,6 +447,9 @@ export function renderViews(
               <button id="btn-open-subassemblies-modal" class="filter-pill" onclick="openSubassembliesModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(99, 102, 241, 0.4); color: #818cf8; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <span>📋</span> Fichas de Despiece
               </button>
+              <button id="btn-open-tools-inventory" class="filter-pill" onclick="openToolsInventoryModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(234, 179, 8, 0.4); color: #facc15; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <span>✂️</span> Herramientas & Cuchillas
+              </button>
               <button class="filter-pill" onclick="openEditProfileModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <span>✏️</span> Editar Perfil
               </button>
@@ -503,6 +506,9 @@ export function renderViews(
           </button>
           <button id="wb-subtab-btn-commissions" class="filter-pill" onclick="switchWorkbenchSubtab('commissions')">
             💼 Encargos & Comisiones <span id="wb-commissions-badge" class="nav-badge" style="display:none; margin-left: 0.35rem; font-size: 0.72rem; padding: 0.1rem 0.45rem;">0</span>
+          </button>
+          <button id="wb-subtab-btn-tools" class="filter-pill" onclick="switchWorkbenchSubtab('tools')">
+            ✂️ Herramientas & Cuchillas <span id="wb-tools-wear-badge" class="nav-badge" style="display:none; background: #ef4444; color: #fff; margin-left: 0.35rem; font-size: 0.72rem; padding: 0.1rem 0.45rem;">0</span>
           </button>
         </div>
 
@@ -591,6 +597,56 @@ export function renderViews(
 
           <div id="wb-commissions-list" style="display: flex; flex-direction: column; gap: 1.25rem;">
             <!-- Dynamically populated via loadWorkbenchData() -->
+          </div>
+        </div>
+
+        <!-- Sub-Tab 5: Workbench Tools & Blade Wear Tracker -->
+        <div id="wb-subtab-tools" class="wb-subtab-content" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff; margin: 0 0 0.25rem 0;">✂️ Inventario de Herramientas & Control de Vida Útil</h3>
+              <p style="font-size: 0.82rem; color: #94a3b8; margin: 0;">Supervisa el desgaste de alicates (GodHand/Tamiya), cuchillas de bisturí y cinceles para evitar estrés blanco y daño al plástico.</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button id="btn-add-tool-wb" class="btn-primary" onclick="openToolsInventoryModal(true)" style="font-size: 0.8rem; padding: 0.45rem 0.85rem; background: linear-gradient(135deg, #eab308, #ca8a04); border: none; display: inline-flex; align-items: center; gap: 0.35rem; color: #000; font-weight: 600;">
+                + Registrar Herramienta
+              </button>
+            </div>
+          </div>
+
+          <!-- Tools KPI Strip -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+            <div style="background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase;">Herramientas Activas</div>
+              <div id="tools-kpi-active-count" style="font-size: 1.35rem; font-weight: 700; color: #38bdf8; margin-top: 0.2rem;">0</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.72rem; color: #facc15; text-transform: uppercase;">Filo Desgastado (>80%)</div>
+              <div id="tools-kpi-worn-count" style="font-size: 1.35rem; font-weight: 700; color: #facc15; margin-top: 0.2rem;">0</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.72rem; color: #ef4444; text-transform: uppercase;">Requieren Cambio</div>
+              <div id="tools-kpi-replace-count" style="font-size: 1.35rem; font-weight: 700; color: #ef4444; margin-top: 0.2rem;">0</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.72rem; color: #4ade80; text-transform: uppercase;">Cuchillas Reemplazadas</div>
+              <div id="tools-kpi-blades-consumed" style="font-size: 1.35rem; font-weight: 700; color: #4ade80; margin-top: 0.2rem;">0</div>
+            </div>
+          </div>
+
+          <!-- Category Filter Pills -->
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+            <button id="tool-filter-all" class="filter-pill active" onclick="filterWorkbenchTools('all')">Todas</button>
+            <button id="tool-filter-nippers" class="filter-pill" onclick="filterWorkbenchTools('nippers')">✂️ Alicates</button>
+            <button id="tool-filter-knives" class="filter-pill" onclick="filterWorkbenchTools('knives')">🗡️ Bisturís</button>
+            <button id="tool-filter-chisels" class="filter-pill" onclick="filterWorkbenchTools('chisels')">📐 Cinceles</button>
+            <button id="tool-filter-abrasives" class="filter-pill" onclick="filterWorkbenchTools('abrasives')">🪨 Limas / Abrasivos</button>
+            <button id="tool-filter-airbrush" class="filter-pill" onclick="filterWorkbenchTools('airbrush')">🎨 Aerógrafos</button>
+          </div>
+
+          <!-- Tools Grid -->
+          <div id="wb-tools-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1rem;">
+            <!-- Dynamically populated via loadWorkbenchTools() -->
           </div>
         </div>
 

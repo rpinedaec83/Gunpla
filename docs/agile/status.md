@@ -4,12 +4,42 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio, Smart Builder AI Assistant, Stash Insurance Valuation Report, Workshop Ambient Soundscapes, Airbrush PSI/Thinner Calculator & Parts Breakdown Subassembly Cards Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) + Pistas de Sonido y Soundscapes de Taller (DT21) + Calculadora de Dilución y Presión de Aerógrafo (DT22) + Generador de Fichas Técnicas & Manuales de Despiece (DT23) + 4 Technical Debt resolutions verified via `npm test` (147 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt23-parts-breakdown` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio, Smart Builder AI Assistant, Stash Insurance Valuation Report, Workshop Ambient Soundscapes, Airbrush PSI/Thinner Calculator, Parts Breakdown Subassembly Cards & Workbench Tool Inventory & Blade Wear Tracker Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) + Pistas de Sonido y Soundscapes de Taller (DT21) + Calculadora de Dilución y Presión de Aerógrafo (DT22) + Generador de Fichas Técnicas & Manuales de Despiece (DT23) + Control de Inventario de Herramientas & Vida Útil de Cuchillas (DT24) + 4 Technical Debt resolutions verified via `npm test` (151 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt24-workbench-tools` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Control de Inventario de Herramientas & Vida Útil de Cuchillas (Workbench Tool Inventory & Blade Wear Tracker - DT24):**
+  - **Catálogo de Herramientas de Taller & Consumibles de Modelismo:**
+    - Modelos de datos en `@gunpla/shared` (`WorkbenchToolItem`, `ToolCategory`, `ToolCondition`, `ToolStatus`, `ToolWearTracker`, `ToolMaintenanceLogEntry`):
+      - Soporte para 7 categorías especializadas: Alicates de corte fino (*nippers*, ej. GodHand SPN-120, Tamiya 74123), Cuchillas de precisión (*knives*, ej. Olfa AK-4, X-Acto #11), Cinceles de paneles (*chisels*, ej. BMC, SAB 0.15mm), Abrasivos y limas (*abrasives*, ej. Gunprimer Raser Plus, lijas esponja), Aerógrafos (*airbrush*, ej. Mr. Hobby PS-289, Iwata Eclipse), Mototools/Taladros (*rotary-drill*), y Herramientas fijas (*general*, pinzas, tapetes de corte).
+    - Asignación automática de kit inicial (*Starter Modeling Arsenal*) de 4 herramientas para nuevos modelistas (GodHand SPN-120, Olfa AK-4, Gunprimer Raser Plus, Mr. Hobby Procon Boy WA 0.3mm).
+  - **Motor de Vida Útil, Dial de Desgaste y Alerta de Cuchilla Mellada:**
+    - Algoritmo en `@gunpla/shared` (`calculateToolWear`):
+      - Seguimiento métrico de cortes realizados (`cutsCount`), sesiones de trabajo y vida útil máxima recomendada (`maxRecommendedCuts`).
+      - Cálculo porcentual de desgaste (`wearPercentage`) y porcentaje de vida restante (`remainingLifespanPct`).
+      - Clasificación dinámica de condición: `new` (0%), `good` (<50%), `fair` (50-79%), `worn` (80-99%), `needs_replacement` (>=100%).
+      - Alerta preventiva de filo comprometido (`isDullWarning: true` cuando el desgaste supera el 80% o se agota): advierte activamente al usuario para evitar daños por pellizco o marcas de estrés blanco en el poliestireno.
+  - **Registro de Reemplazo de Cuchillas e Historial de Mantenimiento:**
+    - Acción de sustitución de filo (`POST /api/v1/workbench/tools/:id/replace-blade`): reinicia el conteo de cortes a 0, incrementa el total histórico de cuchillas consumidas y añade una entrada al historial de mantenimiento (`maintenanceLog`) con marca de tiempo y notas técnicas.
+  - **Endpoints Especializados en API:**
+    - `GET /api/v1/workbench/tools`: Lista completa con cálculo en tiempo real de desgaste y resumen global (`summary`: activas, desgastadas, reemplazo urgente, total de cuchillas consumidas, desglose por categoría).
+    - `POST /api/v1/workbench/tools`: Registro de nuevas herramientas con especificación de filo y seguimiento opcional de desgaste.
+    - `GET /api/v1/workbench/tools/:id`: Inspección detallada y bitácora de mantenimiento.
+    - `PATCH /api/v1/workbench/tools/:id`: Registro incremental de cortes (`cutsIncrement`), sesiones y actualización de atributos.
+    - `POST /api/v1/workbench/tools/:id/replace-blade`: Registro formal de renovación de filo.
+    - `DELETE /api/v1/workbench/tools/:id`: Eliminación de herramienta.
+  - **Interfaz de Usuario Web Shell (UXP-01):**
+    - Botón de acceso directo `#btn-open-tools-inventory` en la barra de herramientas de Mi Taller.
+    - Subpestaña `#wb-subtab-tools` con indicadores KPI (`#tools-kpi-active-count`, `#tools-kpi-worn-count`, `#tools-kpi-replace-count`, `#tools-kpi-blades-consumed`) y grid reactivo de herramientas con filtros por categoría.
+    - Modal interactivo `#modal-workbench-tools` con drawer deslizable para registro, barras de desgaste dinámicas codificadas por color, botones de incremento rápido (+25 cortes, +100 cortes) y disparador de reemplazo de cuchilla.
+    - Badge de advertencia en tiempo real `#wb-tools-wear-badge` en la cabecera cuando alguna herramienta requiere reemplazo de filo.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/workbench-tools.test.mjs` (4 pruebas completas). Total de la plataforma: 151 tests unitarios pasando.
+    - Smoketest automatizado en `scripts/smoketest.mjs` validando ciclo CRUD, incrementos de cortes, advertencias de filo y reemplazo de cuchilla.
+    - Despliegue en producción en Proxmox LXC 190.
 
 - **Generador de Fichas Técnicas & Manuales de Despiece (Parts Breakdown & Assembly Step Cards - DT23):**
   - **Estructuración Anatómica y Modelos por Género:**
