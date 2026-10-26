@@ -1932,7 +1932,7 @@ export function renderModals(
 </div>
 
 <!-- Modal: AI Workbench Smart Builder Assistant (DT19) -->
-<div id="modal-ai-builder-assistant" class="modal" style="display: none;">
+<div id="modal-ai-builder-assistant" class="custom-modal modal" style="display: none;">
   <div class="modal-content" style="max-width: 820px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
     <!-- Header -->
     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
@@ -2096,7 +2096,7 @@ export function renderModals(
 </div>
 
 <!-- Modal: DT20 Stash Insurance & Appraisal Report -->
-<div id="modal-stash-insurance-report" class="auth-modal-overlay" onclick="closeInsuranceReportModal(event)">
+<div id="modal-stash-insurance-report" class="custom-modal auth-modal-overlay" onclick="closeInsuranceReportModal(event)">
   <div class="auth-modal" style="max-width: 820px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; background: #0f172a; border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);" onclick="event.stopPropagation()">
     <!-- Header -->
     <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(15,23,42,0.95) 100%); display: flex; justify-content: space-between; align-items: center;">
@@ -2216,7 +2216,7 @@ export function renderModals(
 </div>
 
 <!-- Modal: DT21 Workshop Soundscapes & Procedural Audio Generator -->
-<div id="modal-soundscapes" class="auth-modal-overlay" onclick="closeSoundscapesModal(event)">
+<div id="modal-soundscapes" class="custom-modal auth-modal-overlay" onclick="closeSoundscapesModal(event)">
   <div class="auth-modal" style="max-width: 860px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; background: #0f172a; border: 1px solid rgba(45, 212, 191, 0.35); border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);" onclick="event.stopPropagation()">
     <!-- Header -->
     <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, rgba(20, 184, 166, 0.18) 0%, rgba(15,23,42,0.95) 100%); display: flex; justify-content: space-between; align-items: center;">
@@ -2334,7 +2334,7 @@ export function renderModals(
 </div>
 
 <!-- Modal: DT22 Airbrush PSI & Thinner Ratio Calculator -->
-<div id="modal-airbrush-calculator" class="auth-modal-overlay" onclick="closeAirbrushCalculatorModal(event)">
+<div id="modal-airbrush-calculator" class="custom-modal auth-modal-overlay" onclick="closeAirbrushCalculatorModal(event)">
   <div class="auth-modal" style="max-width: 880px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; background: #0f172a; border: 1px solid rgba(249, 115, 22, 0.4); border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);" onclick="event.stopPropagation()">
     <!-- Header -->
     <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, rgba(249, 115, 22, 0.18) 0%, rgba(15,23,42,0.95) 100%); display: flex; justify-content: space-between; align-items: center;">
@@ -2505,7 +2505,7 @@ export function renderModals(
 </div>
 
 <!-- Modal: DT23 Parts Breakdown & Assembly Subassembly Cards -->
-<div id="modal-subassemblies-breakdown" class="auth-modal-overlay" onclick="closeSubassembliesModal(event)">
+<div id="modal-subassemblies-breakdown" class="custom-modal auth-modal-overlay" onclick="closeSubassembliesModal(event)">
   <div class="auth-modal" style="max-width: 960px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; background: #0f172a; border: 1px solid rgba(99, 102, 241, 0.4); border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);" onclick="event.stopPropagation()">
     <!-- Header -->
     <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, rgba(99, 102, 241, 0.18) 0%, rgba(15,23,42,0.95) 100%); display: flex; justify-content: space-between; align-items: center;">
@@ -2636,7 +2636,7 @@ export function renderModals(
 </div>
 
 <!-- Modal: Workbench Tools & Blade Wear Tracker (DT24) -->
-<div id="modal-workbench-tools" onclick="closeToolsInventoryModal(event)" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 1rem;">
+<div id="modal-workbench-tools" class="custom-modal" onclick="closeToolsInventoryModal(event)" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 1rem;">
   <div onclick="event.stopPropagation()" style="background: #0b1329; border: 1px solid #1e293b; border-radius: 12px; width: 100%; max-width: 900px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);">
     <!-- Header -->
     <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.95);">

@@ -510,19 +510,47 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData, og?: 
     }
 
     /* Auth & Custom Modals */
-    #auth-modal, .custom-modal {
-      display: none;
+    #auth-modal, .custom-modal, .auth-modal-overlay, .modal {
+      display: none !important;
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(6px);
-      z-index: 1000;
+      z-index: 9999;
       align-items: center;
       justify-content: center;
       padding: 1rem;
       overflow-y: auto;
     }
-    #auth-modal.active, .custom-modal.active { display: flex; animation: fadeIn 0.2s ease; }
+    #auth-modal.active, .custom-modal.active, .auth-modal-overlay.active, .modal.active {
+      display: flex !important;
+      animation: fadeIn 0.2s ease;
+    }
+    .auth-modal {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      overflow: hidden;
+      margin: auto;
+    }
+    .ws-preset-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .ws-preset-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .ws-preset-card.active {
+      border: 1.5px solid var(--accent);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+    }
     .auth-box {
       background: #111827;
       border: 1px solid var(--border-color);
@@ -5986,14 +6014,18 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     }
     const m = document.getElementById('modal-stash-insurance-report');
     if (!m) return;
+    m.style.display = 'flex';
     m.classList.add('active');
     loadInsuranceValuationData();
   }
 
   function closeInsuranceReportModal(e) {
-    if (!e || e.target.id === 'modal-stash-insurance-report' || e.target.classList.contains('auth-close') || !e.target) {
+    if (!e || e.target.id === 'modal-stash-insurance-report' || (e.target.tagName === 'SPAN' && e.target.textContent === '×') || e.target.classList?.contains('auth-close') || !e.target) {
       const m = document.getElementById('modal-stash-insurance-report');
-      if (m) m.classList.remove('active');
+      if (m) {
+        m.classList.remove('active');
+        m.style.display = 'none';
+      }
     }
   }
 
@@ -6283,13 +6315,17 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     const m = document.getElementById('modal-soundscapes');
     if (!m) return;
     renderSoundscapeLayersMixer();
+    m.style.display = 'flex';
     m.classList.add('active');
   }
 
   function closeSoundscapesModal(e) {
-    if (!e || e.target.id === 'modal-soundscapes' || e.target.classList.contains('auth-close') || !e.target) {
+    if (!e || e.target.id === 'modal-soundscapes' || (e.target.tagName === 'SPAN' && e.target.textContent === '×') || e.target.classList?.contains('auth-close') || !e.target) {
       const m = document.getElementById('modal-soundscapes');
-      if (m) m.classList.remove('active');
+      if (m) {
+        m.classList.remove('active');
+        m.style.display = 'none';
+      }
     }
   }
 
