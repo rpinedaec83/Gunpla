@@ -540,11 +540,13 @@ async function handleSignin(req: Request, res: Response): Promise<void> {
   );
 
   // Platform Super Admin (rpinedaec83@gmail.com) universal sign-in fallback across any tenant
-  if (!user && (normalizedId === 'rpinedaec83@gmail.com' || normalizedId === 'rpineda')) {
+  if (!user && (normalizedId === 'rpinedaec83@gmail.com' || normalizedId === 'rpineda' || normalizedId === 'rpinedaec83')) {
     user = db.users.find(
       (u) =>
-        u.email.toLowerCase() === 'rpinedaec83@gmail.com' ||
-        u.username.toLowerCase() === 'rpineda'
+        (u.email.toLowerCase() === normalizedId || u.username.toLowerCase() === normalizedId) &&
+        (u.roles.includes('super_admin') || u.email.toLowerCase() === 'rpinedaec83@gmail.com')
+    ) || db.users.find(
+      (u) => u.email.toLowerCase() === 'rpinedaec83@gmail.com'
     );
   }
 
