@@ -2504,6 +2504,138 @@ export function renderModals(
   </div>
 </div>
 
+<!-- Modal: DT23 Parts Breakdown & Assembly Subassembly Cards -->
+<div id="modal-subassemblies-breakdown" class="auth-modal-overlay" onclick="closeSubassembliesModal(event)">
+  <div class="auth-modal" style="max-width: 960px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; background: #0f172a; border: 1px solid rgba(99, 102, 241, 0.4); border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);" onclick="event.stopPropagation()">
+    <!-- Header -->
+    <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); background: linear-gradient(135deg, rgba(99, 102, 241, 0.18) 0%, rgba(15,23,42,0.95) 100%); display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 0.65rem;">
+        <span style="font-size: 1.6rem;">📋</span>
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Fichas de Despiece & Subensambles</h3>
+          <p style="font-size: 0.78rem; color: #a5b4fc; margin: 0.15rem 0 0 0;">Control anatómico por bloques de armado, seguimiento de fases y fichas de bandeja imprimibles</p>
+        </div>
+      </div>
+      <span style="font-size: 1.5rem; color: #94a3b8; cursor: pointer; line-height: 1;" onclick="closeSubassembliesModal()">&times;</span>
+    </div>
+
+    <!-- Toolbar: Project Selector & Actions -->
+    <div style="padding: 0.85rem 1.5rem; background: rgba(0,0,0,0.25); border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+      <div style="display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 280px;">
+        <label for="subassembly-build-select" style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700; text-transform: uppercase;">Proyecto:</label>
+        <select id="subassembly-build-select" onchange="onSubassemblyBuildSelectChange()" style="flex: 1; padding: 0.4rem 0.6rem; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #fff; font-size: 0.8rem;">
+          <option value="">Cargando bitácoras...</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button id="btn-toggle-add-subassembly" type="button" class="filter-pill" onclick="toggleAddSubassemblyDrawer()" style="font-size: 0.78rem; padding: 0.4rem 0.75rem; border-color: rgba(99, 102, 241, 0.4); color: #818cf8;">
+          + Nuevo Bloque
+        </button>
+        <button id="btn-regenerate-subassemblies" type="button" class="filter-pill" onclick="regenerateDefaultSubassemblies()" style="font-size: 0.78rem; padding: 0.4rem 0.75rem; border-color: rgba(148, 163, 184, 0.3); color: #cbd5e1;">
+          🔄 Plantilla Automática
+        </button>
+        <button id="btn-print-subassemblies" type="button" class="btn-primary" onclick="printSubassemblyWorksheet()" style="font-size: 0.78rem; padding: 0.4rem 0.85rem; background: #4f46e5; border-color: #4f46e5;">
+          🖨️ Fichas A4 Bandeja
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Summary Bar -->
+    <div style="padding: 0.75rem 1.5rem; background: rgba(99, 102, 241, 0.08); border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+      <div style="text-align: center;">
+        <div style="font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Subensambles</div>
+        <div id="sub-stat-total-cards" style="font-size: 1.25rem; font-weight: 800; color: #f1f5f9;">0</div>
+      </div>
+      <div style="text-align: center;">
+        <div style="font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Piezas Totales Est.</div>
+        <div id="sub-stat-total-parts" style="font-size: 1.25rem; font-weight: 800; color: #38bdf8;">~0</div>
+      </div>
+      <div style="text-align: center;">
+        <div style="font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Progreso General</div>
+        <div id="sub-stat-overall-pct" style="font-size: 1.25rem; font-weight: 800; color: #4ade80;">0%</div>
+      </div>
+      <!-- Phase Progress Pills -->
+      <div style="display: flex; gap: 0.35rem; align-items: center;">
+        <span id="sub-pill-cut" class="filter-pill" style="font-size: 0.68rem; padding: 0.2rem 0.5rem;">Cortado: 0%</span>
+        <span id="sub-pill-cleaned" class="filter-pill" style="font-size: 0.68rem; padding: 0.2rem 0.5rem;">Lijado: 0%</span>
+        <span id="sub-pill-primed" class="filter-pill" style="font-size: 0.68rem; padding: 0.2rem 0.5rem;">Imprimado: 0%</span>
+        <span id="sub-pill-painted" class="filter-pill" style="font-size: 0.68rem; padding: 0.2rem 0.5rem;">Pintado: 0%</span>
+        <span id="sub-pill-topcoated" class="filter-pill" style="font-size: 0.68rem; padding: 0.2rem 0.5rem;">Barniz: 0%</span>
+      </div>
+    </div>
+
+    <!-- Drawer: Add Subassembly Form (collapsible) -->
+    <div id="sub-add-form-drawer" style="display: none; padding: 1rem 1.5rem; background: #131d36; border-bottom: 1px solid rgba(99, 102, 241, 0.3);">
+      <div style="font-size: 0.8rem; font-weight: 700; color: #818cf8; margin-bottom: 0.6rem; text-transform: uppercase;">
+        + Agregar Nuevo Bloque / Subensamble
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.6rem; margin-bottom: 0.6rem;">
+        <div>
+          <label style="display: block; font-size: 0.7rem; color: #94a3b8;">Nombre del Subensamble:</label>
+          <input id="sub-input-name" type="text" placeholder="Ej: Hombreras & Escudos" style="width: 100%; padding: 0.35rem 0.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.78rem;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.7rem; color: #94a3b8;">Tipo / Anatomía:</label>
+          <select id="sub-input-type" style="width: 100%; padding: 0.35rem 0.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.78rem;">
+            <option value="head">Cabeza (Head Unit)</option>
+            <option value="torso">Torso / Pecho</option>
+            <option value="arms">Brazos / Extremidades Sup.</option>
+            <option value="waist">Cintura / Faldones</option>
+            <option value="legs">Piernas / Pies</option>
+            <option value="backpack">Mochila / Propulsores</option>
+            <option value="weapons">Armamento & Escudo</option>
+            <option value="cockpit">Cabina / Interior</option>
+            <option value="chassis">Chasis / Casco / Orugas</option>
+            <option value="engine">Motor / Transmisión</option>
+            <option value="wings">Alas / Superficies</option>
+            <option value="accessories">Accesorios / Herramientas</option>
+            <option value="custom" selected>Personalizado</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.7rem; color: #94a3b8;">Grapas / Runners (separados por coma):</label>
+          <input id="sub-input-runners" type="text" placeholder="A, B, C1, PC" style="width: 100%; padding: 0.35rem 0.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.78rem;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.7rem; color: #94a3b8;">Piezas Estimadas:</label>
+          <input id="sub-input-parts" type="number" min="1" max="500" value="15" style="width: 100%; padding: 0.35rem 0.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.78rem;" />
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 0.6rem;">
+        <div>
+          <label style="display: block; font-size: 0.7rem; color: #94a3b8;">Notas de Modificación (Scribing, masilla, fotograbado):</label>
+          <input id="sub-input-notes" type="text" placeholder="Ej: Panel lines 0.15mm en hombreras" style="width: 100%; padding: 0.35rem 0.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.78rem;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.7rem; color: #94a3b8;">Receta de Color / Pinturas:</label>
+          <input id="sub-input-colors" type="text" placeholder="Ej: Mr. Color C65 Azul + C1 Blanco" style="width: 100%; padding: 0.35rem 0.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 4px; color: #fff; font-size: 0.78rem;" />
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <button type="button" class="filter-pill" onclick="toggleAddSubassemblyDrawer()" style="font-size: 0.75rem;">Cancelar</button>
+        <button id="btn-save-subassembly" type="button" class="btn-primary" onclick="submitNewSubassembly()" style="font-size: 0.75rem; padding: 0.35rem 0.85rem; background: #4f46e5;">Guardar Subensamble</button>
+      </div>
+    </div>
+
+    <!-- Cards Body Container -->
+    <div id="subassemblies-cards-container" style="padding: 1.25rem 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.85rem; min-height: 250px;">
+      <p style="color: #94a3b8; font-size: 0.85rem; text-align: center; padding: 2rem;">Selecciona una bitácora para gestionar sus fichas de despiece...</p>
+    </div>
+
+    <!-- Footer Actions -->
+    <div style="padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.95); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+      <div style="font-size: 0.75rem; color: #94a3b8;">
+        💡 Consejo de modelista: Las fichas se sincronizan con las bandejas físicas para mantener organizadas las piezas por fase de pintura.
+      </div>
+      <button type="button" class="btn-primary" onclick="closeSubassembliesModal()" style="font-size: 0.8rem; padding: 0.45rem 1rem;">
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>
+
+
 
 
 `;

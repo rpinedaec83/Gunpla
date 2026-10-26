@@ -698,6 +698,38 @@ Lessons learned:
 - Differentiating between built showcase models (+50% for artisan labor and materials) and mint boxed stash (+15% for scarcity/inflation) accurately mirrors real-world collectibles insurance underwriting practices.
 Usage: Moderate -- self-estimated
 
+### DT23 -- Parts Breakdown & Assembly Step Cards (Generador de Fichas Técnicas & Manuales de Despiece) | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Designed shared data models and template generation logic in `packages/shared/src/index.ts`:
+  - `SubassemblyStage` ('cut', 'cleaned', 'primed', 'painted', 'topcoated'), `SubassemblyType`, `SubassemblyCard`, `CreateSubassemblyDto`, `UpdateSubassemblyDto`, `SubassemblyOverallProgress`.
+  - Implemented `generateDefaultSubassemblies`: Anatomical breakdown generator tailored to scale model genres:
+    - Gunpla/Sci-Fi: 7 blocks (Cabeza, Torso, Brazos, Cintura, Piernas, Mochila, Armamento) with grade multiplier scaling parts count for RG, MG, and PG.
+    - Military Armor: 5 blocks (Casco Inferior, Orugas/Tracks, Casco Superior, Torreta, Herramientas OVM).
+    - Aviation: 5 blocks (Cabina, Fuselaje, Alas/Flaps, Tren de Aterrizaje, Armamento).
+    - Automotive: 4 blocks (Motor/Transmisión, Chasis/Suspensión, Habitáculo, Carrocería).
+  - Implemented `calculateSubassemblyOverallProgress`: Pure function computing total parts, stage progress counters, overall completion percentage, and granular phase breakdown.
+  - Implemented `generateSubassemblyWorksheetHtml`: High-contrast printable A4 worksheet generating physical organizer tray cards (2x2 grid with dotted cut guides `✂️ Cortar ficha para bandeja`, kit metadata, runner tags, part counts, 5-stage checkbox matrix, and modification checklist notes).
+- Extended backend API in `apps/api/src/slices/build-logs/builds.slice.ts`:
+  - `GET /api/v1/builds/:id/subassemblies`: Returns subassemblies and computed progress (auto-initializes defaults if none exist).
+  - `POST /api/v1/builds/:id/subassemblies`: Creates custom subassembly or bulk-generates defaults with `{ autoGenerate: true }`.
+  - `PATCH /api/v1/builds/:id/subassemblies/:subId`: Updates stages, runners, parts, and notes with ownership verification.
+  - `DELETE /api/v1/builds/:id/subassemblies/:subId`: Removes subassembly card.
+  - `GET /api/v1/builds/:id/subassemblies/export`: Printable A4 tray cards sheet (`format=html` and `format=json`).
+- Updated OpenAPI 3.1 specifications in `docs/reference/openapi-starter.yaml` and `apps/api/src/openapi/openapi-spec.ts`.
+- Integrated Web UI shell (UXP-01):
+  - Toolbar button `📋 Fichas de Despiece` (`#btn-open-subassemblies-modal`) in Workbench header.
+  - Modal `#modal-subassemblies-breakdown` with project selector, KPI summary cards (Total Subensambles, Piezas Est., Progreso General, 5-phase percentage pills), collapsible Add Subassembly drawer, dynamic interactive cards with 5-stage toggle buttons, and direct print trigger (`#btn-print-subassemblies`).
+- Authored isolated unit test suite in `tests/unit/subassemblies.test.mjs` (4 tests covering category templates, grade multipliers, progress math, and HTML print generation). Total unit tests: 147 passing.
+- Extended end-to-end regression smoketest in `scripts/smoketest.mjs` verifying subassemblies retrieval, custom subassembly creation, stage patching, A4 HTML export, deletion, and Web Shell elements.
+- Deployed and verified on Proxmox LXC 190.
+Issues hit:
+- In `tests/unit/barcode-scanner.test.mjs`, concurrent test execution occasionally reloaded memory DB without sample kit `kit-rg-hinu`; resolved by ensuring upsert presence in `before()` hook.
+Decisions made:
+- Providing physical printable tray cards directly links the digital build log to the physical workshop bench, allowing modelers to keep cut parts organized in plastic trays with tangible checklists.
+Lessons learned:
+- Modularizing kit building into anatomical subassemblies significantly reduces builder overwhelm on high-part-count kits (MG, PG, resin conversions) and enables systematic batch painting.
+Usage: Moderate -- self-estimated
+
 ### DT22 -- Airbrush PSI & Thinner Ratio Calculator (Calculadora de Dilución y Presión de Aerógrafo) | eMOE: 4 CU | aMOE: 4 CU
 What was done:
 - Designed shared data models and calculation engine in `packages/shared/src/index.ts`:

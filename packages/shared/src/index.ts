@@ -584,6 +584,7 @@ export interface BuildProjectRecord {
   steps: BuildStep[];
   comments: BuildComment[];
   expenses?: BuildExpenseItem[];
+  subassemblies?: SubassemblyCard[];
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -2621,6 +2622,562 @@ export function calculateAirbrushMix(req: AirbrushMixRequest): AirbrushMixResult
     tips,
     troubleshooting
   };
+}
+
+// ============================================================================
+// DT23: Parts Breakdown & Assembly Subassembly Cards
+// ============================================================================
+export type SubassemblyStage = 'cut' | 'cleaned' | 'primed' | 'painted' | 'topcoated';
+
+export interface SubassemblyStageProgress {
+  cut: boolean;
+  cleaned: boolean;
+  primed: boolean;
+  painted: boolean;
+  topcoated: boolean;
+}
+
+export type SubassemblyType =
+  | 'head'
+  | 'torso'
+  | 'arms'
+  | 'legs'
+  | 'waist'
+  | 'backpack'
+  | 'weapons'
+  | 'cockpit'
+  | 'chassis'
+  | 'engine'
+  | 'turret'
+  | 'wings'
+  | 'accessories'
+  | 'custom';
+
+export interface SubassemblyCard {
+  id: string;
+  buildId: string;
+  name: string;
+  type: SubassemblyType;
+  icon: string;
+  runners: string[];
+  partCountEstimated: number;
+  stages: SubassemblyStageProgress;
+  customNotes: string;
+  colorPaletteNotes?: string;
+  orderIndex: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSubassemblyDto {
+  name?: string;
+  type?: SubassemblyType;
+  icon?: string;
+  runners?: string[];
+  partCountEstimated?: number;
+  stages?: Partial<SubassemblyStageProgress>;
+  customNotes?: string;
+  colorPaletteNotes?: string;
+  autoGenerate?: boolean;
+}
+
+export interface UpdateSubassemblyDto {
+  name?: string;
+  type?: SubassemblyType;
+  icon?: string;
+  runners?: string[];
+  partCountEstimated?: number;
+  stages?: Partial<SubassemblyStageProgress>;
+  customNotes?: string;
+  colorPaletteNotes?: string;
+  orderIndex?: number;
+}
+
+export interface SubassemblyOverallProgress {
+  totalCards: number;
+  totalStagesCount: number;
+  completedStagesCount: number;
+  completionPercentage: number;
+  totalPartsEstimated: number;
+  stageBreakdown: Record<SubassemblyStage, { completed: number; total: number; pct: number }>;
+}
+
+export function generateDefaultSubassemblies(
+  buildId: string,
+  category: string = 'gunpla',
+  grade: string = 'MG'
+): SubassemblyCard[] {
+  const cat = (category || 'gunpla').toLowerCase();
+  const now = new Date().toISOString();
+
+  type TemplateItem = {
+    name: string;
+    type: SubassemblyType;
+    icon: string;
+    runners: string[];
+    parts: number;
+    notes: string;
+  };
+
+  let templates: TemplateItem[] = [];
+
+  if (cat.includes('military') || cat.includes('armor') || cat.includes('tank')) {
+    templates = [
+      { name: 'Casco Inferior & Suspensión', type: 'chassis', icon: '🚜', runners: ['A', 'B'], parts: 32, notes: 'Lijar marcas de eyección en brazos de suspensión.' },
+      { name: 'Ruedas & Orugas / Tracks', type: 'chassis', icon: '⚙️', runners: ['B', 'C', 'TR'], parts: 48, notes: 'Pintar bandas de caucho antes de ensamblar eslabones.' },
+      { name: 'Casco Superior & Guardabarros', type: 'chassis', icon: '🛡️', runners: ['A', 'C'], parts: 26, notes: 'Verificar encastre frontal y texturizar fundición.' },
+      { name: 'Torreta Principal & Cañón', type: 'turret', icon: '🎯', runners: ['D', 'E'], parts: 34, notes: 'Eliminar línea de molde en el tubo del cañón (seam line).' },
+      { name: 'Herramientas OVM & Petacas', type: 'accessories', icon: '🔧', runners: ['E', 'PE'], parts: 18, notes: 'Pintar mangos de madera y partes metálicas por separado.' }
+    ];
+  } else if (cat.includes('aviation') || cat.includes('aircraft') || cat.includes('avion')) {
+    templates = [
+      { name: 'Cabina & Asiento Eyectable', type: 'cockpit', icon: '💺', runners: ['A', 'PE'], parts: 16, notes: 'Pintar paneles de instrumentos y arneses antes de cerrar.' },
+      { name: 'Fuselaje & Tomas de Aire', type: 'chassis', icon: '✈️', runners: ['B', 'C'], parts: 28, notes: 'Añadir contrapeso de plomo en el morro (nose weight).' },
+      { name: 'Alas & Flaps / Alerones', type: 'wings', icon: '🛩️', runners: ['A', 'C'], parts: 30, notes: 'Repasar líneas de panel con buril 0.15mm.' },
+      { name: 'Tren de Aterrizaje & Pozos', type: 'chassis', icon: '🛞', runners: ['D', 'PE'], parts: 22, notes: 'Detallar mangueras hidráulicas con hilo de cobre.' },
+      { name: 'Armamento & Tanques Alares', type: 'weapons', icon: '💣', runners: ['E', 'F'], parts: 20, notes: 'Aplicar calcas de advertencia antes de barniz mate.' }
+    ];
+  } else if (cat.includes('auto') || cat.includes('car') || cat.includes('vehiculo')) {
+    templates = [
+      { name: 'Bloque Motor & Transmisión', type: 'engine', icon: '🏎️', runners: ['A', 'B'], parts: 32, notes: 'Cableado de bujías y manifold de escape.' },
+      { name: 'Chasis, Frenos & Suspensión', type: 'chassis', icon: '🔩', runners: ['B', 'C'], parts: 26, notes: 'Imprimar discos de freno en Gunmetal.' },
+      { name: 'Habitáculo, Butacas & Tablero', type: 'cockpit', icon: '🛋️', runners: ['C', 'D'], parts: 24, notes: 'Flocado aterciopelado en alfombras y cinturones tela.' },
+      { name: 'Carrocería & Cristales Transparentes', type: 'accessories', icon: '✨', runners: ['E', 'CL'], parts: 20, notes: 'Pulir carrocería con compuestos basto, fino y finish.' }
+    ];
+  } else {
+    // Default: Sci-Fi / Gunpla / Mecha
+    const isPg = grade === 'PG' || grade === 'MegaSize';
+    const mult = isPg ? 1.8 : grade === 'RG' || grade === 'MG' ? 1.2 : 1.0;
+
+    templates = [
+      { name: 'Cabeza / Head Unit', type: 'head', icon: '🤖', runners: ['A', 'B', 'PC'], parts: Math.round(14 * mult), notes: 'Pintar v-fin, panel line en orejas y limpiar nubs diminutos.' },
+      { name: 'Torso & Cabina de Piloto', type: 'torso', icon: '🥋', runners: ['A', 'B', 'C', 'PC'], parts: Math.round(26 * mult), notes: 'Encastre de hombros y compuerta de cockpit.' },
+      { name: 'Brazos & Manos / Arm Units', type: 'arms', icon: '💪', runners: ['A', 'C', 'D', 'PC'], parts: Math.round(36 * mult), notes: 'Comprobar rigidez de codos y despiece simétrico der/izq.' },
+      { name: 'Cintura & Faldones / Waist Unit', type: 'waist', icon: '🩳', runners: ['B', 'C', 'PC'], parts: Math.round(18 * mult), notes: 'Separar faldones frontales gemelos con alicate de corte fino.' },
+      { name: 'Piernas & Pies / Leg Units', type: 'legs', icon: '🦵', runners: ['A', 'B', 'D', 'PC'], parts: Math.round(44 * mult), notes: 'Pistones de rodilla en esqueleto interno y tobillo con holgura.' },
+      { name: 'Mochila Propulsora / Backpack', type: 'backpack', icon: '🚀', runners: ['C', 'D'], parts: Math.round(16 * mult), notes: 'Toberas metálicas con quemado titanium exhaust.' },
+      { name: 'Armamento & Escudo / Weapons', type: 'weapons', icon: '⚔️', runners: ['E', 'F'], parts: Math.round(22 * mult), notes: 'Eliminar costura longitudinal en rifle de rayos.' }
+    ];
+  }
+
+  return templates.map((tpl, idx) => ({
+    id: `sub-${buildId.slice(-6)}-${idx + 1}`,
+    buildId,
+    name: tpl.name,
+    type: tpl.type,
+    icon: tpl.icon,
+    runners: tpl.runners,
+    partCountEstimated: tpl.parts,
+    stages: {
+      cut: false,
+      cleaned: false,
+      primed: false,
+      painted: false,
+      topcoated: false
+    },
+    customNotes: tpl.notes,
+    colorPaletteNotes: '',
+    orderIndex: idx,
+    createdAt: now,
+    updatedAt: now
+  }));
+}
+
+export function calculateSubassemblyOverallProgress(cards: SubassemblyCard[]): SubassemblyOverallProgress {
+  const totalCards = cards.length;
+  const stagesList: SubassemblyStage[] = ['cut', 'cleaned', 'primed', 'painted', 'topcoated'];
+
+  if (totalCards === 0) {
+    return {
+      totalCards: 0,
+      totalStagesCount: 0,
+      completedStagesCount: 0,
+      completionPercentage: 0,
+      totalPartsEstimated: 0,
+      stageBreakdown: {
+        cut: { completed: 0, total: 0, pct: 0 },
+        cleaned: { completed: 0, total: 0, pct: 0 },
+        primed: { completed: 0, total: 0, pct: 0 },
+        painted: { completed: 0, total: 0, pct: 0 },
+        topcoated: { completed: 0, total: 0, pct: 0 }
+      }
+    };
+  }
+
+  const totalStagesCount = totalCards * stagesList.length;
+  let completedStagesCount = 0;
+  let totalPartsEstimated = 0;
+
+  const stageBreakdown: Record<SubassemblyStage, { completed: number; total: number; pct: number }> = {
+    cut: { completed: 0, total: totalCards, pct: 0 },
+    cleaned: { completed: 0, total: totalCards, pct: 0 },
+    primed: { completed: 0, total: totalCards, pct: 0 },
+    painted: { completed: 0, total: totalCards, pct: 0 },
+    topcoated: { completed: 0, total: totalCards, pct: 0 }
+  };
+
+  cards.forEach(card => {
+    totalPartsEstimated += card.partCountEstimated || 0;
+    stagesList.forEach(stg => {
+      if (card.stages && card.stages[stg]) {
+        completedStagesCount++;
+        stageBreakdown[stg].completed++;
+      }
+    });
+  });
+
+  stagesList.forEach(stg => {
+    stageBreakdown[stg].pct = Math.round((stageBreakdown[stg].completed / totalCards) * 100);
+  });
+
+  const completionPercentage = Math.round((completedStagesCount / totalStagesCount) * 100);
+
+  return {
+    totalCards,
+    totalStagesCount,
+    completedStagesCount,
+    completionPercentage,
+    totalPartsEstimated,
+    stageBreakdown
+  };
+}
+
+export function generateSubassemblyWorksheetHtml(params: {
+  buildTitle: string;
+  kitName?: string;
+  scale?: string;
+  grade?: string;
+  builderName?: string;
+  tenantTitle?: string;
+  cards: SubassemblyCard[];
+}): string {
+  const { buildTitle, kitName, scale, grade, builderName, tenantTitle, cards } = params;
+  const progress = calculateSubassemblyOverallProgress(cards);
+  const nowFormatted = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const cardsHtml = cards.map(c => {
+    const runnersHtml = (c.runners && c.runners.length > 0)
+      ? c.runners.map(r => `<span class="runner-badge">[ ${r} ]</span>`).join(' ')
+      : '<span style="color: #94a3b8; font-style: italic;">Sin asignar</span>';
+
+    const stageBox = (stgKey: SubassemblyStage, label: string) => {
+      const isChecked = c.stages && c.stages[stgKey];
+      return `
+        <div class="stage-item ${isChecked ? 'checked' : ''}">
+          <span class="box">${isChecked ? '☒' : '☐'}</span>
+          <span class="lbl">${label}</span>
+        </div>
+      `;
+    };
+
+    return `
+      <div class="tray-card">
+        <div class="cut-corner">✂️ Cortar ficha para bandeja</div>
+        <div class="card-header">
+          <div class="title-wrap">
+            <span class="icon">${c.icon || '🧩'}</span>
+            <span class="name">${c.name}</span>
+          </div>
+          <span class="parts-badge">~${c.partCountEstimated || 0} piezas</span>
+        </div>
+
+        <div class="meta-row">
+          <strong>Grapas / Runners:</strong> ${runnersHtml}
+        </div>
+
+        <div class="stages-grid">
+          ${stageBox('cut', '1. Cortado')}
+          ${stageBox('cleaned', '2. Lijado / Nubs')}
+          ${stageBox('primed', '3. Imprimado')}
+          ${stageBox('painted', '4. Pintado')}
+          ${stageBox('topcoated', '5. Barnizado')}
+        </div>
+
+        ${c.customNotes ? `
+          <div class="notes-box">
+            <strong>Modificaciones / Checklist:</strong>
+            <p>${c.customNotes}</p>
+          </div>
+        ` : `
+          <div class="notes-box empty">
+            <em>Notas técnicas / panel lines / encastre libre:</em>
+            <div class="dotted-lines">....................................................................................................</div>
+          </div>
+        `}
+
+        ${c.colorPaletteNotes ? `
+          <div class="color-box">
+            <strong>Colores:</strong> ${c.colorPaletteNotes}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Fichas de Despiece & Subensambles - ${kitName || buildTitle}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 10mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background: #f8fafc;
+      color: #0f172a;
+      padding: 12px;
+    }
+    .header-banner {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 6px solid #2563eb;
+    }
+    .header-banner h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .header-banner p {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .kpi-row {
+      display: flex;
+      gap: 16px;
+      text-align: right;
+    }
+    .kpi-pill {
+      background: rgba(255,255,255,0.08);
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .kpi-val {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+    .kpi-lbl {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .tray-card {
+      background: #ffffff;
+      border: 2px dashed #94a3b8;
+      border-radius: 8px;
+      padding: 14px 16px;
+      position: relative;
+      page-break-inside: avoid;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .cut-corner {
+      position: absolute;
+      top: -10px;
+      right: 14px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 0.62rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding-bottom: 6px;
+    }
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .icon {
+      font-size: 1.25rem;
+    }
+    .name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .parts-badge {
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+    }
+
+    .meta-row {
+      font-size: 0.78rem;
+      color: #334155;
+    }
+    .runner-badge {
+      display: inline-block;
+      background: #e0e7ff;
+      color: #3730a3;
+      font-weight: 700;
+      font-family: monospace;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin-right: 2px;
+    }
+
+    .stages-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      background: #f8fafc;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+    .stage-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 4px 2px;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      color: #475569;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+    }
+    .stage-item.checked {
+      background: #ecfdf5;
+      border-color: #10b981;
+      color: #065f46;
+      font-weight: 700;
+    }
+    .stage-item .box {
+      font-size: 0.95rem;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+
+    .notes-box {
+      background: #fdf2f8;
+      border-left: 3px solid #ec4899;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      color: #831843;
+    }
+    .notes-box.empty {
+      background: #f8fafc;
+      border-left: 3px solid #cbd5e1;
+      color: #64748b;
+    }
+    .dotted-lines {
+      color: #cbd5e1;
+      margin-top: 4px;
+      letter-spacing: 2px;
+    }
+
+    .color-box {
+      font-size: 0.7rem;
+      color: #0369a1;
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .footer-bar {
+      margin-top: 16px;
+      font-size: 0.7rem;
+      color: #94a3b8;
+      text-align: center;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .tray-card {
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header-banner">
+    <div>
+      <h1>📋 Ficha de Despiece & Bandejas de Subensambles</h1>
+      <p>
+        <strong>${buildTitle}</strong>
+        ${kitName && kitName !== buildTitle ? ` · Kit: ${kitName}` : ''}
+        ${scale ? ` · Escala ${scale}` : ''}
+        ${grade ? ` · ${grade}` : ''}
+        ${builderName ? ` · Modelista: ${builderName}` : ''}
+      </p>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi-pill">
+        <div class="kpi-val">${progress.totalCards}</div>
+        <div class="kpi-lbl">Subensambles</div>
+      </div>
+      <div class="kpi-pill">
+        <div class="kpi-val">~${progress.totalPartsEstimated}</div>
+        <div class="kpi-lbl">Piezas Est.</div>
+      </div>
+      <div class="kpi-pill">
+        <div class="kpi-val">${progress.completionPercentage}%</div>
+        <div class="kpi-lbl">Progreso Fase</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cards-grid">
+    ${cardsHtml}
+  </div>
+
+  <div class="footer-bar">
+    ${tenantTitle || 'PlamoScale / GunplaJunkies'} · Manual de Taller y Fichas de Bandeja · Impreso el ${nowFormatted}
+  </div>
+</body>
+</html>`;
 }
 
 export * from './ui-shell/app-shell';

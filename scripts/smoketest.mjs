@@ -2776,7 +2776,98 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT22 Airbrush PSI & Thinner Ratio Calculator verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR CHECKS PASSED ===');
+    // =========================================================================
+    // DT23: Parts Breakdown & Assembly Subassembly Cards
+    // =========================================================================
+    console.log('\n--- Verifying DT23 Parts Breakdown & Assembly Subassembly Cards ---');
+
+    // 1. Fetch subassemblies for seed build (RG Hi-Nu)
+    const subListRes = await fetch(`${baseUrl}/api/v1/builds/build-aperich-hinu/subassemblies`);
+    assert.equal(subListRes.status, 200, 'GET /builds/:id/subassemblies must return 200');
+    const subListData = await subListRes.json();
+    assert.equal(subListData.buildId, 'build-aperich-hinu');
+    assert.ok(Array.isArray(subListData.items), 'items must be an array');
+    assert.ok(subListData.items.length >= 7, 'Gunpla seed build should have at least 7 subassembly cards');
+    assert.ok(subListData.progress.totalCards >= 7, 'progress totalCards should match items count');
+    assert.ok(subListData.progress.totalPartsEstimated > 100, 'total estimated parts should be > 100');
+    assert.ok(subListData.progress.stageBreakdown.cut, 'stageBreakdown must have cut stage');
+
+    // 2. Add custom subassembly card as aperich (Author)
+    const addSubRes = await fetch(`${baseUrl}/api/v1/builds/build-aperich-hinu/subassemblies`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${aperichToken}`
+      },
+      body: JSON.stringify({
+        name: 'Hi-Mega Bazooka Launcher Custom',
+        type: 'weapons',
+        runners: ['W1', 'W2'],
+        partCountEstimated: 28,
+        customNotes: 'Cableado LED en mira optica y fibra optica',
+        colorPaletteNotes: 'Gunmetal C28 + Titan Blue C65'
+      })
+    });
+    assert.equal(addSubRes.status, 201, 'POST /builds/:id/subassemblies must return 201');
+    const addSubData = await addSubRes.json();
+    assert.ok(addSubData.item.id, 'Created card must have an id');
+    assert.equal(addSubData.item.name, 'Hi-Mega Bazooka Launcher Custom');
+    assert.equal(addSubData.item.type, 'weapons');
+    assert.deepEqual(addSubData.item.runners, ['W1', 'W2']);
+    const newSubId = addSubData.item.id;
+
+    // 3. Update stage progress on the new subassembly card
+    const patchSubRes = await fetch(`${baseUrl}/api/v1/builds/build-aperich-hinu/subassemblies/${newSubId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${aperichToken}`
+      },
+      body: JSON.stringify({
+        stages: {
+          cut: true,
+          cleaned: true,
+          primed: true
+        }
+      })
+    });
+    assert.equal(patchSubRes.status, 200, 'PATCH /builds/:id/subassemblies/:subId must return 200');
+    const patchSubData = await patchSubRes.json();
+    assert.equal(patchSubData.item.stages.cut, true);
+    assert.equal(patchSubData.item.stages.cleaned, true);
+    assert.equal(patchSubData.item.stages.primed, true);
+    assert.equal(patchSubData.item.stages.painted, false);
+
+    // 4. Export printable A4 workshop organizer cards
+    const exportSubRes = await fetch(`${baseUrl}/api/v1/builds/build-aperich-hinu/subassemblies/export`);
+    assert.equal(exportSubRes.status, 200, 'GET /subassemblies/export must return 200');
+    const exportHtml = await exportSubRes.text();
+    assert.ok(exportHtml.includes('<!DOCTYPE html>'), 'Export must be valid HTML');
+    assert.ok(exportHtml.includes('Ficha de Despiece'), 'Must contain worksheet title');
+    assert.ok(exportHtml.includes('Hi-Mega Bazooka Launcher Custom'), 'Must contain added subassembly');
+    assert.ok(exportHtml.includes('Cortar ficha para bandeja'), 'Must contain tray cut guide');
+
+    // 5. Delete the custom subassembly card to maintain idempotency
+    const deleteSubRes = await fetch(`${baseUrl}/api/v1/builds/build-aperich-hinu/subassemblies/${newSubId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${aperichToken}`
+      }
+    });
+    assert.equal(deleteSubRes.status, 200, 'DELETE /subassemblies/:subId must return 200');
+    const deleteSubData = await deleteSubRes.json();
+    assert.equal(deleteSubData.removedId, newSubId);
+
+    // 6. Verify Web Shell UI elements in PlamoScale frontend
+    assert.ok(plamoWebShellHtml.includes('id="btn-open-subassemblies-modal"'), 'PlamoScale must render subassemblies toolbar button');
+    assert.ok(plamoWebShellHtml.includes('id="modal-subassemblies-breakdown"'), 'PlamoScale must render modal-subassemblies-breakdown');
+    assert.ok(plamoWebShellHtml.includes('id="subassembly-build-select"'), 'PlamoScale must render subassembly-build-select');
+    assert.ok(plamoWebShellHtml.includes('id="btn-print-subassemblies"'), 'PlamoScale must render btn-print-subassemblies');
+    assert.ok(plamoWebShellHtml.includes('id="btn-regenerate-subassemblies"'), 'PlamoScale must render btn-regenerate-subassemblies');
+
+    console.log('[PASS] DT23 Parts Breakdown & Assembly Subassembly Cards verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

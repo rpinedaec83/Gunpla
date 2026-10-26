@@ -4,12 +4,38 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio, Smart Builder AI Assistant, Stash Insurance Valuation Report, Workshop Ambient Soundscapes & Airbrush PSI/Thinner Calculator Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) + Pistas de Sonido y Soundscapes de Taller (DT21) + Calculadora de Dilución y Presión de Aerógrafo (DT22) + 4 Technical Debt resolutions verified via `npm test` (143 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt22-airbrush-calculator` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio, Smart Builder AI Assistant, Stash Insurance Valuation Report, Workshop Ambient Soundscapes, Airbrush PSI/Thinner Calculator & Parts Breakdown Subassembly Cards Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) + Pistas de Sonido y Soundscapes de Taller (DT21) + Calculadora de Dilución y Presión de Aerógrafo (DT22) + Generador de Fichas Técnicas & Manuales de Despiece (DT23) + 4 Technical Debt resolutions verified via `npm test` (147 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt23-parts-breakdown` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Generador de Fichas Técnicas & Manuales de Despiece (Parts Breakdown & Assembly Step Cards - DT23):**
+  - **Estructuración Anatómica y Modelos por Género:**
+    - Lógica algorítmica en `@gunpla/shared` (`generateDefaultSubassemblies`):
+      - **Gunpla / Sci-Fi Mecha**: 7 bloques anatómicos esenciales (*Cabeza / Head Unit*, *Torso & Cabina*, *Brazos & Manos*, *Cintura & Faldones*, *Piernas & Pies*, *Mochila Propulsora*, *Armamento & Escudo*) con multiplicador de complejidad de piezas escalado para HG, RG, MG y PG.
+      - **Vehículos Militares / Carros de Combate**: 5 bloques (*Casco Inferior & Suspensión*, *Ruedas & Orugas/Tracks*, *Casco Superior*, *Torreta & Cañón*, *Herramientas OVM*).
+      - **Aviación a Escala**: 5 bloques (*Cabina & Asiento*, *Fuselaje*, *Alas & Flaps*, *Tren de Aterrizaje*, *Armamento Alar*).
+      - **Modelismo Civil Automotriz**: 4 bloques (*Bloque Motor*, *Chasis & Suspensión*, *Habitáculo*, *Carrocería*).
+  - **Matriz de 5 Fases de Montaje & Métricas de Avance:**
+    - Seguimiento de 5 estados por subensamble: `Cortado`, `Lijado/Nubs`, `Imprimado`, `Pintado`, `Barnizado/Topcoat`.
+    - Motor de cálculo `calculateSubassemblyOverallProgress` que consolida total de piezas, etapas completadas, porcentaje global y desglose por fase.
+  - **Hoja Imprimible Oficial A4 de Fichas de Bandeja (Workshop Tray Cards Worksheet):**
+    - Generador `generateSubassemblyWorksheetHtml`: Fichas modulares de bandeja de 90x70mm con líneas de corte punteadas (`✂️ Cortar ficha para bandeja`), grapas/runners requeridos (`[ A ] [ B ] [ PC ]`), casilleros de verificación de fases, área de notas técnicas de modificación (panel lines, masilla, fotograbado) y recordatorio de colores.
+  - **Endpoints Especializados en API:**
+    - `GET /api/v1/builds/:id/subassemblies`: Consulta de fichas y progreso (auto-inicializa si el proyecto no tiene fichas).
+    - `POST /api/v1/builds/:id/subassemblies`: Creación de bloques personalizados o regeneración masiva con `{ autoGenerate: true }`.
+    - `PATCH /api/v1/builds/:id/subassemblies/:subId`: Actualización reactiva de fases, grapas, piezas y notas.
+    - `DELETE /api/v1/builds/:id/subassemblies/:subId`: Eliminación de ficha.
+    - `GET /api/v1/builds/:id/subassemblies/export`: Exportación imprimible A4 (`html`) o estructurada (`json`).
+  - **Interfaz de Usuario Web Shell (UXP-01):**
+    - Botón de acceso `#btn-open-subassemblies-modal` en la cabecera de Mi Taller.
+    - Modal técnico `#modal-subassemblies-breakdown` con selector de bitácoras, resumen de KPIs, drawer deslizable para nuevos bloques, fichas dinámicas con botones reactivos de 5 fases y disparador de impresión de bandejas.
+  - **Pruebas Automatizadas:**
+    - Suite unitaria `tests/unit/subassemblies.test.mjs` (4 pruebas completas). Total de la plataforma: 147 tests unitarios pasando.
+    - Smoketest automatizado en `scripts/smoketest.mjs` validando ciclo CRUD completo y exportación A4.
+    - Despliegue en producción en Proxmox LXC 190.
 
 - **Calculadora de Dilución y Presión de Aerógrafo (Airbrush PSI & Thinner Ratio Calculator - DT22):**
   - **Motor de Mezcla y Química de Pintura para Modelismo Escala:**

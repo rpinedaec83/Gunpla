@@ -25,7 +25,16 @@ import {
   BuildCostSummary,
   AddExpenseRequest,
   BuildCostResponse,
-  calculateBuildCostSummary
+  calculateBuildCostSummary,
+  SubassemblyCard,
+  SubassemblyStage,
+  SubassemblyType,
+  CreateSubassemblyDto,
+  UpdateSubassemblyDto,
+  SubassemblyOverallProgress,
+  generateDefaultSubassemblies,
+  calculateSubassemblyOverallProgress,
+  generateSubassemblyWorksheetHtml
 } from '@gunpla/shared';
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
@@ -1151,4 +1160,339 @@ buildsRouter.delete('/:id/costs/:expenseId', requireAuth, (req: Request, res: Re
     removedExpenseId: expenseId,
     summary
   });
+});
+
+// ---------------------------------------------------------------------------
+// DT23: Parts Breakdown & Assembly Subassembly Cards
+// ---------------------------------------------------------------------------
+
+/**
+ * GET /api/v1/builds/:id/subassemblies
+ * List subassembly cards and overall progress breakdown for a build log
+ */
+buildsRouter.get('/:id/subassemblies', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const db = getDb();
+  const build = db.builds.find(b => b.id === id);
+
+  if (!build) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Bitacora No Encontrada',
+      `No se encontro el proyecto con id '${id}'.`
+    );
+  }
+
+  // Auto-initialize with default subassemblies if none exist yet
+  if (!build.subassemblies || build.subassemblies.length === 0) {
+    build.subassemblies = generateDefaultSubassemblies(build.id, build.category, build.grade);
+    build.updatedAt = new Date().toISOString();
+    saveDb(db);
+  }
+
+  const progress = calculateSubassemblyOverallProgress(build.subassemblies);
+
+  return res.json({
+    buildId: build.id,
+    buildTitle: build.title,
+    kitName: build.kit?.name || build.title,
+    scale: build.scale,
+    grade: build.grade,
+    items: build.subassemblies,
+    progress
+  });
+});
+
+/**
+ * POST /api/v1/builds/:id/subassemblies
+ * Create a new subassembly card or bulk reset/regenerate default subassembly cards
+ */
+buildsRouter.post('/:id/subassemblies', requireAuth, (req: Request, res: Response) => {
+  const { id } = req.params;
+  const user = req.user!;
+  const db = getDb();
+  const build = db.builds.find(b => b.id === id);
+
+  if (!build) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Bitacora No Encontrada',
+      `No se encontro el proyecto con id '${id}'.`
+    );
+  }
+
+  // Ownership verification
+  if (build.userId !== user.id && !user.roles.includes('admin')) {
+    return sendProblem(
+      req,
+      res,
+      403,
+      'Acceso No Autorizado',
+      'Solo el autor del proyecto o un administrador puede gestionar los subensambles.'
+    );
+  }
+
+  const body = req.body as CreateSubassemblyDto;
+
+  if (body.autoGenerate) {
+    build.subassemblies = generateDefaultSubassemblies(build.id, build.category, build.grade);
+    build.updatedAt = new Date().toISOString();
+    saveDb(db);
+
+    const progress = calculateSubassemblyOverallProgress(build.subassemblies);
+    return res.status(201).json({
+      message: 'Subensambles generados automáticamente',
+      items: build.subassemblies,
+      progress
+    });
+  }
+
+  if (!body.name || typeof body.name !== 'string' || body.name.trim() === '') {
+    return sendProblem(
+      req,
+      res,
+      400,
+      'Nombre Requerido',
+      'El campo name es obligatorio para crear una ficha de subensamble.',
+      'invalid-name'
+    );
+  }
+
+  if (!build.subassemblies) {
+    build.subassemblies = [];
+  }
+
+  const now = new Date().toISOString();
+  const newCard: SubassemblyCard = {
+    id: `sub-${randomUUID().slice(0, 8)}`,
+    buildId: build.id,
+    name: body.name.trim(),
+    type: (body.type || 'custom') as SubassemblyType,
+    icon: body.icon || '🧩',
+    runners: Array.isArray(body.runners) ? body.runners.map(r => String(r).trim().toUpperCase()).filter(Boolean) : [],
+    partCountEstimated: Number(body.partCountEstimated) >= 0 ? Number(body.partCountEstimated) : 0,
+    stages: {
+      cut: !!body.stages?.cut,
+      cleaned: !!body.stages?.cleaned,
+      primed: !!body.stages?.primed,
+      painted: !!body.stages?.painted,
+      topcoated: !!body.stages?.topcoated
+    },
+    customNotes: body.customNotes || '',
+    colorPaletteNotes: body.colorPaletteNotes || '',
+    orderIndex: build.subassemblies.length,
+    createdAt: now,
+    updatedAt: now
+  };
+
+  build.subassemblies.push(newCard);
+  build.updatedAt = now;
+  saveDb(db);
+
+  const progress = calculateSubassemblyOverallProgress(build.subassemblies);
+
+  return res.status(201).json({
+    item: newCard,
+    progress
+  });
+});
+
+/**
+ * PATCH /api/v1/builds/:id/subassemblies/:subId
+ * Update stage completion, runners, parts count, or notes for a subassembly
+ */
+buildsRouter.patch('/:id/subassemblies/:subId', requireAuth, (req: Request, res: Response) => {
+  const { id, subId } = req.params;
+  const user = req.user!;
+  const db = getDb();
+  const build = db.builds.find(b => b.id === id);
+
+  if (!build) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Bitacora No Encontrada',
+      `No se encontro el proyecto con id '${id}'.`
+    );
+  }
+
+  if (build.userId !== user.id && !user.roles.includes('admin')) {
+    return sendProblem(
+      req,
+      res,
+      403,
+      'Acceso No Autorizado',
+      'Solo el autor del proyecto o un administrador puede modificar los subensambles.'
+    );
+  }
+
+  if (!build.subassemblies || build.subassemblies.length === 0) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Subensamble No Encontrado',
+      `No existen subensambles para el proyecto '${id}'.`
+    );
+  }
+
+  const card = build.subassemblies.find(c => c.id === subId);
+  if (!card) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Subensamble No Encontrado',
+      `No se encontro la ficha de subensamble con id '${subId}'.`
+    );
+  }
+
+  const body = req.body as UpdateSubassemblyDto;
+
+  if (body.name !== undefined) card.name = String(body.name).trim();
+  if (body.type !== undefined) card.type = body.type;
+  if (body.icon !== undefined) card.icon = body.icon;
+  if (body.runners !== undefined && Array.isArray(body.runners)) {
+    card.runners = body.runners.map(r => String(r).trim().toUpperCase()).filter(Boolean);
+  }
+  if (body.partCountEstimated !== undefined) {
+    card.partCountEstimated = Math.max(0, Number(body.partCountEstimated) || 0);
+  }
+  if (body.stages !== undefined && typeof body.stages === 'object') {
+    if (body.stages.cut !== undefined) card.stages.cut = !!body.stages.cut;
+    if (body.stages.cleaned !== undefined) card.stages.cleaned = !!body.stages.cleaned;
+    if (body.stages.primed !== undefined) card.stages.primed = !!body.stages.primed;
+    if (body.stages.painted !== undefined) card.stages.painted = !!body.stages.painted;
+    if (body.stages.topcoated !== undefined) card.stages.topcoated = !!body.stages.topcoated;
+  }
+  if (body.customNotes !== undefined) card.customNotes = String(body.customNotes);
+  if (body.colorPaletteNotes !== undefined) card.colorPaletteNotes = String(body.colorPaletteNotes);
+  if (body.orderIndex !== undefined) card.orderIndex = Number(body.orderIndex);
+
+  const now = new Date().toISOString();
+  card.updatedAt = now;
+  build.updatedAt = now;
+  saveDb(db);
+
+  const progress = calculateSubassemblyOverallProgress(build.subassemblies);
+
+  return res.json({
+    item: card,
+    progress
+  });
+});
+
+/**
+ * DELETE /api/v1/builds/:id/subassemblies/:subId
+ * Remove a subassembly card from a build project
+ */
+buildsRouter.delete('/:id/subassemblies/:subId', requireAuth, (req: Request, res: Response) => {
+  const { id, subId } = req.params;
+  const user = req.user!;
+  const db = getDb();
+  const build = db.builds.find(b => b.id === id);
+
+  if (!build) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Bitacora No Encontrada',
+      `No se encontro el proyecto con id '${id}'.`
+    );
+  }
+
+  if (build.userId !== user.id && !user.roles.includes('admin')) {
+    return sendProblem(
+      req,
+      res,
+      403,
+      'Acceso No Autorizado',
+      'Solo el autor del proyecto o un administrador puede eliminar subensambles.'
+    );
+  }
+
+  if (!build.subassemblies || build.subassemblies.length === 0) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Subensamble No Encontrado',
+      `No existen subensambles en el proyecto '${id}'.`
+    );
+  }
+
+  const idx = build.subassemblies.findIndex(c => c.id === subId);
+  if (idx === -1) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Subensamble No Encontrado',
+      `No se encontro la ficha con id '${subId}'.`
+    );
+  }
+
+  build.subassemblies.splice(idx, 1);
+  build.updatedAt = new Date().toISOString();
+  saveDb(db);
+
+  const progress = calculateSubassemblyOverallProgress(build.subassemblies);
+
+  return res.json({
+    removedId: subId,
+    progress
+  });
+});
+
+/**
+ * GET /api/v1/builds/:id/subassemblies/export
+ * Printable A4 organizer tray cards sheet for physical workbench trays
+ */
+buildsRouter.get('/:id/subassemblies/export', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const db = getDb();
+  const build = db.builds.find(b => b.id === id);
+
+  if (!build) {
+    return sendProblem(
+      req,
+      res,
+      404,
+      'Bitacora No Encontrada',
+      `No se encontro el proyecto con id '${id}'.`
+    );
+  }
+
+  if (!build.subassemblies || build.subassemblies.length === 0) {
+    build.subassemblies = generateDefaultSubassemblies(build.id, build.category, build.grade);
+    build.updatedAt = new Date().toISOString();
+    saveDb(db);
+  }
+
+  if (req.query.format === 'json') {
+    const progress = calculateSubassemblyOverallProgress(build.subassemblies);
+    return res.json({
+      buildId: build.id,
+      items: build.subassemblies,
+      progress
+    });
+  }
+
+  const html = generateSubassemblyWorksheetHtml({
+    buildTitle: build.title,
+    kitName: build.kit?.name || build.title,
+    scale: build.scale,
+    grade: build.grade,
+    builderName: build.userDisplayName || build.username,
+    tenantTitle: 'PlamoScale / GunplaJunkies',
+    cards: build.subassemblies
+  });
+
+  return res.type('html').send(html);
 });

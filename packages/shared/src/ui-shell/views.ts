@@ -444,6 +444,9 @@ export function renderViews(
               <button id="btn-open-airbrush-calc" class="filter-pill" onclick="openAirbrushCalculatorModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(249, 115, 22, 0.4); color: #fb923c; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <span>🎨</span> Ratio Aerógrafo
               </button>
+              <button id="btn-open-subassemblies-modal" class="filter-pill" onclick="openSubassembliesModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(99, 102, 241, 0.4); color: #818cf8; display: inline-flex; align-items: center; gap: 0.35rem;">
+                <span>📋</span> Fichas de Despiece
+              </button>
               <button class="filter-pill" onclick="openEditProfileModal()" style="font-size: 0.82rem; padding: 0.5rem 0.9rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; display: inline-flex; align-items: center; gap: 0.35rem;">
                 <span>✏️</span> Editar Perfil
               </button>

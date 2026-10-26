@@ -36,12 +36,34 @@ describe('Barcode Scanner & Instant Stash Registration Unit Tests', () => {
     // Clean up test kits
     db.kits = db.kits.filter(k => !k.id.startsWith('kit-scan-test-') && k.barcode !== '4934054887766');
     // Ensure sample kits with barcodes are present in memory
-    const existingHiNu = db.kits.find(k => k.id === 'kit-rg-hinu');
-    if (existingHiNu) {
+    let existingHiNu = db.kits.find(k => k.id === 'kit-rg-hinu');
+    if (!existingHiNu) {
+      existingHiNu = {
+        id: 'kit-rg-hinu',
+        name: 'RG 1/144 Hi-Nu Gundam',
+        brand: 'Bandai Spirits',
+        scale: '1/144',
+        grade: 'RG (Real Grade)',
+        category: 'gunpla-mecha',
+        barcode: '4573102619198'
+      };
+      db.kits.push(existingHiNu);
+    } else {
       existingHiNu.barcode = '4573102619198';
     }
-    const existingSpitfire = db.kits.find(k => k.id === 'kit-tamiya-spitfire');
-    if (existingSpitfire) {
+
+    let existingSpitfire = db.kits.find(k => k.id === 'kit-tamiya-spitfire');
+    if (!existingSpitfire) {
+      existingSpitfire = {
+        id: 'kit-tamiya-spitfire',
+        name: 'Supermarine Spitfire Mk.I',
+        brand: 'Tamiya',
+        scale: '1/48',
+        category: 'scale-aviation',
+        barcode: '4950344611195'
+      };
+      db.kits.push(existingSpitfire);
+    } else {
       existingSpitfire.barcode = '4950344611195';
     }
     saveDb(db);

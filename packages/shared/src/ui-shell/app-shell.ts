@@ -6459,6 +6459,296 @@ ${renderModals(config, data, { escapeHtml, birthYearOptions, kitOptions, paintOp
     }
   }
 
+  // --- DT23: Parts Breakdown & Assembly Subassembly Cards ---
+  let currentSubassemblyBuildId = null;
+  let currentSubassembliesData = null;
+
+  async function openSubassembliesModal(specificBuildId) {
+    if (!currentUser) {
+      openAuthModal();
+      return;
+    }
+    const m = document.getElementById('modal-subassemblies-breakdown');
+    if (!m) return;
+    m.style.display = 'flex';
+    m.classList.add('active');
+
+    const select = document.getElementById('subassembly-build-select');
+    if (select) {
+      select.innerHTML = '<option value="">Cargando bitacoras...</option>';
+      try {
+        const res = await fetch('/api/v1/builds?author=' + encodeURIComponent(currentUser.username));
+        const data = await res.json();
+        const builds = data.items || [];
+        if (builds.length === 0) {
+          select.innerHTML = '<option value="">No tienes bitacoras creadas aun</option>';
+        } else {
+          select.innerHTML = builds.map(function(b) {
+            const title = b.title || (b.kit ? b.kit.name : '') || b.id;
+            return '<option value="' + b.id + '">' + title + '</option>';
+          }).join('');
+          if (specificBuildId) {
+            select.value = specificBuildId;
+          }
+          currentSubassemblyBuildId = select.value;
+          loadSubassembliesForCurrentBuild();
+        }
+      } catch (e) {
+        console.error('Error loading builds for subassemblies:', e);
+      }
+    }
+  }
+
+  function closeSubassembliesModal(e) {
+    if (!e || e.target.id === 'modal-subassemblies-breakdown' || (e.target.tagName === 'SPAN' && e.target.textContent === '×') || !e.target) {
+      const m = document.getElementById('modal-subassemblies-breakdown');
+      if (m) {
+        m.classList.remove('active');
+        m.style.display = 'none';
+      }
+    }
+  }
+
+  function onSubassemblyBuildSelectChange() {
+    const select = document.getElementById('subassembly-build-select');
+    if (select && select.value) {
+      currentSubassemblyBuildId = select.value;
+      loadSubassembliesForCurrentBuild();
+    }
+  }
+
+  async function loadSubassembliesForCurrentBuild() {
+    if (!currentSubassemblyBuildId) return;
+    const container = document.getElementById('subassemblies-cards-container');
+    if (container) {
+      container.innerHTML = '<p style="color: #94a3b8; font-size: 0.85rem; text-align: center; padding: 2rem;">Cargando fichas de despiece...</p>';
+    }
+
+    try {
+      const res = await fetch('/api/v1/builds/' + encodeURIComponent(currentSubassemblyBuildId) + '/subassemblies');
+      if (!res.ok) throw new Error('Error al cargar subensambles');
+      const data = await res.json();
+      currentSubassembliesData = data;
+      renderSubassembliesUI(data);
+    } catch (err) {
+      console.error('Error loading subassemblies:', err);
+      if (container) {
+        container.innerHTML = '<p style="color: #ef4444; font-size: 0.85rem; text-align: center; padding: 2rem;">No se pudieron cargar los subensambles. Reintenta.</p>';
+      }
+    }
+  }
+
+  function renderSubassembliesUI(data) {
+    const container = document.getElementById('subassemblies-cards-container');
+    if (!container || !data) return;
+
+    const p = data.progress || {};
+    const statCards = document.getElementById('sub-stat-total-cards');
+    const statParts = document.getElementById('sub-stat-total-parts');
+    const statPct = document.getElementById('sub-stat-overall-pct');
+
+    if (statCards) statCards.textContent = p.totalCards || 0;
+    if (statParts) statParts.textContent = '~' + (p.totalPartsEstimated || 0);
+    if (statPct) statPct.textContent = (p.completionPercentage || 0) + '%';
+
+    const sb = p.stageBreakdown || {};
+    const pillCut = document.getElementById('sub-pill-cut');
+    const pillCleaned = document.getElementById('sub-pill-cleaned');
+    const pillPrimed = document.getElementById('sub-pill-primed');
+    const pillPainted = document.getElementById('sub-pill-painted');
+    const pillTop = document.getElementById('sub-pill-topcoated');
+
+    if (pillCut) pillCut.textContent = 'Cortado: ' + (sb.cut ? sb.cut.pct : 0) + '%';
+    if (pillCleaned) pillCleaned.textContent = 'Lijado: ' + (sb.cleaned ? sb.cleaned.pct : 0) + '%';
+    if (pillPrimed) pillPrimed.textContent = 'Imprimado: ' + (sb.primed ? sb.primed.pct : 0) + '%';
+    if (pillPainted) pillPainted.textContent = 'Pintado: ' + (sb.painted ? sb.painted.pct : 0) + '%';
+    if (pillTop) pillTop.textContent = 'Barniz: ' + (sb.topcoated ? sb.topcoated.pct : 0) + '%';
+
+    const items = data.items || [];
+    if (items.length === 0) {
+      container.innerHTML = '<div style="text-align: center; padding: 2rem; color: #94a3b8;"><p style="margin-bottom: 0.75rem;">Aun no hay fichas de despiece registradas para este modelo.</p><button type="button" class="btn-primary" onclick="regenerateDefaultSubassemblies()" style="font-size: 0.8rem;">Plantilla Automatica</button></div>';
+      return;
+    }
+
+    container.innerHTML = items.map(function(card) {
+      const runnersHtml = (card.runners && card.runners.length > 0)
+        ? card.runners.map(function(r) { return '<span style="display: inline-block; background: #312e81; color: #c7d2fe; font-size: 0.72rem; font-family: monospace; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-right: 4px;">[' + r + ']</span>'; }).join('')
+        : '<span style="color: #64748b; font-size: 0.72rem; font-style: italic;">Sin grapas asignadas</span>';
+
+      function stageBtn(key, label) {
+        const checked = card.stages && card.stages[key];
+        const bg = checked ? '#059669' : 'rgba(255,255,255,0.05)';
+        const col = checked ? '#fff' : '#94a3b8';
+        const border = checked ? '#10b981' : '#334155';
+        return '<button type="button" data-sub-id="' + card.id + '" data-stage-key="' + key + '" onclick="toggleSubassemblyStage(this.dataset.subId, this.dataset.stageKey)" style="padding: 0.35rem 0.6rem; border-radius: 6px; border: 1px solid ' + border + '; background: ' + bg + '; color: ' + col + '; font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">' + (checked ? '✓ ' : '') + label + '</button>';
+      }
+
+      return '<div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: 0.65rem;">' +
+        '<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.5rem;">' +
+          '<div style="display: flex; align-items: center; gap: 0.5rem;">' +
+            '<span style="font-size: 1.35rem;">' + (card.icon || '🧩') + '</span>' +
+            '<strong style="font-size: 0.95rem; color: #f1f5f9;">' + card.name + '</strong>' +
+            '<span style="font-size: 0.72rem; color: #a5b4fc; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 2px 8px; font-weight: 600;">~' + (card.partCountEstimated || 0) + ' piezas</span>' +
+          '</div>' +
+          '<button type="button" data-sub-id="' + card.id + '" onclick="deleteSubassembly(this.dataset.subId)" style="background: transparent; border: none; color: #ef4444; font-size: 0.9rem; cursor: pointer; padding: 2px 6px;" title="Eliminar subensamble">🗑️</button>' +
+        '</div>' +
+
+        '<div style="font-size: 0.75rem; color: #cbd5e1;">' +
+          '<strong>Grapas / Runners:</strong> ' + runnersHtml +
+        '</div>' +
+
+        '<div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">' +
+          stageBtn('cut', '1. Cortado') +
+          stageBtn('cleaned', '2. Lijado') +
+          stageBtn('primed', '3. Imprimado') +
+          stageBtn('painted', '4. Pintado') +
+          stageBtn('topcoated', '5. Barniz') +
+        '</div>' +
+
+        (card.customNotes ? '<div style="background: rgba(236, 72, 153, 0.08); border-left: 3px solid #ec4899; padding: 0.4rem 0.65rem; border-radius: 4px; font-size: 0.73rem; color: #fbcfe8;"><strong>Checklist / Mods:</strong> ' + card.customNotes + '</div>' : '') +
+        (card.colorPaletteNotes ? '<div style="background: rgba(14, 165, 233, 0.08); border-left: 3px solid #0284c7; padding: 0.35rem 0.65rem; border-radius: 4px; font-size: 0.72rem; color: #bae6fd;"><strong>Pinturas:</strong> ' + card.colorPaletteNotes + '</div>' : '') +
+      '</div>';
+    }).join('');
+  }
+
+  async function toggleSubassemblyStage(subId, stageKey) {
+    if (!currentSubassemblyBuildId || !currentSubassembliesData) return;
+    const item = (currentSubassembliesData.items || []).find(c => c.id === subId);
+    if (!item) return;
+
+    const newStageVal = !(item.stages && item.stages[stageKey]);
+    const payload = {
+      stages: {}
+    };
+    payload.stages[stageKey] = newStageVal;
+
+    try {
+      const res = await fetch('/api/v1/builds/' + encodeURIComponent(currentSubassemblyBuildId) + '/subassemblies/' + encodeURIComponent(subId), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Error al actualizar fase');
+      loadSubassembliesForCurrentBuild();
+    } catch (err) {
+      console.error('Error toggling stage:', err);
+    }
+  }
+
+  function toggleAddSubassemblyDrawer() {
+    const d = document.getElementById('sub-add-form-drawer');
+    if (!d) return;
+    d.style.display = (d.style.display === 'none' || !d.style.display) ? 'block' : 'none';
+  }
+
+  async function submitNewSubassembly() {
+    if (!currentSubassemblyBuildId) return;
+    const nameInput = document.getElementById('sub-input-name');
+    const typeSelect = document.getElementById('sub-input-type');
+    const runnersInput = document.getElementById('sub-input-runners');
+    const partsInput = document.getElementById('sub-input-parts');
+    const notesInput = document.getElementById('sub-input-notes');
+    const colorsInput = document.getElementById('sub-input-colors');
+
+    const name = nameInput ? nameInput.value.trim() : '';
+    if (!name) {
+      alert('Por favor escribe un nombre para el bloque de subensamble');
+      return;
+    }
+
+    const runners = runnersInput && runnersInput.value ? runnersInput.value.split(',').map(r => r.trim()).filter(Boolean) : [];
+    const parts = partsInput ? parseInt(partsInput.value, 10) || 0 : 0;
+    const type = typeSelect ? typeSelect.value : 'custom';
+    const customNotes = notesInput ? notesInput.value.trim() : '';
+    const colorPaletteNotes = colorsInput ? colorsInput.value.trim() : '';
+
+    const iconMap = {
+      head: '🤖', torso: '🥋', arms: '💪', waist: '🩳', legs: '🦵',
+      backpack: '🚀', weapons: '⚔️', cockpit: '💺', chassis: '🚜',
+      engine: '🏎️', wings: '🛩️', accessories: '🔧', custom: '🧩'
+    };
+
+    const payload = {
+      name: name,
+      type: type,
+      icon: iconMap[type] || '🧩',
+      runners: runners,
+      partCountEstimated: parts,
+      customNotes: customNotes,
+      colorPaletteNotes: colorPaletteNotes
+    };
+
+    try {
+      const res = await fetch('/api/v1/builds/' + encodeURIComponent(currentSubassemblyBuildId) + '/subassemblies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Error al guardar subensamble');
+      if (nameInput) nameInput.value = '';
+      if (runnersInput) runnersInput.value = '';
+      if (notesInput) notesInput.value = '';
+      if (colorsInput) colorsInput.value = '';
+      toggleAddSubassemblyDrawer();
+      loadSubassembliesForCurrentBuild();
+    } catch (err) {
+      console.error('Error submitting subassembly:', err);
+      alert('Error al agregar subensamble. Intenta nuevamente.');
+    }
+  }
+
+  async function deleteSubassembly(subId) {
+    if (!currentSubassemblyBuildId) return;
+    if (!confirm('¿Eliminar este bloque de subensamble?')) return;
+
+    try {
+      const res = await fetch('/api/v1/builds/' + encodeURIComponent(currentSubassemblyBuildId) + '/subassemblies/' + encodeURIComponent(subId), {
+        method: 'DELETE',
+        headers: {
+          'Authorization': 'Bearer ' + currentToken
+        }
+      });
+      if (!res.ok) throw new Error('Error al eliminar');
+      loadSubassembliesForCurrentBuild();
+    } catch (err) {
+      console.error('Error deleting subassembly:', err);
+    }
+  }
+
+  async function regenerateDefaultSubassemblies() {
+    if (!currentSubassemblyBuildId) return;
+    if (!confirm('¿Reemplazar los bloques actuales con la plantilla anatomica recomendada segun la categoria y grado del modelo?')) return;
+
+    try {
+      const res = await fetch('/api/v1/builds/' + encodeURIComponent(currentSubassemblyBuildId) + '/subassemblies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + currentToken
+        },
+        body: JSON.stringify({ autoGenerate: true })
+      });
+      if (!res.ok) throw new Error('Error al regenerar');
+      loadSubassembliesForCurrentBuild();
+    } catch (err) {
+      console.error('Error regenerating subassemblies:', err);
+    }
+  }
+
+  function printSubassemblyWorksheet() {
+    if (!currentSubassemblyBuildId) {
+      alert('Selecciona una bitacora primero');
+      return;
+    }
+    window.open('/api/v1/builds/' + encodeURIComponent(currentSubassemblyBuildId) + '/subassemblies/export', '_blank');
+  }
+
   // --- Bulk Import Tool Engine (CSV / TSV / Excel for Stash & Paint Rack) ---
   let currentBulkImportTab = 'stash';
 

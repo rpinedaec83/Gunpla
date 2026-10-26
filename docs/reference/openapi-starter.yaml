@@ -1092,6 +1092,109 @@ paths:
           description: Forbidden
         '404':
           description: Expense not found
+  /api/v1/builds/{id}/subassemblies:
+    get:
+      tags: [Build Logs]
+      summary: List subassemblies breakdown cards and progress for a build
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subassemblies list and progress
+        '404':
+          description: Build not found
+    post:
+      tags: [Build Logs]
+      summary: Create custom subassembly or auto-generate defaults
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Subassembly created or defaults generated
+        '400':
+          description: Invalid name
+        '403':
+          description: Forbidden
+        '404':
+          description: Build not found
+  /api/v1/builds/{id}/subassemblies/{subId}:
+    patch:
+      tags: [Build Logs]
+      summary: Update subassembly stages, runners, parts, or notes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: subId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subassembly updated
+        '403':
+          description: Forbidden
+        '404':
+          description: Subassembly or build not found
+    delete:
+      tags: [Build Logs]
+      summary: Delete subassembly card
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: subId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subassembly removed
+        '403':
+          description: Forbidden
+        '404':
+          description: Subassembly or build not found
+  /api/v1/builds/{id}/subassemblies/export:
+    get:
+      tags: [Build Logs]
+      summary: Printable A4 workshop tray cards sheet for project subassemblies
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [html, json]
+      responses:
+        '200':
+          description: Printable HTML or JSON export
+        '404':
+          description: Build not found
   /api/v1/media/upload:
     post:
       tags: [Media]
