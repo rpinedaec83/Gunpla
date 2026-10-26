@@ -1459,22 +1459,50 @@ export function renderViews(
 
     <!-- 8. SHOPS TAB -->
     <section id="view-shops" class="view-section">
+      <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff; margin-bottom: 0.25rem;">Tiendas de Confianza & Distribuidores Aliados</h2>
+          <p style="color: #94a3b8; font-size: 0.88rem;">Tiendas verificadas asociadas a ${config.tenantName} con acuerdos comerciales, cupones exclusivos y stock prioritario.</p>
+        </div>
+      </div>
+
       <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;">
         ${data.shops
           .map(
-            (s) => `
-          <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-              <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">${s.name}</h3>
-              ${s.isVerified ? '<span style="font-size: 0.72rem; color: #4ade80; background: rgba(34,197,94,0.15); padding: 0.2rem 0.5rem; border-radius: 4px;">VERIFICADA</span>' : ''}
+            (s: any) => `
+          <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.5rem; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; gap: 0.5rem;">
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">${s.name}</h3>
+              <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; justify-content: flex-end;">
+                ${s.tenantLink?.badgeLabel ? `<span style="font-size: 0.72rem; color: #38bdf8; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.3); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700;">${s.tenantLink.badgeLabel}</span>` : ''}
+                ${s.isVerified ? '<span style="font-size: 0.72rem; color: #4ade80; background: rgba(34,197,94,0.15); padding: 0.2rem 0.5rem; border-radius: 4px;">VERIFICADA</span>' : ''}
+              </div>
             </div>
-            <p style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 1rem;">${s.description}</p>
+            <p style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 1rem; flex: 1;">${s.description}</p>
+
+            ${s.tenantLink?.discountCode ? `
+              <div style="background: rgba(234, 179, 8, 0.1); border: 1px dashed rgba(234, 179, 8, 0.4); border-radius: 6px; padding: 0.65rem 0.85rem; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 0.72rem; color: #facc15; font-weight: 700; text-transform: uppercase;">Cupón Comunidad</span>
+                  <code style="font-size: 0.85rem; font-weight: 800; color: #fef08a; background: rgba(0,0,0,0.35); padding: 0.15rem 0.45rem; border-radius: 4px; cursor: pointer; border: 1px solid rgba(254, 240, 138, 0.3);" title="Copiar código" onclick="navigator.clipboard.writeText('${s.tenantLink.discountCode}'); alert('¡Cupón ${s.tenantLink.discountCode} copiado al portapapeles!');">${s.tenantLink.discountCode}</code>
+                </div>
+                ${s.tenantLink.discountDescription ? `<p style="font-size: 0.78rem; color: #f1f5f9; margin: 0.35rem 0 0 0; line-height: 1.35;">${s.tenantLink.discountDescription}</p>` : ''}
+              </div>
+            ` : ''}
+
+            ${s.tenantLink?.customNotes ? `
+              <div style="font-size: 0.8rem; color: #94a3b8; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 0.5rem 0.75rem; margin-bottom: 1rem;">
+                ℹ️ ${s.tenantLink.customNotes}
+              </div>
+            ` : ''}
+
             <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 1.25rem;">
-              ${s.specialties.map((sp) => `<span style="font-size: 0.72rem; background: rgba(255,255,255,0.06); padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">${sp}</span>`).join('')}
+              ${(s.specialties || []).map((sp: string) => `<span style="font-size: 0.72rem; background: rgba(255,255,255,0.06); padding: 0.2rem 0.5rem; border-radius: 4px; color: #94a3b8;">${sp}</span>`).join('')}
             </div>
-            <div style="display: flex; gap: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
-              ${s.catalogUrl ? `<a href="${s.catalogUrl}" target="_blank" rel="noopener" style="font-size: 0.82rem; color: var(--accent); text-decoration: none; font-weight: 600;">Catálogo PDF / Lista ➔</a>` : ''}
-              ${s.whatsappUrl ? `<a href="${s.whatsappUrl}" target="_blank" rel="noopener" style="font-size: 0.82rem; color: #22c55e; text-decoration: none; font-weight: 600;">Grupo WhatsApp ➔</a>` : ''}
+            <div style="display: flex; gap: 0.75rem; border-top: 1px solid var(--border-color); padding-top: 1rem; flex-wrap: wrap;">
+              ${s.catalogUrl ? `<a href="${s.catalogUrl}" target="_blank" rel="noopener" style="font-size: 0.82rem; color: var(--accent); text-decoration: none; font-weight: 600;">Catálogo / Lista ➔</a>` : ''}
+              ${s.whatsappUrl ? `<a href="${s.whatsappUrl}" target="_blank" rel="noopener" style="font-size: 0.82rem; color: #22c55e; text-decoration: none; font-weight: 600;">WhatsApp Directo ➔</a>` : ''}
+              ${s.websiteUrl ? `<a href="${s.websiteUrl}" target="_blank" rel="noopener" style="font-size: 0.82rem; color: #60a5fa; text-decoration: none; font-weight: 600;">Sitio Web ➔</a>` : ''}
             </div>
           </div>
         `

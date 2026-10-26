@@ -3138,7 +3138,136 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT28 Multi-Tenant Auth Isolation & Super Admin verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN + WORKBENCH-TOOLS + LANDING-PAGE + TENANT-AUTH-ISOLATION-SUPERADMIN CHECKS PASSED ===');
+    // -------------------------------------------------------------------------
+    // 36. DT29 - Master Shops Catalog, Tenant Trusted Shops & Discount Codes
+    // -------------------------------------------------------------------------
+    console.log('\n--- Verifying DT29 Master Shops, Tenant Trusted Shops & Discount Codes ---');
+
+    // 1. Scoped shops query for GunplaJunkies: Must return trusted shops with GUNPLA10 coupon
+    const gjShopsRes = await fetch(`${baseUrl}/api/v1/shops`, {
+      headers: { 'X-Tenant-Slug': 'gunplajunkies' }
+    });
+    assert.equal(gjShopsRes.status, 200);
+    const gjShopsData = await gjShopsRes.json();
+    assert.equal(gjShopsData.isFilteredByTenant, true);
+    assert.ok(gjShopsData.items.length >= 2);
+    const gjMainStore = gjShopsData.items.find(s => s.id === 'shop-gunpla-peru-store');
+    assert.ok(gjMainStore, 'GunplaJunkies trusted shops must include Hobby & Gunpla Peru Store');
+    assert.equal(gjMainStore.tenantLink.discountCode, 'GUNPLA10');
+    assert.ok(gjMainStore.tenantLink.discountDescription.includes('10%'));
+
+    // 2. Scoped shops query for PlamoScale: Must return trusted shops with PLAMO7 coupon
+    const psShopsRes = await fetch(`${baseUrl}/api/v1/shops`, {
+      headers: { 'X-Tenant-Slug': 'plamoscale' }
+    });
+    assert.equal(psShopsRes.status, 200);
+    const psShopsData = await psShopsRes.json();
+    assert.equal(psShopsData.isFilteredByTenant, true);
+    const psMainStore = psShopsData.items.find(s => s.id === 'shop-scale-hobby-art');
+    assert.ok(psMainStore, 'PlamoScale trusted shops must include Scale Hobby Art');
+    assert.equal(psMainStore.tenantLink.discountCode, 'PLAMO7');
+
+    // 3. Global Master Shops query (?all=true): Returns entire master directory
+    const allMasterShopsRes = await fetch(`${baseUrl}/api/v1/shops?all=true`);
+    assert.equal(allMasterShopsRes.status, 200);
+    const allMasterShopsData = await allMasterShopsRes.json();
+    assert.equal(allMasterShopsData.isFilteredByTenant, false);
+    assert.ok(allMasterShopsData.items.length >= 3);
+
+    // 4. Super Admin creates a new Master Shop in global catalog
+    const newMasterShopRes = await fetch(`${baseUrl}/api/v1/shops`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${superAdminToken}`
+      },
+      body: JSON.stringify({
+        name: 'HobbyLink Japan Official Partner',
+        description: 'Distribuidor internacional de maquetas plásticas, herramientas y pinturas con envíos a Latinoamérica.',
+        country: 'Japón / Global',
+        city: 'Sano, Tochigi',
+        websiteUrl: 'https://hlj.com',
+        catalogUrl: 'https://hlj.com/gunpla',
+        specialties: ['Gunpla Original', 'Herramientas Wave & Kotobukiya', 'Calcas al Agua'],
+        isVerified: true
+      })
+    });
+    assert.equal(newMasterShopRes.status, 201, 'Super Admin must be able to create new master shop');
+    const createdMasterShop = await newMasterShopRes.json();
+    assert.ok(createdMasterShop.id.startsWith('shop-'));
+    assert.equal(createdMasterShop.name, 'HobbyLink Japan Official Partner');
+
+    // 5. Link new master shop to GunplaJunkies community with custom discount coupon
+    const linkShopRes = await fetch(`${baseUrl}/api/v1/tenants/gunplajunkies/shops`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${superAdminToken}`
+      },
+      body: JSON.stringify({
+        shopId: createdMasterShop.id,
+        discountCode: 'HLJJUNKIES',
+        discountDescription: 'Envío prioritario y 8% de descuento en kits de preventa',
+        badgeLabel: 'Distribuidor Internacional Aliado',
+        customNotes: 'Envíos con seguimiento FedEx y Japan Post SAL directo a Perú y LATAM.'
+      })
+    });
+    assert.equal(linkShopRes.status, 201, 'Super Admin or Community Admin must link shop to community');
+    const linkShopData = await linkShopRes.json();
+    assert.equal(linkShopData.link.discountCode, 'HLJJUNKIES');
+
+    // 6. Verify Tenant Shops endpoint reflects newly linked shop
+    const tenantShopsListRes = await fetch(`${baseUrl}/api/v1/tenants/gunplajunkies/shops`);
+    assert.equal(tenantShopsListRes.status, 200);
+    const tenantShopsList = await tenantShopsListRes.json();
+    assert.ok(tenantShopsList.items.some(s => s.id === createdMasterShop.id));
+
+    // 7. Community News endpoint: List and publish news article
+    const getNewsRes = await fetch(`${baseUrl}/api/v1/tenants/gunplajunkies/news`);
+    assert.equal(getNewsRes.status, 200);
+    const newsList = await getNewsRes.json();
+    assert.ok(newsList.items.length >= 2, 'GunplaJunkies must have initial news');
+
+    const postNewsRes = await fetch(`${baseUrl}/api/v1/tenants/gunplajunkies/news`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${superAdminToken}`
+      },
+      body: JSON.stringify({
+        title: 'Torneo Relampago Speed Build 2026',
+        summary: 'Competencia en vivo de armado de kits HG en menos de 2 horas sin herramientas electricas.',
+        content: 'Este fin de semana realizaremos el primer Speed Build Challenge en nuestro servidor de Discord y taller presencial.',
+        category: 'eventos',
+        tag: 'Evento Comunitario',
+        readTime: '3 min'
+      })
+    });
+    assert.equal(postNewsRes.status, 201, 'Community Admin can publish news article');
+    const postedNews = await postNewsRes.json();
+    assert.equal(postedNews.category, 'eventos');
+
+    // 8. Community Featured Photos endpoint
+    const getPhotosRes = await fetch(`${baseUrl}/api/v1/tenants/gunplajunkies/featured-photos`);
+    assert.equal(getPhotosRes.status, 200);
+    const photosList = await getPhotosRes.json();
+    assert.ok(photosList.items.length >= 2);
+
+    // 9. Web frontends render discount coupon chips in Shops view
+    const gjFrontRes = await fetch(`${gunplaUrl}/`);
+    assert.equal(gjFrontRes.status, 200);
+    const gjHtml = await gjFrontRes.text();
+    assert.ok(gjHtml.includes('GUNPLA10'), 'GunplaJunkies web frontend must render GUNPLA10 coupon');
+    assert.ok(gjHtml.includes('Cupón Comunidad'), 'Must render coupon banner');
+
+    const psFrontRes = await fetch(`${plamoUrl}/`);
+    assert.equal(psFrontRes.status, 200);
+    const psHtml = await psFrontRes.text();
+    assert.ok(psHtml.includes('PLAMO7'), 'PlamoScale web frontend must render PLAMO7 coupon');
+
+    console.log('[PASS] DT29 Master Shops, Tenant Trusted Shops & Discount Codes verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN + WORKBENCH-TOOLS + LANDING-PAGE + TENANT-AUTH-ISOLATION-SUPERADMIN + MASTER-SHOPS-TENANT-TRUSTED CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

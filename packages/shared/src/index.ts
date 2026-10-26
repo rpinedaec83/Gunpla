@@ -1023,6 +1023,52 @@ export interface ShopRecord {
   stockItems?: ShopStockItem[];
 }
 
+export interface TenantShopLink {
+  id: string;
+  tenantSlug: string;
+  shopId: string;
+  isTrusted: boolean;
+  discountCode?: string;
+  discountDescription?: string;
+  customNotes?: string;
+  badgeLabel?: string;
+  addedAt: string;
+  updatedAt?: string;
+}
+
+export interface EnrichedShopRecord extends ShopRecord {
+  tenantLink?: TenantShopLink;
+}
+
+export interface CommunityNewsArticle {
+  id: string;
+  tenantSlug: string;
+  category: 'lanzamientos' | 'tecnicas' | 'herramientas' | 'eventos' | 'general';
+  tag: string;
+  tagColor?: string;
+  date: string;
+  readTime: string;
+  title: string;
+  summary: string;
+  content: string;
+  authorUsername?: string;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CommunityFeaturedPhoto {
+  id: string;
+  tenantSlug: string;
+  photoUrl: string;
+  title: string;
+  builderUsername: string;
+  scale?: string;
+  grade?: string;
+  featuredOrder?: number;
+  featuredAt: string;
+}
+
 export type BoxCondition = 'mint_sealed' | 'opened_complete' | 'started' | 'damaged_box';
 export type MarketplaceType = 'sale' | 'trade' | 'both';
 export type MarketplaceStatus = 'active' | 'reserved' | 'completed' | 'cancelled';

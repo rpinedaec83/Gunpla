@@ -15,13 +15,18 @@ import {
   ContestAwardType,
   ContestAwardBadge,
   HallOfFameItem,
-  ContestPodiumResult
+  ContestPodiumResult,
+  TenantShopLink,
+  EnrichedShopRecord,
+  CommunityNewsArticle,
+  CommunityFeaturedPhoto
 } from '@gunpla/shared';
 import { getDb, saveDb } from '../../core/db';
 import { sendProblem } from '../../core/problem-details';
-import { requireAuth } from '../auth-sso/auth.slice';
+import { requireAuth, requireSuperAdmin, requireCommunityAdmin } from '../auth-sso/auth.slice';
 import { sendTenantEmailViaResend } from '../notifications-resend/resend.slice';
 import { dispatchNotification } from '../notifications-bell/notifications.slice';
+import { INITIAL_TENANT_SHOPS, INITIAL_COMMUNITY_NEWS, INITIAL_FEATURED_PHOTOS } from '../../seed/seed-legacy';
 
 export const communityRouter = Router();
 
@@ -219,6 +224,30 @@ export function getShopsFromDb(): ShopRecord[] {
     return db.shops;
   }
   return INITIAL_SHOPS;
+}
+
+export function getTenantShopsFromDb(): TenantShopLink[] {
+  const db = getDb();
+  if (db.tenantShops && db.tenantShops.length > 0) {
+    return db.tenantShops;
+  }
+  return INITIAL_TENANT_SHOPS;
+}
+
+export function getTenantNewsFromDb(): CommunityNewsArticle[] {
+  const db = getDb();
+  if (db.tenantNews && db.tenantNews.length > 0) {
+    return db.tenantNews;
+  }
+  return INITIAL_COMMUNITY_NEWS;
+}
+
+export function getFeaturedPhotosFromDb(): CommunityFeaturedPhoto[] {
+  const db = getDb();
+  if (db.featuredPhotos && db.featuredPhotos.length > 0) {
+    return db.featuredPhotos;
+  }
+  return INITIAL_FEATURED_PHOTOS;
 }
 
 export const INITIAL_SHOP_STOCK: ShopStockItem[] = [
@@ -1369,14 +1398,469 @@ communityRouter.get('/contests/:id/entries/:entryId/certificate', async (req: Re
 
 /**
  * GET /api/v1/shops
- * List verified trusted shops directory
+ * List verified shops directory.
+ * - When in a tenant context (or ?tenant=slug), returns the community's trusted shops enriched with tenant discount codes.
+ * - When ?all=true is supplied (or caller is super admin), returns all shops in the central master catalog.
  */
-communityRouter.get('/shops', (_req: Request, res: Response) => {
-  const shops = getShopsFromDb();
+communityRouter.get('/shops', (req: Request, res: Response) => {
+  const allMasterShops = getShopsFromDb();
+  const tenantSlug = (req.query.tenant as string)?.trim().toLowerCase() || req.tenant?.slug;
+  const showAll = req.query.all === 'true';
+
+  if (!tenantSlug || showAll) {
+    return res.json({
+      items: allMasterShops,
+      totalCount: allMasterShops.length,
+      isFilteredByTenant: false
+    });
+  }
+
+  const tenantLinks = getTenantShopsFromDb().filter(
+    (ts) => ts.tenantSlug === tenantSlug && ts.isTrusted !== false
+  );
+
+  const enrichedItems: EnrichedShopRecord[] = (
+    tenantLinks.length > 0
+      ? tenantLinks
+          .map((ts) => {
+            const shop = allMasterShops.find((s) => s.id === ts.shopId);
+            if (!shop) return null;
+            return {
+              ...shop,
+              tenantLink: ts
+            };
+          })
+          .filter(Boolean)
+      : allMasterShops.map((s) => ({ ...s }))
+  ) as EnrichedShopRecord[];
+
   return res.json({
-    items: shops,
-    totalCount: shops.length
+    tenant: tenantSlug,
+    items: enrichedItems,
+    totalCount: enrichedItems.length,
+    isFilteredByTenant: tenantLinks.length > 0
   });
+});
+
+/**
+ * POST /api/v1/shops
+ * Register a new shop in the global master catalog (Super Admin only)
+ */
+communityRouter.post('/shops', requireAuth, requireSuperAdmin, (req: Request, res: Response) => {
+  const {
+    name,
+    description,
+    country,
+    city,
+    websiteUrl,
+    catalogUrl,
+    whatsappUrl,
+    instagramUrl,
+    specialties,
+    isVerified
+  } = req.body || {};
+
+  if (!name || !description) {
+    return sendProblem(
+      req,
+      res,
+      400,
+      'Datos Incompletos',
+      'name y description son obligatorios para registrar una tienda en el catálogo maestro.',
+      'validation-error'
+    );
+  }
+
+  const db = getDb();
+  if (!db.shops) db.shops = [];
+
+  const newShop: ShopRecord = {
+    id: `shop-${Date.now()}-${String(name).toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30)}`,
+    name: String(name).trim(),
+    description: String(description).trim(),
+    country: country ? String(country).trim() : 'Perú',
+    city: city ? String(city).trim() : 'Lima',
+    websiteUrl: websiteUrl ? String(websiteUrl).trim() : undefined,
+    catalogUrl: catalogUrl ? String(catalogUrl).trim() : undefined,
+    whatsappUrl: whatsappUrl ? String(whatsappUrl).trim() : undefined,
+    instagramUrl: instagramUrl ? String(instagramUrl).trim() : undefined,
+    specialties: Array.isArray(specialties) ? specialties.map(String) : [],
+    isVerified: isVerified !== false
+  };
+
+  db.shops.push(newShop);
+  saveDb(db);
+
+  return res.status(201).json(newShop);
+});
+
+/**
+ * PATCH /api/v1/shops/:id
+ * Update shop details in the global master catalog (Super Admin only)
+ */
+communityRouter.patch('/shops/:id', requireAuth, requireSuperAdmin, (req: Request, res: Response) => {
+  const { id } = req.params;
+  const db = getDb();
+  if (!db.shops) db.shops = getShopsFromDb();
+
+  const shop = db.shops.find((s) => s.id === id);
+  if (!shop) {
+    return sendProblem(req, res, 404, 'Tienda No Encontrada', `La tienda '${id}' no existe en el catálogo maestro.`);
+  }
+
+  const {
+    name,
+    description,
+    country,
+    city,
+    websiteUrl,
+    catalogUrl,
+    whatsappUrl,
+    instagramUrl,
+    specialties,
+    isVerified
+  } = req.body || {};
+
+  if (name !== undefined) shop.name = String(name).trim();
+  if (description !== undefined) shop.description = String(description).trim();
+  if (country !== undefined) shop.country = String(country).trim();
+  if (city !== undefined) shop.city = String(city).trim();
+  if (websiteUrl !== undefined) shop.websiteUrl = websiteUrl ? String(websiteUrl).trim() : undefined;
+  if (catalogUrl !== undefined) shop.catalogUrl = catalogUrl ? String(catalogUrl).trim() : undefined;
+  if (whatsappUrl !== undefined) shop.whatsappUrl = whatsappUrl ? String(whatsappUrl).trim() : undefined;
+  if (instagramUrl !== undefined) shop.instagramUrl = instagramUrl ? String(instagramUrl).trim() : undefined;
+  if (Array.isArray(specialties)) shop.specialties = specialties.map(String);
+  if (isVerified !== undefined) shop.isVerified = Boolean(isVerified);
+
+  saveDb(db);
+  return res.json(shop);
+});
+
+/**
+ * DELETE /api/v1/shops/:id
+ * Remove shop from global master catalog and unlink from tenants (Super Admin only)
+ */
+communityRouter.delete('/shops/:id', requireAuth, requireSuperAdmin, (req: Request, res: Response) => {
+  const { id } = req.params;
+  const db = getDb();
+  if (!db.shops) db.shops = getShopsFromDb();
+
+  const index = db.shops.findIndex((s) => s.id === id);
+  if (index === -1) {
+    return sendProblem(req, res, 404, 'Tienda No Encontrada', `La tienda '${id}' no existe en el catálogo maestro.`);
+  }
+
+  db.shops.splice(index, 1);
+  if (db.tenantShops) {
+    db.tenantShops = db.tenantShops.filter((ts) => ts.shopId !== id);
+  }
+
+  saveDb(db);
+  return res.json({ message: `Tienda '${id}' eliminada del catálogo maestro.` });
+});
+
+/**
+ * GET /api/v1/tenants/:slug/shops
+ * List trusted shops specifically linked to a tenant
+ */
+communityRouter.get('/tenants/:slug/shops', (req: Request, res: Response) => {
+  const slug = req.params.slug.toLowerCase().trim();
+  const allMasterShops = getShopsFromDb();
+  const allTenantShops = getTenantShopsFromDb();
+
+  const tenantLinks = allTenantShops.filter((ts) => ts.tenantSlug === slug);
+  const enriched: EnrichedShopRecord[] = tenantLinks
+    .map((ts) => {
+      const shop = allMasterShops.find((s) => s.id === ts.shopId);
+      if (!shop) return null;
+      return {
+        ...shop,
+        tenantLink: ts
+      };
+    })
+    .filter(Boolean) as EnrichedShopRecord[];
+
+  return res.json({
+    tenantSlug: slug,
+    items: enriched,
+    totalCount: enriched.length
+  });
+});
+
+/**
+ * POST /api/v1/tenants/:slug/shops
+ * Link a master shop as a trusted shop for this community (Community Admin or Super Admin)
+ */
+communityRouter.post('/tenants/:slug/shops', requireAuth, requireCommunityAdmin, (req: Request, res: Response) => {
+  const slug = req.params.slug.toLowerCase().trim();
+  const { shopId, discountCode, discountDescription, customNotes, badgeLabel, isTrusted } = req.body || {};
+
+  if (!shopId) {
+    return sendProblem(req, res, 400, 'Datos Incompletos', 'shopId es obligatorio.', 'validation-error');
+  }
+
+  const allMasterShops = getShopsFromDb();
+  const shop = allMasterShops.find((s) => s.id === shopId);
+  if (!shop) {
+    return sendProblem(req, res, 404, 'Tienda No Encontrada', `La tienda '${shopId}' no existe en el catálogo maestro.`);
+  }
+
+  const db = getDb();
+  if (!db.tenantShops) db.tenantShops = getTenantShopsFromDb();
+
+  let link = db.tenantShops.find((ts) => ts.tenantSlug === slug && ts.shopId === shopId);
+  if (link) {
+    link.isTrusted = isTrusted !== false;
+    if (discountCode !== undefined) link.discountCode = discountCode ? String(discountCode).trim().toUpperCase() : undefined;
+    if (discountDescription !== undefined) link.discountDescription = discountDescription ? String(discountDescription).trim() : undefined;
+    if (customNotes !== undefined) link.customNotes = customNotes ? String(customNotes).trim() : undefined;
+    if (badgeLabel !== undefined) link.badgeLabel = badgeLabel ? String(badgeLabel).trim() : undefined;
+    link.updatedAt = new Date().toISOString();
+  } else {
+    link = {
+      id: `tshop-${slug}-${shopId}`,
+      tenantSlug: slug,
+      shopId,
+      isTrusted: isTrusted !== false,
+      discountCode: discountCode ? String(discountCode).trim().toUpperCase() : undefined,
+      discountDescription: discountDescription ? String(discountDescription).trim() : undefined,
+      customNotes: customNotes ? String(customNotes).trim() : undefined,
+      badgeLabel: badgeLabel ? String(badgeLabel).trim() : 'Tienda de Confianza',
+      addedAt: new Date().toISOString()
+    };
+    db.tenantShops.push(link);
+  }
+
+  saveDb(db);
+  return res.status(201).json({
+    message: 'Tienda vinculada exitosamente a la comunidad.',
+    link,
+    shop
+  });
+});
+
+/**
+ * PATCH /api/v1/tenants/:slug/shops/:shopId
+ * Update community trusted shop link & discount codes
+ */
+communityRouter.patch('/tenants/:slug/shops/:shopId', requireAuth, requireCommunityAdmin, (req: Request, res: Response) => {
+  const slug = req.params.slug.toLowerCase().trim();
+  const { shopId } = req.params;
+  const db = getDb();
+  if (!db.tenantShops) db.tenantShops = getTenantShopsFromDb();
+
+  const link = db.tenantShops.find((ts) => ts.tenantSlug === slug && ts.shopId === shopId);
+  if (!link) {
+    return sendProblem(req, res, 404, 'Vínculo No Encontrado', `La tienda '${shopId}' no está vinculada a '${slug}'.`);
+  }
+
+  const { discountCode, discountDescription, customNotes, badgeLabel, isTrusted } = req.body || {};
+  if (discountCode !== undefined) link.discountCode = discountCode ? String(discountCode).trim().toUpperCase() : undefined;
+  if (discountDescription !== undefined) link.discountDescription = discountDescription ? String(discountDescription).trim() : undefined;
+  if (customNotes !== undefined) link.customNotes = customNotes ? String(customNotes).trim() : undefined;
+  if (badgeLabel !== undefined) link.badgeLabel = badgeLabel ? String(badgeLabel).trim() : undefined;
+  if (isTrusted !== undefined) link.isTrusted = Boolean(isTrusted);
+  link.updatedAt = new Date().toISOString();
+
+  saveDb(db);
+  return res.json({ message: 'Vínculo actualizado.', link });
+});
+
+/**
+ * DELETE /api/v1/tenants/:slug/shops/:shopId
+ * Unlink a trusted shop from a community
+ */
+communityRouter.delete('/tenants/:slug/shops/:shopId', requireAuth, requireCommunityAdmin, (req: Request, res: Response) => {
+  const slug = req.params.slug.toLowerCase().trim();
+  const { shopId } = req.params;
+  const db = getDb();
+  if (!db.tenantShops) db.tenantShops = getTenantShopsFromDb();
+
+  const index = db.tenantShops.findIndex((ts) => ts.tenantSlug === slug && ts.shopId === shopId);
+  if (index === -1) {
+    return sendProblem(req, res, 404, 'Vínculo No Encontrado', `La tienda '${shopId}' no está vinculada a '${slug}'.`);
+  }
+
+  db.tenantShops.splice(index, 1);
+  saveDb(db);
+  return res.json({ message: `Tienda '${shopId}' desvinculada de la comunidad '${slug}'.` });
+});
+
+/**
+ * GET /api/v1/tenants/:slug/news
+ * List community news articles
+ */
+communityRouter.get('/tenants/:slug/news', (req: Request, res: Response) => {
+  const slug = req.params.slug.toLowerCase().trim();
+  const allNews = getTenantNewsFromDb();
+  let news = allNews.filter((n) => n.tenantSlug === slug);
+
+  const category = (req.query.category as string)?.trim().toLowerCase();
+  if (category && category !== 'todas') {
+    news = news.filter((n) => n.category.toLowerCase() === category);
+  }
+
+  return res.json({
+    tenantSlug: slug,
+    items: news,
+    totalCount: news.length
+  });
+});
+
+/**
+ * POST /api/v1/tenants/:slug/news
+ * Publish new community news article (Community Admin or Super Admin)
+ */
+communityRouter.post('/tenants/:slug/news', requireAuth, requireCommunityAdmin, (req: Request, res: Response) => {
+  const slug = req.params.slug.toLowerCase().trim();
+  const { title, summary, content, category, tag, tagColor, readTime } = req.body || {};
+
+  if (!title || !summary || !content) {
+    return sendProblem(req, res, 400, 'Datos Incompletos', 'title, summary y content son obligatorios.', 'validation-error');
+  }
+
+  const db = getDb();
+  if (!db.tenantNews) db.tenantNews = getTenantNewsFromDb();
+
+  const newArticle: CommunityNewsArticle = {
+    id: `news-${Date.now()}-${String(title).toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 30)}`,
+    tenantSlug: slug,
+    title: String(title).trim(),
+    summary: String(summary).trim(),
+    content: String(content).trim(),
+    category: category || 'general',
+    tag: tag ? String(tag).trim() : 'Comunidad',
+    tagColor: tagColor || 'rgba(59, 130, 246, 0.2); color: #60a5fa;',
+    date: new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }),
+    readTime: readTime || '4 min',
+    authorUsername: req.user?.username,
+    isPublished: true,
+    createdAt: new Date().toISOString()
+  };
+
+  db.tenantNews.unshift(newArticle);
+  saveDb(db);
+  return res.status(201).json(newArticle);
+});
+
+/**
+ * PATCH /api/v1/tenants/:slug/news/:id
+ * Edit community news article
+ */
+communityRouter.patch('/tenants/:slug/news/:id', requireAuth, requireCommunityAdmin, (req: Request, res: Response) => {
+  const slug = req.params.slug.toLowerCase().trim();
+  const { id } = req.params;
+  const db = getDb();
+  if (!db.tenantNews) db.tenantNews = getTenantNewsFromDb();
+
+  const article = db.tenantNews.find((n) => n.id === id && n.tenantSlug === slug);
+  if (!article) {
+    return sendProblem(req, res, 404, 'Noticia No Encontrada', `El artículo '${id}' no existe en '${slug}'.`);
+  }
+
+  const { title, summary, content, category, tag, tagColor, readTime, isPublished } = req.body || {};
+  if (title !== undefined) article.title = String(title).trim();
+  if (summary !== undefined) article.summary = String(summary).trim();
+  if (content !== undefined) article.content = String(content).trim();
+  if (category !== undefined) article.category = category;
+  if (tag !== undefined) article.tag = String(tag).trim();
+  if (tagColor !== undefined) article.tagColor = String(tagColor).trim();
+  if (readTime !== undefined) article.readTime = String(readTime).trim();
+  if (isPublished !== undefined) article.isPublished = Boolean(isPublished);
+  article.updatedAt = new Date().toISOString();
+
+  saveDb(db);
+  return res.json(article);
+});
+
+/**
+ * DELETE /api/v1/tenants/:slug/news/:id
+ * Delete community news article
+ */
+communityRouter.delete('/tenants/:slug/news/:id', requireAuth, requireCommunityAdmin, (req: Request, res: Response) => {
+  const slug = req.params.slug.toLowerCase().trim();
+  const { id } = req.params;
+  const db = getDb();
+  if (!db.tenantNews) db.tenantNews = getTenantNewsFromDb();
+
+  const index = db.tenantNews.findIndex((n) => n.id === id && n.tenantSlug === slug);
+  if (index === -1) {
+    return sendProblem(req, res, 404, 'Noticia No Encontrada', `El artículo '${id}' no existe en '${slug}'.`);
+  }
+
+  db.tenantNews.splice(index, 1);
+  saveDb(db);
+  return res.json({ message: 'Artículo de noticias eliminado.' });
+});
+
+/**
+ * GET /api/v1/tenants/:slug/featured-photos
+ * List featured showcase photos for community landing gallery
+ */
+communityRouter.get('/tenants/:slug/featured-photos', (req: Request, res: Response) => {
+  const slug = req.params.slug.toLowerCase().trim();
+  const allPhotos = getFeaturedPhotosFromDb();
+  const photos = allPhotos
+    .filter((p) => p.tenantSlug === slug)
+    .sort((a, b) => (a.featuredOrder || 99) - (b.featuredOrder || 99));
+
+  return res.json({
+    tenantSlug: slug,
+    items: photos,
+    totalCount: photos.length
+  });
+});
+
+/**
+ * POST /api/v1/tenants/:slug/featured-photos
+ * Add a photo to community featured showcase gallery
+ */
+communityRouter.post('/tenants/:slug/featured-photos', requireAuth, requireCommunityAdmin, (req: Request, res: Response) => {
+  const slug = req.params.slug.toLowerCase().trim();
+  const { photoUrl, title, builderUsername, scale, grade, featuredOrder } = req.body || {};
+
+  if (!photoUrl || !title || !builderUsername) {
+    return sendProblem(req, res, 400, 'Datos Incompletos', 'photoUrl, title y builderUsername son obligatorios.', 'validation-error');
+  }
+
+  const db = getDb();
+  if (!db.featuredPhotos) db.featuredPhotos = getFeaturedPhotosFromDb();
+
+  const newPhoto: CommunityFeaturedPhoto = {
+    id: `feat-photo-${Date.now()}`,
+    tenantSlug: slug,
+    photoUrl: String(photoUrl).trim(),
+    title: String(title).trim(),
+    builderUsername: String(builderUsername).trim(),
+    scale: scale ? String(scale).trim() : undefined,
+    grade: grade ? String(grade).trim() : undefined,
+    featuredOrder: typeof featuredOrder === 'number' ? featuredOrder : db.featuredPhotos.length + 1,
+    featuredAt: new Date().toISOString()
+  };
+
+  db.featuredPhotos.push(newPhoto);
+  saveDb(db);
+  return res.status(201).json(newPhoto);
+});
+
+/**
+ * DELETE /api/v1/tenants/:slug/featured-photos/:id
+ * Remove a photo from community featured showcase gallery
+ */
+communityRouter.delete('/tenants/:slug/featured-photos/:id', requireAuth, requireCommunityAdmin, (req: Request, res: Response) => {
+  const slug = req.params.slug.toLowerCase().trim();
+  const { id } = req.params;
+  const db = getDb();
+  if (!db.featuredPhotos) db.featuredPhotos = getFeaturedPhotosFromDb();
+
+  const index = db.featuredPhotos.findIndex((p) => p.id === id && p.tenantSlug === slug);
+  if (index === -1) {
+    return sendProblem(req, res, 404, 'Foto No Encontrada', `La foto '${id}' no está en la galería destacada de '${slug}'.`);
+  }
+
+  db.featuredPhotos.splice(index, 1);
+  saveDb(db);
+  return res.json({ message: 'Foto retirada de la vitrina destacada.' });
 });
 
 /**

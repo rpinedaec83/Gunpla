@@ -4,12 +4,12 @@ Active tasks only. This is a burn-down list, not a history log.
 
 ## Current Phase
 
-Name: Phase DT29 -- Catalogo Maestro Global de Tiendas, Tenant Shops y Codigos de Descuento
-Goal: Implementar la base de datos central de tiendas con relacion tenant_shops por comunidad y gestion por administradores de comunidad.
+Name: Post-DT29 Ready / Next Phase Planning
+Goal: DT29 completed. Awaiting user direction or next phase definition.
 
 ## Active Tasks
 
-(No active tasks in current burn-down list. Ready for DT29.)
+(No active tasks in current burn-down list. Ready for next task.)
 
 ## Reset
 

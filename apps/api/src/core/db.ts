@@ -20,7 +20,10 @@ import {
   NotificationItem,
   PushSubscriptionRecord,
   GroupBuildRecord,
-  WorkbenchToolItem
+  WorkbenchToolItem,
+  TenantShopLink,
+  CommunityNewsArticle,
+  CommunityFeaturedPhoto
 } from '@gunpla/shared';
 import { isPostgresConfigured, isPostgresInitialized, syncStateToPostgres } from './postgres';
 
@@ -45,6 +48,9 @@ export interface PlatformDatabaseState {
   pushSubscriptions: PushSubscriptionRecord[];
   groupBuilds: GroupBuildRecord[];
   tools?: WorkbenchToolItem[];
+  tenantShops?: TenantShopLink[];
+  tenantNews?: CommunityNewsArticle[];
+  featuredPhotos?: CommunityFeaturedPhoto[];
   lastSeededAt: string | null;
 }
 
@@ -77,6 +83,9 @@ function createEmptyState(): PlatformDatabaseState {
     pushSubscriptions: [],
     groupBuilds: [],
     tools: [],
+    tenantShops: [],
+    tenantNews: [],
+    featuredPhotos: [],
     lastSeededAt: null
   };
 }
@@ -110,6 +119,9 @@ export function getDb(): PlatformDatabaseState {
         pushSubscriptions: parsed.pushSubscriptions ?? [],
         groupBuilds: parsed.groupBuilds ?? [],
         tools: parsed.tools ?? [],
+        tenantShops: parsed.tenantShops ?? [],
+        tenantNews: parsed.tenantNews ?? [],
+        featuredPhotos: parsed.featuredPhotos ?? [],
         lastSeededAt: parsed.lastSeededAt ?? null
       };
       return memoryState;

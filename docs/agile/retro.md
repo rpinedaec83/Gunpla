@@ -2,6 +2,36 @@
 
 Completed work belongs here.
 
+## Session -- 2026-10-25 | Goal: Master Shops Catalog, Tenant Trusted Shops & Discount Codes
+Start: 22:50 | End: 23:05 | Duration: 0h 15m
+
+### DT29 -- Catalogo Maestro Global de Tiendas, Tenant Shops y Codigos de Descuento | eMOE: 3 CU | aMOE: 3 CU
+What was done:
+- Designed and implemented centralized master shops catalog and community-specific trusted shops linking system:
+  - Extended shared data models in `packages/shared/src/index.ts` with `TenantShopLink`, `EnrichedShopRecord`, `CommunityNewsArticle`, and `CommunityFeaturedPhoto`.
+  - Added `tenantShops`, `tenantNews`, and `featuredPhotos` collections to `PlatformDatabaseState`, `createEmptyState`, and `getDb` in `apps/api/src/core/db.ts`.
+  - Seeded starter data in `apps/api/src/seed/seed-legacy.ts` linking trusted partner shops for both `gunplajunkies` and `plamoscale` with community-specific discount codes (e.g. GUNPLA10, JUNKIES5, GUNPLAART5 for Gunpla; PLAMO7, PLAMOFAMILY, PLAMOGUNPLA5 for PlamoScale), initial community news articles, and featured collector showcase photos.
+  - Implemented Master Shops endpoints in `apps/api/src/slices/community/community.slice.ts`:
+    - `GET /api/v1/shops`: When filtered by tenant, returns trusted shops enriched with `tenantLink` metadata (discount codes, partner badges, custom community notes); when requested with `?all=true`, returns the unconstrained global master catalog.
+    - `POST /api/v1/shops`, `PATCH /api/v1/shops/:id`, `DELETE /api/v1/shops/:id`: Global master catalog management protected by `requireAuth` + `requireSuperAdmin` (rpinedaec83@gmail.com).
+  - Implemented Tenant Shops endpoints in `apps/api/src/slices/community/community.slice.ts`:
+    - `GET /api/v1/tenants/:slug/shops`, `POST /api/v1/tenants/:slug/shops`, `PATCH /api/v1/tenants/:slug/shops/:shopId`, `DELETE /api/v1/tenants/:slug/shops/:shopId`: Protected by `requireAuth` + `requireCommunityAdmin`, allowing each community admin to choose their trusted shops, set custom discount codes, partner badges, and commercial agreement notes.
+  - Implemented Community News & Editorial endpoints:
+    - `GET /api/v1/tenants/:slug/news`, `POST /api/v1/tenants/:slug/news`, `PATCH /api/v1/tenants/:slug/news/:id`, `DELETE /api/v1/tenants/:slug/news/:id`: Protected by `requireAuth` + `requireCommunityAdmin` for localized community news publishing.
+  - Implemented Community Featured Collector Photos endpoints:
+    - `GET /api/v1/tenants/:slug/featured-photos`, `POST /api/v1/tenants/:slug/featured-photos`, `DELETE /api/v1/tenants/:slug/featured-photos/:id`: Protected by `requireAuth` + `requireCommunityAdmin`.
+  - Frontend integration in `packages/shared/src/ui-shell/views.ts`:
+    - Updated `#view-shops` to display community discount coupon chips with 1-click clipboard copy (`navigator.clipboard.writeText`), partner badges, and community recommendation notes.
+  - Authored comprehensive unit tests in `tests/unit/master-shops-tenant-trusted.test.mjs` (5 test suites passing).
+  - Updated end-to-end smoketest in `scripts/smoketest.mjs` with Step 36 verifying master catalog, tenant trusted shops, custom discount coupons, community news publishing, and featured photos.
+  - Verified with 178 unit tests and all 36 smoketest steps passing cleanly.
+Issues hit:
+- Smoketest assertion at line 724 checked that `shopsData.items.length >= 3` for default tenant `plamoscale`; resolved by ensuring `INITIAL_TENANT_SHOPS` seeds 3 trusted partner links for `plamoscale`.
+Decisions made:
+- Kept master shops catalog global and shared across all communities under Super Admin governance, while making the trusted shop relationship (`tenant_shops`) tenant-scoped so each community admin chooses their 1 or 2 trusted shops and community-exclusive discount codes.
+Lessons learned:
+- Enriching master shop objects with `tenantLink` preserves backwards compatibility for legacy shop endpoints while seamlessly exposing discount codes and partner badges to web clients.
+
 ## Session -- 2026-10-25 | Goal: Multi-Tenant Total Auth Isolation & Platform Super Admin
 Start: 22:20 | End: 22:45 | Duration: 0h 25m
 

@@ -4,12 +4,27 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT28 Multi-Tenant Auth Isolation & Super Admin, DT27 Public Landing Page with News & Collector Showcase, Native Android App M1 & AND-05 Stash API Live on Device, DT26 Redis 7 Caching, PostgreSQL 16 Persistence)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + DT20-DT28 + Native Android App (`apps/mobile-android`). 173 backend/web unit tests + mobile unit tests passing. Full smoketest green (35 steps).
-- Current branch or release line: `feature/dt28-tenant-auth-isolation-superadmin`
+- Stage: **PVT (In Progress -- DT29 Master Shops Catalog, Tenant Trusted Shops & Community Discount Codes, DT28 Multi-Tenant Auth Isolation & Super Admin, DT27 Public Landing Page with News & Collector Showcase, Native Android App M1 & AND-05 Stash API Live on Device, DT26 Redis 7 Caching, PostgreSQL 16 Persistence)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + DT20-DT29 + Native Android App (`apps/mobile-android`). 178 backend/web unit tests + mobile unit tests passing. Full smoketest green (36 steps).
+- Current branch or release line: `feature/dt29-master-shops-tenant-trusted`
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Catalogo Maestro Global de Tiendas, Tenant Shops de Confianza y Codigos de Descuento (DT29):**
+  - **Catalogo Maestro Centralizado de Tiendas (`shops`):**
+    - Repositorio unificado global de tiendas y proveedores de modelismo (nombre, sitio web, ubicacion, marcas soportadas, calificacion de confianza, soporte para envios).
+    - Gestion exclusiva del catalogo maestro reservada al Administrador Todopoderoso (`rpinedaec83@gmail.com`) mediante middleware `requireSuperAdmin` (`POST /api/v1/shops`, `PATCH /api/v1/shops/:id`, `DELETE /api/v1/shops/:id`).
+  - **Relacion de Tiendas de Confianza por Comunidad (`tenant_shops`):**
+    - Cada comunidad define y vincula de forma independiente sus 1 o 2 (o mas) tiendas de confianza recomendadas.
+    - Metadatos por comunidad: codigo de cupon de descuento exclusivo (ej. `GUNPLA10`, `PLAMO7`), insignia personalizada (`partnerBadge`), notas de acuerdo comercial y estado activo.
+    - Endpoints delegados a los administradores de cada comunidad (`POST /api/v1/tenants/:slug/shops`, `PATCH /api/v1/tenants/:slug/shops/:shopId`, `DELETE /api/v1/tenants/:slug/shops/:shopId`) protegidos con `requireCommunityAdmin` (o Super Admin).
+  - **Noticias y Novedades Editoriales de Comunidad (`tenant_news`):**
+    - Gestion de articulos de noticias locales por tenant (`GET/POST/PATCH/DELETE /api/v1/tenants/:slug/news`) para novedades sobre lanzamientos, eventos locales, y guias tecnicas.
+  - **Fotografias Destacadas de la Vitrina de Coleccionistas (`featured_photos`):**
+    - Gestion de imagenes destacadas para la portada y vitrina publica de coleccionistas (`GET/POST/DELETE /api/v1/tenants/:slug/featured-photos`).
+  - **Experiencia de Usuario en Frontend (`#view-shops`):**
+    - Vista de tiendas enriquece cada tarjeta con chips interactivos de codigo de cupon de descuento con copiado instantaneo al portapapeles en 1 clic (`navigator.clipboard.writeText`), insignias de tienda oficial y recomendaciones de la comunidad.
 
 - **Aislamiento Total de Autenticacion Multi-Tenant y Super Admin (DT28):**
   - **Aislamiento Total entre Comunidades:**
