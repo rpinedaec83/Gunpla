@@ -4,12 +4,33 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio, Smart Builder AI Assistant, Stash Insurance Valuation Report, Workshop Ambient Soundscapes, Airbrush PSI/Thinner Calculator, Parts Breakdown Subassembly Cards & Workbench Tool Inventory & Blade Wear Tracker Verified)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) + Pistas de Sonido y Soundscapes de Taller (DT21) + Calculadora de Dilución y Presión de Aerógrafo (DT22) + Generador de Fichas Técnicas & Manuales de Despiece (DT23) + Control de Inventario de Herramientas & Vida Útil de Cuchillas (DT24) + 4 Technical Debt resolutions verified via `npm test` (151 unit tests + full integration suite) and live LXC 190 deployment.
-- Current branch or release line: `feature/dt24-workbench-tools` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
+- Stage: **PVT (In Progress -- DT8, DT9, DT10, B1-B3, PWA, Tech Debt Hardening, Stock Alerts, AI Paint Equivalences, Contest Hall of Fame, WhatsApp Inquiries, Bulk Import Tool, Social OpenGraph Cards, In-App Activity Bell, Multi-Photo Gallery Reorder, Community Group Builds, Barcode Scanner, Interactive 3D / AR Viewer, Build Cost Estimator, Decal Studio, Smart Builder AI Assistant, Stash Insurance Valuation Report, Workshop Ambient Soundscapes, Airbrush PSI/Thinner Calculator, Parts Breakdown Subassembly Cards, Workbench Tool Inventory & PostgreSQL 16 Relational Persistence Hardening Verified)**
+- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + Stock Alerts + AI Paint Rack Equivalences + Contest Community Voting Badges & Hall of Fame + Direct WhatsApp Community Inquiries + Herramienta de Importacion Masiva CSV / Excel + Tarjetas Dinamicas de Previsualizacion Social OpenGraph + Notificaciones Web Push & Campana de Actividad + Galeria Multi-Foto & Reordenamiento de Pasos + Proyectos Grupales Comunitarios + Escáner de Código de Barras (JAN/EAN/UPC) + Visor 3D / AR Interactivo de Maquetas y Diorama Studio + Control de Costos y Presupuesto de Proyectos + Estudio y Generador de Calcas al Agua y Pistas de Enmascarado + Asistente Inteligente de Taller con Vision AI (Google Gemini 3.5 Flash) + Ficha de Tasacion de Inventario y Seguro Patrimonial (DT20) + Pistas de Sonido y Soundscapes de Taller (DT21) + Calculadora de Dilución y Presión de Aerógrafo (DT22) + Generador de Fichas Técnicas & Manuales de Despiece (DT23) + Control de Inventario de Herramientas & Vida Útil de Cuchillas (DT24) + Endurecimiento de Persistencia Relacional PostgreSQL 16 (DT25) + 4 Technical Debt resolutions verified via `npm test` (152 unit tests + full integration suite) and live LXC 190 deployment.
+- Current branch or release line: `feature/dt25-postgres-hardening` (PR against `main` on `https://github.com/rpinedaec83/Gunpla`)
 - Last meaningful update: 2026-10-25
 
 ## Live Capabilities
+
+- **Endurecimiento de Persistencia Relacional PostgreSQL 16 (`gunpla-db` - DT25):**
+  - **Migración DDL Automatizada & Tabla `schema_migrations`:**
+    - Runner de migraciones secuenciales en `apps/api/src/core/postgres.ts` ejecutando scripts SQL (`001_init_schema.sql`, `002_workbench_and_tools.sql`).
+    - Tabla atómica `schema_migrations` (`version VARCHAR(255) PRIMARY KEY, applied_at TIMESTAMPTZ`) para evitar re-ejecuciones y bloqueos concurrentes (*deadlocks*).
+  - **DDL Relacional Completo (`apps/api/sql/002_workbench_and_tools.sql`):**
+    - `build_subassemblies` (Fichas técnicas y manuales de despiece con 5 fases, runners JSONB, part estimates, notas técnicas y paletas).
+    - `build_expenses` (Control de costos de proyecto, desglose por categoría, horas de mano de obra y monedas).
+    - `workbench_tools` (Inventario de herramientas con seguimiento métrico de cortes, desgaste y dial de vida útil).
+    - `tool_maintenance_logs` (Historial técnico de reemplazo de cuchillas y mantenimiento preventivo).
+    - `commission_requests` (Cotizaciones y encargos de pintura y armado a medida con códigos de tracking únicos).
+  - **Sincronización Bidireccional & Carga Inicial:**
+    - `syncStateToPostgresInternal` con upserts `ON CONFLICT` en una sola transacción ACID para las 22 entidades de la plataforma.
+    - `loadStateFromPostgres()` y `hydrateDbFromPostgres()`: rehidratación automática de memoria y caché en disco desde PostgreSQL 16 al arrancar el contenedor sin provocar bucles de sincronización innecesarios.
+    - Prevención de concurrencia: `saveDb` solo dispara sincronización en segundo plano si `isPostgresInitialized()` es verdadero.
+  - **Diagnóstico Relacional `/api/v1/system/database`:**
+    - Reporte en tiempo real de `engine: "PostgreSQL 16"`, `mode: "relational-postgres"`, latencia en milisegundos (`latencyMs`) y conteos exactos de 22 tablas relacionales.
+  - **Pruebas Automatizadas y Despliegue:**
+    - Suite de pruebas unitarias `tests/unit/postgres-persistence.test.mjs` (4 pruebas exhaustivas).
+    - Verificación completa con `npm test` (152 unit tests + integration smoketest pasando).
+    - Despliegue en producción en Proxmox LXC 190 (`gunpla-db` en puerto 5432) y verificación en caliente de persistencia y reinicio de contenedores.
 
 - **Control de Inventario de Herramientas & Vida Útil de Cuchillas (Workbench Tool Inventory & Blade Wear Tracker - DT24):**
   - **Catálogo de Herramientas de Taller & Consumibles de Modelismo:**

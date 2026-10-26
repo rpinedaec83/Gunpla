@@ -814,3 +814,27 @@ Decisions made:
 Lessons learned:
 - Setting the dull blade warning threshold at 80% matches real-world scale modeling best practices, alerting modelers before micro-burrs and edge deformation cause white stress marks or plastic tear on delicate parts.
 Usage: Moderate -- self-estimated
+
+### DT25 -- PostgreSQL 16 Relational Persistence Hardening & Multi-Migration Runner | eMOE: 4 CU | aMOE: 4 CU
+What was done:
+- Implemented SQL migration `apps/api/sql/002_workbench_and_tools.sql` defining relational tables with foreign keys (`ON DELETE CASCADE`) and composite indexes:
+  - `build_subassemblies` (Subassembly cards, 5 progress stages, runners JSONB, part estimates, color notes).
+  - `build_expenses` (Project cost accounting items, labor hours, consumable fractions, currencies).
+  - `workbench_tools` (Tool inventory assets, brand, model, wear tracker JSONB, condition status).
+  - `tool_maintenance_logs` (Blade replacement logs and maintenance history).
+  - `commission_requests` (Commission request quotes, tracking codes, client/builder references).
+- Created automated migration runner and atomic migration tracking table `schema_migrations` in `apps/api/src/core/postgres.ts`, executing all SQL migration files sorted and preventing duplicate executions.
+- Updated `syncStateToPostgresInternal` to synchronize all 22 entity groups in an ACID transaction with `ON CONFLICT` upserts.
+- Built bidirectional loader `loadStateFromPostgres()` and hydration helper `hydrateDbFromPostgres()` in `apps/api/src/core/db.ts` to restore complete state from PostgreSQL 16 on container boot without triggering redundant background syncs.
+- Prevented concurrency lock contention/deadlock between startup seed and initialization by gating background sync with `isPostgresInitialized()`.
+- Updated `/api/v1/system/database` diagnostic endpoint and `MONITORED_PG_TABLES` to monitor and report live counts for 22 relational tables.
+- Authored unit test suite `tests/unit/postgres-persistence.test.mjs` (4 tests: SQL files DDL integrity, config checks, stats table counts, deserialization and hydration). Total platform tests: 152 passed.
+- Extended regression smoketest `scripts/smoketest.mjs` asserting all 5 new tables in diagnostic endpoint.
+- Deployed and verified on Proxmox LXC 190 (`gunpla-db` :5432, `mode: "relational-postgres"` verified live, tool creation persisted and verified across container restarts).
+Issues hit:
+- Container boot experienced a deadlock during initial startup when `seedPlatformDatabase` called `saveDb` concurrently while `initPostgres` was acquiring catalog locks for table creation. Resolved cleanly by adding `schema_migrations` tracking and checking `isPostgresInitialized()` before triggering background syncs.
+Decisions made:
+- Using a dedicated `schema_migrations` table in PostgreSQL ensures that subsequent container restarts or multi-replica deployments apply new migrations incrementally without re-running previous DDL.
+Lessons learned:
+- Separating in-memory hydration (`hydrateDbFromPostgres`) from normal mutation persistence (`saveDb`) prevents infinite synchronization loops between PostgreSQL and local memory.
+Usage: Moderate -- self-estimated

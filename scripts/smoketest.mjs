@@ -934,8 +934,8 @@ async function runSmoketest() {
     assert.ok(gunplaMarketHtml.includes('view-commissions'), 'GunplaJunkies frontend must render commissions section');
     console.log(`[PASS] Commission builders directory (${buildersData.items.length} builders) and Web Frontends UI integration verified.`);
 
-    // 24. DT8 - PostgreSQL 16 Hybrid Persistence & Relational Diagnostics
-    console.log('\n--- Checking DT8: PostgreSQL 16 Persistence & Diagnostic Endpoint ---');
+    // 24. DT8 & DT25 - PostgreSQL 16 Hybrid Persistence & Relational Diagnostics
+    console.log('\n--- Checking DT8 & DT25: PostgreSQL 16 Persistence & Diagnostic Endpoint ---');
     const dbStatsRes = await fetch(`${baseUrl}/api/v1/system/database`);
     assert.equal(dbStatsRes.status, 200);
     const dbStats = await dbStatsRes.json();
@@ -944,7 +944,13 @@ async function runSmoketest() {
       ['standalone-memory-json', 'relational-postgres', 'postgres-offline-fallback'].includes(dbStats.mode),
       `Invalid DB mode: ${dbStats.mode}`
     );
-    console.log(`[PASS] PostgreSQL persistence status endpoint verified (Engine: ${dbStats.engine}, Mode: ${dbStats.mode}).`);
+    assert.ok(dbStats.tables && typeof dbStats.tables === 'object', 'tables object must be returned');
+    assert.ok('build_subassemblies' in dbStats.tables, 'build_subassemblies table count must be monitored');
+    assert.ok('build_expenses' in dbStats.tables, 'build_expenses table count must be monitored');
+    assert.ok('workbench_tools' in dbStats.tables, 'workbench_tools table count must be monitored');
+    assert.ok('tool_maintenance_logs' in dbStats.tables, 'tool_maintenance_logs table count must be monitored');
+    assert.ok('commission_requests' in dbStats.tables, 'commission_requests table count must be monitored');
+    console.log(`[PASS] PostgreSQL persistence status endpoint verified (Engine: ${dbStats.engine}, Mode: ${dbStats.mode}, Monitored Tables: ${Object.keys(dbStats.tables).length}).`);
 
     // 25. DT9 - Google OAuth SSO & Interactive Auth Modal on Web Frontends
     console.log('\n--- Checking DT9: Google OAuth SSO Integration & Web Auth Modals ---');

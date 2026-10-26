@@ -5,7 +5,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import { seedPlatformDatabase, resolveLegacyPlamoscaleDir } from './seed/seed-legacy';
-import { getDb } from './core/db';
+import { getDb, hydrateDbFromPostgres } from './core/db';
 import { resolveTenantMiddleware } from './core/tenant.middleware';
 import { sendProblem } from './core/problem-details';
 import { createRateLimiter } from './core/rate-limit.middleware';
@@ -28,7 +28,7 @@ import { soundscapesRouter } from './slices/soundscapes/soundscapes.slice';
 import { airbrushRouter } from './slices/airbrush/airbrush.slice';
 import { toolsRouter } from './slices/workbench-tools/tools.slice';
 import { openApiSpec } from './openapi/openapi-spec';
-import { initPostgres, getPostgresStats, isPostgresConfigured } from './core/postgres';
+import { initPostgres, getPostgresStats, isPostgresConfigured, loadStateFromPostgres, syncStateToPostgres } from './core/postgres';
 
 dotenv.config();
 
@@ -230,9 +230,17 @@ if (require.main === module) {
   const app = createApp();
   
   if (isPostgresConfigured()) {
-    initPostgres(getDb()).then((connected) => {
+    initPostgres(getDb()).then(async (connected) => {
       if (connected) {
         console.log('[Postgres] Connected and schema synchronized with gunpla-db.');
+        const pgState = await loadStateFromPostgres();
+        if (pgState && pgState.tenants.length > 0) {
+          hydrateDbFromPostgres(pgState);
+          console.log('[Postgres] In-memory database successfully hydrated from PostgreSQL 16.');
+        } else {
+          await syncStateToPostgres(getDb());
+          console.log('[Postgres] Initial database synchronized with PostgreSQL 16.');
+        }
       } else {
         console.warn('[Postgres] Could not connect to PostgreSQL; using offline JSON fallback.');
       }

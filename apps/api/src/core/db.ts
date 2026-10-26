@@ -22,7 +22,7 @@ import {
   GroupBuildRecord,
   WorkbenchToolItem
 } from '@gunpla/shared';
-import { isPostgresConfigured, syncStateToPostgres } from './postgres';
+import { isPostgresConfigured, isPostgresInitialized, syncStateToPostgres } from './postgres';
 
 export interface PlatformDatabaseState {
   tenants: Tenant[];
@@ -76,6 +76,7 @@ function createEmptyState(): PlatformDatabaseState {
     notifications: [],
     pushSubscriptions: [],
     groupBuilds: [],
+    tools: [],
     lastSeededAt: null
   };
 }
@@ -108,6 +109,7 @@ export function getDb(): PlatformDatabaseState {
         notifications: parsed.notifications ?? [],
         pushSubscriptions: parsed.pushSubscriptions ?? [],
         groupBuilds: parsed.groupBuilds ?? [],
+        tools: parsed.tools ?? [],
         lastSeededAt: parsed.lastSeededAt ?? null
       };
       return memoryState;
@@ -141,13 +143,19 @@ async function triggerPostgresSync(state: PlatformDatabaseState): Promise<void> 
   }
 }
 
+export function hydrateDbFromPostgres(state: PlatformDatabaseState): void {
+  memoryState = state;
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(DB_FILE, JSON.stringify(state, null, 2), 'utf-8');
+}
+
 export function saveDb(state: PlatformDatabaseState = getDb()): void {
   memoryState = state;
   fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(DB_FILE, JSON.stringify(state, null, 2), 'utf-8');
 
-  // Asynchronously synchronize state into PostgreSQL if configured with queuing/debouncing
-  if (isPostgresConfigured()) {
+  // Asynchronously synchronize state into PostgreSQL if configured and initialized with queuing/debouncing
+  if (isPostgresConfigured() && isPostgresInitialized()) {
     triggerPostgresSync(state).catch((err) => {
       console.error('[Postgres Queue Error]:', err.message);
     });

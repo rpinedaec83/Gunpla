@@ -5,11 +5,11 @@ Active tasks only. This is a burn-down list, not a history log.
 ## Current Phase
 
 Name: Phase 3 (PVT) — Production Hardening, Relational PostgreSQL Persistence & Resilience
-Goal: Transition persistence to PostgreSQL 16 (`gunpla-db`), ensuring ACID relational integrity, automated schema migration, and seed synchronization across all slices (DT1 through DT7).
+Goal: Transition persistence to PostgreSQL 16 (`gunpla-db`), ensuring ACID relational integrity, automated schema migration, and seed synchronization across all slices.
 
 ## Active Tasks
 
-None currently active. All 3 workbench feature requests (DT22 Airbrush Dilution & PSI Calculator, DT23 Parts Breakdown & Assembly Step Cards, and DT24 Workbench Tool Inventory & Blade Wear Tracker) have been completed, tested, and deployed to LXC 190.
+(No active tasks currently in flight. Ready for next sprint or phase transition.)
 
 ## Reset
 
