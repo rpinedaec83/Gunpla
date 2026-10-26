@@ -3567,7 +3567,69 @@ XF-1,Tamiya,Flat Black,2,owned`,
 
     console.log('[PASS] DT31 Super Admin Community Governance, Onboarding & Suspension verified.');
 
-    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN + WORKBENCH-TOOLS + LANDING-PAGE + TENANT-AUTH-ISOLATION-SUPERADMIN + MASTER-SHOPS-TENANT-TRUSTED + COMMUNITY-ADMIN-MODERATION + SUPERADMIN-COMMUNITY-GOVERNANCE CHECKS PASSED ===');
+    // -------------------------------------------------------------------------
+    // 39. DT32 - SEO Canonical Tags, Robots.txt & Sitemap.xml Verification
+    // -------------------------------------------------------------------------
+    console.log('\n--- Checking DT32: SEO Canonical Tags, Robots.txt & Sitemap.xml ---');
+
+    // 1. Robots.txt on PlamoScale & GunplaJunkies
+    const plamoRobotsRes = await fetch(`${plamoUrl}/robots.txt`);
+    assert.equal(plamoRobotsRes.status, 200, 'PlamoScale robots.txt should return 200 OK');
+    assert.ok(plamoRobotsRes.headers.get('content-type')?.includes('text/plain'), 'Robots content type must be text/plain');
+    const plamoRobotsText = await plamoRobotsRes.text();
+    assert.ok(plamoRobotsText.includes('User-agent: *'), 'Robots must declare User-agent');
+    assert.ok(plamoRobotsText.includes('Disallow: /workbench'), 'Robots must disallow /workbench');
+    assert.ok(plamoRobotsText.includes('Disallow: /admin'), 'Robots must disallow /admin');
+    assert.ok(plamoRobotsText.includes('Sitemap: https://plamoscale.com/sitemap.xml'), 'Robots must point to plamoscale sitemap');
+
+    const gunplaRobotsRes = await fetch(`${gunplaUrl}/robots.txt`);
+    assert.equal(gunplaRobotsRes.status, 200, 'GunplaJunkies robots.txt should return 200 OK');
+    const gunplaRobotsText = await gunplaRobotsRes.text();
+    assert.ok(gunplaRobotsText.includes('Sitemap: https://gunplajunkies.com/sitemap.xml'), 'Robots must point to gunplajunkies sitemap');
+
+    // 2. Sitemap.xml on PlamoScale & GunplaJunkies
+    const plamoSitemapRes = await fetch(`${plamoUrl}/sitemap.xml`);
+    assert.equal(plamoSitemapRes.status, 200, 'PlamoScale sitemap.xml should return 200 OK');
+    assert.ok(plamoSitemapRes.headers.get('content-type')?.includes('xml'), 'Sitemap content type must be xml');
+    const plamoSitemapText = await plamoSitemapRes.text();
+    assert.ok(plamoSitemapText.includes('<urlset'), 'Sitemap must contain urlset tag');
+    assert.ok(plamoSitemapText.includes('<loc>https://plamoscale.com/</loc>'), 'Sitemap must include root');
+    assert.ok(plamoSitemapText.includes('<loc>https://plamoscale.com/showcase</loc>'), 'Sitemap must include showcase');
+
+    const gunplaSitemapRes = await fetch(`${gunplaUrl}/sitemap.xml`);
+    assert.equal(gunplaSitemapRes.status, 200, 'GunplaJunkies sitemap.xml should return 200 OK');
+    const gunplaSitemapText = await gunplaSitemapRes.text();
+    assert.ok(gunplaSitemapText.includes('<loc>https://gunplajunkies.com/</loc>'), 'Gunpla sitemap must include root');
+
+    // 3. HTML Shell Canonical Tags & Robots Meta
+    const rootHtmlRes = await fetch(`${plamoUrl}/`);
+    const rootHtml = await rootHtmlRes.text();
+    assert.ok(rootHtml.includes('<link rel="canonical" href="https://plamoscale.com/">'), 'Root page must have canonical href pointing to root');
+    assert.ok(rootHtml.includes('<meta name="robots" content="index, follow, max-image-preview:large">'), 'Root page must allow indexing');
+
+    const workbenchHtmlRes = await fetch(`${plamoUrl}/workbench`);
+    const workbenchHtml = await workbenchHtmlRes.text();
+    assert.ok(workbenchHtml.includes('<link rel="canonical" href="https://plamoscale.com/">'), 'Workbench must canonicalize to root');
+    assert.ok(workbenchHtml.includes('<meta name="robots" content="noindex, nofollow">'), 'Workbench must enforce noindex, nofollow');
+
+    const adminHtmlRes = await fetch(`${plamoUrl}/admin`);
+    const adminHtml = await adminHtmlRes.text();
+    assert.ok(adminHtml.includes('<link rel="canonical" href="https://plamoscale.com/">'), 'Admin must canonicalize to root');
+    assert.ok(adminHtml.includes('<meta name="robots" content="noindex, nofollow">'), 'Admin must enforce noindex, nofollow');
+
+    const privacyHtmlRes = await fetch(`${plamoUrl}/privacy`);
+    const privacyHtml = await privacyHtmlRes.text();
+    assert.ok(privacyHtml.includes('<link rel="canonical" href="https://plamoscale.com/privacy">'), 'Privacy must have canonical tag');
+    assert.ok(privacyHtml.includes('<meta name="robots" content="index, follow">'), 'Privacy must allow indexing');
+
+    const termsHtmlRes = await fetch(`${plamoUrl}/terms`);
+    const termsHtml = await termsHtmlRes.text();
+    assert.ok(termsHtml.includes('<link rel="canonical" href="https://plamoscale.com/terms">'), 'Terms must have canonical tag');
+    assert.ok(termsHtml.includes('<meta name="robots" content="index, follow">'), 'Terms must allow indexing');
+
+    console.log('[PASS] DT32 SEO Canonical Tags, Robots.txt & Sitemap.xml verified.');
+
+    console.log('=== ALL DT1 + DT2 + DT3 + DT4 + DT5 + DT6 + DT7 + DT8 + DT9 + DT10 + PAINTS-AI + SPEC-CARDS + WHITE-LABEL + JUDGE-RUBRICS + COMMISSIONS + PWA + STOCK-ALERTS + PAINT-EQUIVALENCES + HALL-OF-FAME + WHATSAPP-INQUIRIES + BULK-IMPORT + SOCIAL-OG + NOTIFICATIONS-BELL + GROUP-BUILDS + BARCODE-SCANNER + 3D-AR-VIEWER + BUILD-COSTS + DECAL-STUDIO + BUILDER-AI + STASH-INSURANCE + WORKSHOP-SOUNDSCAPES + AIRBRUSH-CALCULATOR + SUBASSEMBLIES-BREAKDOWN + WORKBENCH-TOOLS + LANDING-PAGE + TENANT-AUTH-ISOLATION-SUPERADMIN + MASTER-SHOPS-TENANT-TRUSTED + COMMUNITY-ADMIN-MODERATION + SUPERADMIN-COMMUNITY-GOVERNANCE + SEO-CANONICAL-ROBOTS-SITEMAP CHECKS PASSED ===');
   } finally {
     if (plamoServer) plamoServer.close();
     if (gunplaServer) gunplaServer.close();

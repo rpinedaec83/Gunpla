@@ -4,10 +4,12 @@ Active tasks only. This is a burn-down list, not a history log.
 
 ## Current Phase
 
-Name: PVT Community Governance, Resend Onboarding and Institutional Portal Suspension
-Goal: Complete DT31 to provide Super Admin community lifecycle controls, Resend API key onboarding for new clubs, and friendly institutional suspension pages.
+Name: PVT Search Engine Optimization (SEO), Canonical Tags & Indexation
+Goal: Resolve Google Search Console 'Duplicate without user-selected canonical' by implementing canonical URL tags, robots.txt, dynamic sitemap.xml, and SPA crawler routing.
 
 ## Active Tasks
+
+None. Ready for next cycle.
 
 ## Reset
 

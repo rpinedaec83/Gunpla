@@ -18,6 +18,8 @@ import {
   generateManifest,
   generateServiceWorker,
   generateAppIconSvg,
+  generateRobotsTxt,
+  generateSitemapXml,
   OpenGraphMetadata
 } from '@gunpla/shared';
 
@@ -28,6 +30,7 @@ const PORT = Number(process.env.PORT || 3000);
 const getApiUrl = () => process.env.API_URL || 'http://localhost:8080';
 const OTHER_TENANT_URL = process.env.GUNPLAJUNKIES_WEB_URL || 'http://localhost:3001';
 const PUBLIC_API_URL = process.env.PUBLIC_API_URL || '';
+const CANONICAL_DOMAIN = process.env.CANONICAL_DOMAIN || 'plamoscale.com';
 
 app.use(cors());
 app.use(express.json());
@@ -186,6 +189,28 @@ app.get('/terms', (_req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
+// SEO: Robots.txt and Sitemap.xml
+// ---------------------------------------------------------------------------
+app.get('/robots.txt', (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(generateRobotsTxt(CANONICAL_DOMAIN));
+});
+
+app.get('/sitemap.xml', async (_req: Request, res: Response) => {
+  try {
+    const data = await fetchTenantData();
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(generateSitemapXml(CANONICAL_DOMAIN, data));
+  } catch (err: any) {
+    console.error('[PlamoScale Web] Error generating sitemap.xml:', err);
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.send(generateSitemapXml(CANONICAL_DOMAIN));
+  }
+});
+
+// ---------------------------------------------------------------------------
 // PWA & Offline Support: Manifest, Service Worker, and App Icons
 // ---------------------------------------------------------------------------
 app.get('/manifest.json', (_req: Request, res: Response) => {
@@ -240,65 +265,122 @@ app.get('/icons/:name', async (req: Request, res: Response) => {
 function resolveOpenGraphMetadata(req: Request, data: AppShellData, currentConfig: AppShellConfig): OpenGraphMetadata {
   const isGunpla = currentConfig.tenantSlug === 'gunplajunkies';
   const defaultDomain = isGunpla ? 'gunplajunkies.com' : 'plamoscale.com';
+  const canonicalDomain = CANONICAL_DOMAIN || defaultDomain;
+  const canonicalBase = `https://${canonicalDomain}`;
+
   const host = req.get('host') || defaultDomain;
   const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
   const origin = `${protocol}://${host}`;
 
   const path = req.path;
 
-  // 1. Build log detail: /builds/:slug or /b/:slug
+  // 1. Private / Authenticated user routes (Marked with noindex and canonical to root)
+  if (
+    path.startsWith('/workbench') ||
+    path.startsWith('/stash') ||
+    path.startsWith('/admin') ||
+    path.startsWith('/profile')
+  ) {
+    return {
+      title: `${currentConfig.tenantName} — Banco de Trabajo`,
+      description: currentConfig.tenantTagline,
+      image: `${origin}/api/v1/og/default`,
+      url: `${canonicalBase}/`,
+      canonicalUrl: `${canonicalBase}/`,
+      noIndex: true,
+      type: 'website',
+      siteName: currentConfig.tenantName
+    };
+  }
+
+  // 2. Build log detail: /builds/:slug or /b/:slug
   if (path.startsWith('/builds/') || path.startsWith('/b/')) {
     const slug = path.replace(/^\/(builds|b)\//, '').split('/')[0].split('?')[0];
     const build = (data.builds || []).find((b: any) => b.slug === slug || b.id === slug);
     if (build) {
       const statusText = build.status === 'completed' ? 'Terminado' : 'En Progreso';
       const author = build.userDisplayName || build.username;
+      const canonicalUrl = `${canonicalBase}/builds/${encodeURIComponent(slug)}`;
       return {
         title: `${build.title} por ${author} | ${currentConfig.tenantName}`,
         description: `${build.subtitle || 'Bitácora de montaje y pintura'}. Escala: ${build.scale || '-'} · Grado: ${build.grade || '-'} · Estado: ${statusText}.`,
         image: `${origin}/api/v1/og/builds/${encodeURIComponent(slug)}`,
-        url: `${origin}/builds/${encodeURIComponent(slug)}`,
+        url: canonicalUrl,
+        canonicalUrl,
+        noIndex: false,
         type: 'article',
         siteName: currentConfig.tenantName
       };
     }
   }
 
-  // 2. Contest podium or contest detail: /contests/:id/podium or /contests/:id
+  // 3. Contest podium or contest detail: /contests/:id/podium or /contests/:id
   if (path.startsWith('/contests/')) {
     const parts = path.split('/').filter(Boolean);
     const contestId = parts[1];
+    const isPodium = parts[2] === 'podium';
     const contest = (data.contests || []).find((c: any) => c.id === contestId || c.slug === contestId);
     if (contest) {
+      const canonicalUrl = isPodium
+        ? `${canonicalBase}/contests/${encodeURIComponent(contest.id)}/podium`
+        : `${canonicalBase}/contests/${encodeURIComponent(contest.id)}`;
       return {
-        title: `Podio y Ganadores: ${contest.title} | ${currentConfig.tenantName}`,
+        title: isPodium
+          ? `Podio y Ganadores: ${contest.title} | ${currentConfig.tenantName}`
+          : `${contest.title} | Concursos | ${currentConfig.tenantName}`,
         description: `Conoce las obras galardonadas con Oro, Plata y Bronce del certamen ${contest.title} en ${currentConfig.tenantName}.`,
         image: `${origin}/api/v1/og/contests/${encodeURIComponent(contest.id)}`,
-        url: `${origin}/contests/${encodeURIComponent(contest.id)}/podium`,
+        url: canonicalUrl,
+        canonicalUrl,
+        noIndex: false,
         type: 'website',
         siteName: currentConfig.tenantName
       };
     }
   }
 
-  // 3. Hall of fame: /hall-of-fame
+  // 4. Hall of fame: /hall-of-fame
   if (path === '/hall-of-fame') {
+    const canonicalUrl = `${canonicalBase}/hall-of-fame`;
     return {
       title: `Salón de la Fama y Galería de Honor | ${currentConfig.tenantName}`,
       description: 'Los mejores modelistas, obras maestras y medallas condecoradas con evaluación oficial de jurados y voto popular.',
       image: `${origin}/api/v1/og/hall-of-fame`,
-      url: `${origin}/hall-of-fame`,
+      url: canonicalUrl,
+      canonicalUrl,
+      noIndex: false,
       type: 'website',
       siteName: currentConfig.tenantName
     };
   }
 
-  // 4. Default homepage / fallback
+  // 5. Standard public sections (canonicalize cleanly without trailing slash)
+  const publicSections = ['/builds', '/kits', '/paints', '/showcase', '/marketplace', '/contests', '/shops', '/builders', '/group-builds', '/commissions'];
+  const matchedSection = publicSections.find(s => path === s || path === `${s}/`);
+  if (matchedSection) {
+    const canonicalUrl = `${canonicalBase}${matchedSection}`;
+    return {
+      title: `${currentConfig.tenantName} — ${currentConfig.tenantTagline}`,
+      description: 'Comunidad y plataforma de modelismo a escala. Bitácoras de armado, catálogo de kits, muestrario de pinturas y banco de trabajo personal.',
+      image: `${origin}/api/v1/og/default`,
+      url: canonicalUrl,
+      canonicalUrl,
+      noIndex: false,
+      type: 'website',
+      siteName: currentConfig.tenantName
+    };
+  }
+
+  // 6. Default homepage / fallback
+  const isRoot = path === '/' || path === '';
+  const canonicalUrl = `${canonicalBase}/`;
   return {
     title: `${currentConfig.tenantName} — ${currentConfig.tenantTagline}`,
     description: 'Comunidad y plataforma de modelismo a escala. Bitácoras de armado, catálogo de kits, muestrario de pinturas y banco de trabajo personal.',
     image: `${origin}/api/v1/og/default`,
-    url: `${origin}${path === '/' ? '' : path}`,
+    url: canonicalUrl,
+    canonicalUrl,
+    noIndex: false,
     type: 'website',
     siteName: currentConfig.tenantName
   };

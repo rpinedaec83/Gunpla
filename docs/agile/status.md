@@ -4,12 +4,30 @@ Current live state of the project.
 
 ## Summary
 
-- Stage: **PVT (DT31 Panel de Gobernanza de Comunidades, Onboarding con Resend API Key y Pantalla Institucional de Suspension, DT30 Community Admin Panel & Marketplace Moderation, DT29 Master Shops Catalog, Tenant Trusted Shops & Community Discount Codes, DT28 Multi-Tenant Auth Isolation & Super Admin, DT27 Public Landing Page with News & Collector Showcase, Native Android App M1 & AND-05 Stash API Live on Device, DT26 Redis 7 Caching, PostgreSQL 16 Persistence)**
-- Overall state: Green -- DT1 through DT10 + B1-B3 + PWA + DT20-DT31 + Native Android App (`apps/mobile-android`). 194 backend/web unit tests + mobile unit tests passing. Full smoketest green (38 steps).
-- Current branch or release line: `feature/dt31-community-governance`
+- Stage: **PVT (In Progress -- DT32 SEO Canonical Tags, Robots.txt, Sitemap.xml y Resolucion de Indexacion en Google Search Console, DT31 Panel de Gobernanza de Comunidades, Onboarding con Resend API Key y Pantalla Institucional de Suspension, DT30 Community Admin Panel & Marketplace Moderation, DT29 Master Shops Catalog, Tenant Trusted Shops & Community Discount Codes, DT28 Multi-Tenant Auth Isolation & Super Admin, DT27 Public Landing Page with News & Collector Showcase, Native Android App M1 & AND-05 Stash API Live on Device, DT26 Redis 7 Caching, PostgreSQL 16 Persistence)**
+- Overall state: Green -- DT1 through DT32 + Native Android App (`apps/mobile-android`). 202 backend/web unit tests passing. Full smoketest green (39 steps).
+- Current branch or release line: `feature/dt32-seo-canonical-sitemap-indexing`
 - Last meaningful update: 2026-10-26
 
 ## Live Capabilities
+
+- **SEO Canonical Tags, Robots.txt, Sitemap.xml y Resolucion de Indexacion en Google Search Console (DT32):**
+  - **Etiquetas Canónicas Absolutas (`<link rel="canonical" href="...">`):**
+    - Inyección garantizada de URL canónica absoluta en el `<head>` del HTML (`renderAppShell`, `renderPrivacyPolicy`, `renderTermsOfService`) para resolver definitivamente la advertencia de Google Search Console: *"Duplicada: el usuario no ha indicado ninguna versión canónica. Estas páginas no se indexan ni aparecen en Google"*.
+    - Normalización automática a dominio oficial canónico (`https://plamoscale.com` o `https://gunplajunkies.com` configurable vía `CANONICAL_DOMAIN`), eliminando discrepancias entre HTTP/HTTPS, proxies inversos y parámetros de consulta arbitrarios.
+  - **Directivas Meta Robots Dinámicas (`<meta name="robots" content="...">`):**
+    - Rutas públicas (`/`, `/builds`, `/kits`, `/paints`, `/showcase`, `/marketplace`, `/contests`, `/shops`, `/hall-of-fame`, `/privacy`, `/terms`) emiten `index, follow, max-image-preview:large`.
+    - Rutas privadas autenticadas de SPA (`/workbench`, `/stash`, `/admin`, `/profile`) emiten `noindex, nofollow` y apuntan canónicamente a la raíz del sitio (`https://<domain>/`), evitando que Googlebot indexe contenedores vacíos del cliente como duplicados de la portada.
+    - Pantalla institucional de suspensión (`renderInstitutionalSuspensionPage`) protegida con `noindex, nofollow`.
+  - **Directivas de Rastreo Robots.txt (`GET /robots.txt`):**
+    - Endpoints montados en `apps/plamoscale-web` y `apps/gunplajunkies-web` sirviendo `text/plain; charset=utf-8` con directiva `User-agent: *`.
+    - Bloqueo explícito de endpoints de API e internos: `Disallow: /api/`, `Disallow: /icons/`, `Disallow: /workbench`, `Disallow: /stash`, `Disallow: /admin`, `Disallow: /profile`.
+    - Vinculación declarativa del mapa de sitio: `Sitemap: https://<domain>/sitemap.xml`.
+  - **Mapa de Sitio Dinámico XML (`GET /sitemap.xml`):**
+    - Generación automatizada con encabezado `application/xml; charset=utf-8` según especificación Sitemaps.org 0.9.
+    - Listado de rutas estáticas prioritarias (`1.0` para raíz, `0.9` para showcase, `0.8` para catálogo y certámenes).
+    - Indexación dinámica de bitácoras de armado públicas (`/builds/:slug`) con fecha de última modificación (`lastmod`) y frecuencia semanal.
+    - Indexación de concursos y podios de premiación (`/contests/:id` y `/contests/:id/podium`).
 
 - **Panel de Gobernanza de Comunidades, Onboarding con Resend API Key y Pantalla Institucional de Suspension (DT31):**
   - **Subtabs Exclusivos de Super Admin en `#view-admin`:**

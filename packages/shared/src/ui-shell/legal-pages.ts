@@ -15,6 +15,8 @@ export function renderPrivacyPolicy(tenantName: string, domain: string, contactE
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Política de Privacidad y Tratamiento de Datos Personales — ${tenantName}</title>
+  <link rel="canonical" href="https://${domain}/privacy">
+  <meta name="robots" content="index, follow">
   <style>
     :root {
       --bg: #080c14;
@@ -174,6 +176,8 @@ export function renderTermsOfService(tenantName: string, domain: string, contact
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Términos y Condiciones del Servicio — ${tenantName}</title>
+  <link rel="canonical" href="https://${domain}/terms">
+  <meta name="robots" content="index, follow">
   <style>
     :root {
       --bg: #080c14;
@@ -346,6 +350,7 @@ export function renderInstitutionalSuspensionPage(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${statusLabel} — ${tenantName}</title>
+  <meta name="robots" content="noindex, nofollow">
   <style>
     :root {
       --bg: #080c14;

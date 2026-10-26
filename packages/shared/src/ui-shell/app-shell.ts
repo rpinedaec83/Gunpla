@@ -66,6 +66,8 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData, og?: 
   const ogUrl = og?.url || `https://${defaultDomain}/`;
   const ogType = og?.type || 'website';
   const ogSiteName = og?.siteName || config.tenantName;
+  const canonicalUrl = og?.canonicalUrl || ogUrl;
+  const robotsDirective = og?.noIndex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large';
 
   const birthYearOptions = Array.from({ length: 87 }, (_, i) => 2026 - i)
     .map(y => `<option value="${y}">${y}</option>`)
@@ -104,6 +106,8 @@ export function renderAppShell(config: AppShellConfig, data: AppShellData, og?: 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(ogTitle)}</title>
   <meta name="description" content="${escapeHtml(ogDesc)}">
+  <link rel="canonical" href="${escapeHtml(canonicalUrl)}">
+  <meta name="robots" content="${escapeHtml(robotsDirective)}">
 
   <!-- OpenGraph / Social Sharing (Facebook, WhatsApp, Telegram, Discord, LinkedIn) -->
   <meta property="og:site_name" content="${escapeHtml(ogSiteName)}">

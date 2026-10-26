@@ -2,6 +2,36 @@
 
 Completed work belongs here.
 
+## Session -- 2026-10-26 | Goal: SEO Canonical Tags, Robots.txt, Sitemap.xml & Google Search Console Resolution
+Start: 10:45 | End: 11:05 | Duration: 0h 20m
+
+### DT32 -- SEO Canonical Tags, Robots.txt, Sitemap.xml y Resolucion de Indexacion en Google Search Console | eMOE: 3 CU | aMOE: 3 CU
+What was done:
+- Diagnosed root cause for Google Search Console indexation blockage: *"Duplicada: el usuario no ha indicado ninguna versión canónica. Estas páginas no se indexan ni aparecen en Google"*:
+  1. SPA shell routes and legal pages lacked an explicit `<link rel="canonical" href="...">` in `<head>`.
+  2. Public crawlers visiting client-rendered private SPA routes (`/workbench`, `/stash`, `/admin`, `/profile`) received the same root shell HTML without `noindex` headers or canonical tags, triggering duplicate page flags.
+  3. Neither `/robots.txt` nor `/sitemap.xml` was served by either frontend service.
+- Implemented SEO infrastructure in `@gunpla/shared`:
+  - Extended `OpenGraphMetadata` interface with optional `canonicalUrl?: string` and `noIndex?: boolean`.
+  - Updated `renderAppShell` to inject `<link rel="canonical" href="${canonicalUrl}">` and `<meta name="robots" content="${robotsDirective}">`.
+  - Updated `renderPrivacyPolicy` and `renderTermsOfService` to inject their respective canonical tags and `index, follow` directives.
+  - Updated `renderInstitutionalSuspensionPage` to inject `<meta name="robots" content="noindex, nofollow">`.
+  - Created `packages/shared/src/ui-shell/seo.ts` exporting `generateRobotsTxt(canonicalDomain)` and `generateSitemapXml(canonicalDomain, data)`.
+- Mounted endpoints and routing in `apps/plamoscale-web` and `apps/gunplajunkies-web`:
+  - Added `GET /robots.txt` returning `text/plain` disallowing private routes (`/workbench`, `/stash`, `/admin`, etc.) and declaring sitemap URL.
+  - Added `GET /sitemap.xml` returning `application/xml` compliant with Sitemaps.org 0.9 schema, enumerating static routes, public build logs (`/builds/:slug`), and contests/podiums.
+  - Enhanced `resolveOpenGraphMetadata` to normalize canonical URLs to official production domains (`CANONICAL_DOMAIN`), mark private SPA routes with `noIndex: true` pointing to root, and cleanly map public sections and detail pages.
+- Quality & Verification:
+  - Created unit test suite `tests/unit/seo-canonical-sitemap.test.mjs` (8 passing assertions).
+  - Extended end-to-end smoketest in `scripts/smoketest.mjs` with Step 39 validating `robots.txt`, `sitemap.xml`, and HTML `<link rel="canonical">` and `<meta name="robots">` tags.
+  - Ran full test suite: 202 unit tests + 39 smoketest steps passing 100% green.
+Issues hit:
+- In `tests/unit/seo-canonical-sitemap.test.mjs`, mock contest record initially lacked `status` and `participantsCount` causing `toUpperCase()` on undefined; corrected mock data to match full contest schema.
+Decisions made:
+- Enforced `noindex, nofollow` on `/workbench`, `/stash`, `/admin`, and `/profile` SPA paths so that search engines never index client-only session views as duplicate homepages.
+Lessons learned:
+- Providing dynamic sitemap generation directly from the server allows newly completed community builds and contest podiums to be indexed by Google without manual sitemap maintenance.
+
 ## Session -- 2026-10-26 | Goal: Super Admin Community Governance, Onboarding with Resend API Key & Suspension
 Start: 00:10 | End: 00:38 | Duration: 0h 28m
 

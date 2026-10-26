@@ -1328,6 +1328,8 @@ export interface OpenGraphMetadata {
   description: string;
   image: string;
   url: string;
+  canonicalUrl?: string;
+  noIndex?: boolean;
   type?: 'website' | 'article';
   siteName?: string;
 }
@@ -3610,3 +3612,4 @@ export * from './ui-shell/modals';
 export * from './ui-shell/legal-pages';
 export * from './ui-shell/pwa';
 export * from './ui-shell/og-card';
+export * from './ui-shell/seo';
