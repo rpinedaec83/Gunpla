@@ -2,6 +2,27 @@
 
 Completed work belongs here.
 
+## Session -- 2026-10-26 | Goal: Harden the Homeserver Deployment Path
+Start: 20:55 | End: 21:20 | Duration: 0h 25m
+
+### RDT4 -- Production Env Consolidation and Revision-Tracked Deployment | eMOE: 3 CU | aMOE: 4 CU
+What was done:
+- Consolidated `/opt/gunpla/infra/.env` on the application container into a single 0600 file with DB, JWT, Google, Resend, R2, and Gemini keys, using current container values with fallback to the existing env file.
+- Recreated `gunpla-api` with the consolidated env and confirmed the container now receives Google and Resend values that were previously empty.
+- Removed `secrets.md` and a stale `apps/api/.env` from `/opt/gunpla-monorepo`, leaving production secrets only in the root-owned env file.
+- Added `scripts/deploy-homeserver.sh` with rsync excludes, optional service selection, a post-deploy health probe, and a `.deployed-revision` record written on the target.
+- Ran the script end to end: it rebuilt all three images, recreated only the API container, passed the public health check, and recorded commit `a0bfb39`.
+Smoketest: `docker compose --env-file /opt/gunpla/infra/.env config --quiet` reports no missing variables. The API container shows non-zero lengths for `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`, `JWT_SECRET`, and `DATABASE_URL`. `https://api.plamoscale.com/api/v1/health` returns 200, and `.deployed-revision` reports `dirty=false` with the deployed SHA.
+UAT: Sign in with Google, send a transactional email, and upload a photo. Google and Resend should now work. R2 media upload and the Gemini assistant remain disabled because their credentials are empty in every deployment location found.
+Issues hit:
+- The running API had empty values for Google, Resend, R2, and Gemini even though the env file held Google and Resend. It had been started without `--env-file`. The consolidation fixed Google and Resend. R2 and Gemini values do not exist anywhere on the host, so those integrations stay unconfigured.
+Decisions made:
+- Kept the existing JWT secret during consolidation to avoid invalidating live sessions. Rotation belongs to the security task.
+- Left the legacy `/opt/gunpla` tree and its `secrets.md` in place because it is outside the active deployment path. Removing it needs an explicit cleanup decision.
+Lessons learned:
+- A compose deployment without `--env-file` silently runs with empty integrations. The deploy script now always passes the consolidated file.
+Usage: Moderate -- self-estimated
+
 ## Session -- 2026-10-26 | Goal: Point the Android Client to the Cloudflare API Endpoint
 Start: 20:45 | End: 20:50 | Duration: 0h 05m
 
