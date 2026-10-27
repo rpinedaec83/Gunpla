@@ -50,6 +50,7 @@ Do not store credentials, keys, tokens, passwords, connection strings, or deploy
   - API: `http://192.168.1.190:8080`
   - PlamoScale: `http://192.168.1.190:3000`
   - GunplaJunkies: `http://192.168.1.190:3001`
+- Public API used by the Android client by default: `https://api.plamoscale.com` (LAN override remains available at `http://192.168.1.190:8080`)
 - Pages project: Optional edge static caching / DNS proxy
 - Workers service: Optional image resizing / CDN edge caching
 - Deployment environment notes: Both `plamoscale.com` and `gunplajunkies.com` apex and www domains are bound to Cloudflare DNS/Proxy with assigned nameservers `cruz.ns.cloudflare.com` and `dylan.ns.cloudflare.com`. Cloudflare Tunnel ingress rules run on Proxmox host `192.168.1.200` and route public traffic to LXC 190 (`10.20.30.190`) with Full Strict SSL. Resend DKIM/SPF domain verification is 100% completed and verified (2026-10-23). Both zones will link to Cloudflare R2 bucket (`plamoscale-media-prod` / `plamoscale-media-dev`) for zero-egress high-resolution image delivery.

@@ -2,6 +2,20 @@
 
 Completed work belongs here.
 
+## Session -- 2026-10-26 | Goal: Point the Android Client to the Cloudflare API Endpoint
+Start: 20:45 | End: 20:50 | Duration: 0h 05m
+
+### RDT3 -- Android Default API Endpoint Moved to Cloudflare | eMOE: 1 CU | aMOE: 1 CU
+What was done:
+- Changed `DEFAULT_API_URL` in `SessionManager.kt` from the LAN address to `https://api.plamoscale.com`.
+- Updated the connection hint in `ProfileScreen.kt` and the Android capability note in `status.md`.
+- Recorded the public default and the LAN override in `accounts.md`.
+Decisions made:
+- Kept `usesCleartextTraffic="true"` and the LAN override so device testing against `192.168.1.190:8080` still works, while production traffic uses HTTPS through Cloudflare.
+Smoketest: `grep` confirms `https://api.plamoscale.com` in both Kotlin sources and no LAN address remains as the default. `npm run build` and `npm run test:unit` pass. Android compilation was not run because the Android SDK is not installed in this environment.
+UAT: Install the APK on a device, confirm the profile screen shows `https://api.plamoscale.com`, and complete a sign-in against the public API.
+Usage: Light -- self-estimated
+
 ## Session -- 2026-10-26 | Goal: Publish DT32 SEO Release to LXC 190
 Start: 20:15 | End: 20:40 | Duration: 0h 25m
 

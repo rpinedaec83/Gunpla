@@ -231,7 +231,7 @@ fun ProfileScreen(
                     Text("• Capa de Caching: ${dbStats?.cache?.engine ?: "Redis 7"} (Conectado: ${dbStats?.cache?.connected ?: true})", fontSize = 12.sp)
                     Text("• Latencia Servidor: ${dbStats?.latencyMs} ms", fontSize = 12.sp)
                 } else {
-                    Text("Conectando con http://192.168.1.190:8080...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Conectando con https://api.plamoscale.com...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

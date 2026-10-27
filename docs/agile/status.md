@@ -127,7 +127,7 @@ Current live state of the project.
   - **Módulos y Pantallas Implementadas:**
     - **Mesa de Trabajo (Workbench):** Métricas de taller (herramientas, en proceso, vida útil de cuchillas), sincronización con API y arsenal inicial de modelismo.
     - **Stash Personal:** Filtros por estado (*Todas*, *En Proceso*, *En Caja*), tarjetas con barras de progreso y escalas (1/144, 1/100, 1/35, 1/48).
-    - **Catálogo & Scalemates:** Búsqueda en tiempo real contra la API central (`http://192.168.1.190:8080`), paginación y visualización de marcas.
+    - **Catálogo & Scalemates:** Búsqueda en tiempo real contra la API central (`https://api.plamoscale.com`), con override LAN manual a `http://192.168.1.190:8080` desde la pantalla de perfil, paginación y visualización de marcas.
     - **Perfil & 1-Click SSO:** Estado de autenticación JWT, botones de inicio rápido para Demo Builder y Admin, y configuración de endpoint API.
   - **Verificación en Dispositivo Físico:**
     - APK de depuración (11.9 MB) transferido e instalado exitosamente en smartphone Xiaomi Redmi Note (`M2101K7BG`) mediante Wireless Debugging (ADB sobre Wi-Fi).
