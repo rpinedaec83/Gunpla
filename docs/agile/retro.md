@@ -2,6 +2,28 @@
 
 Completed work belongs here.
 
+## Session -- 2026-10-26 | Goal: Premium Public Frontend for PlamoScale and GunplaJunkies
+Start: 20:20 | End: 21:00 | Duration: 0h 40m
+
+### DT33 -- Premium Multi-Tenant Public Frontend (Next.js, Tailwind, Framer Motion) | eMOE: 5 CU | aMOE: 6 CU
+What was done:
+- Created `apps/premium-web`, a Next.js 16 public frontend with Tailwind CSS 4 and Framer Motion 14, tenant-resolved by host with a `?tenant=` preview override.
+- Defined the Quiet Precision direction: SF/system display type, graphite and bone surfaces, one accent per tenant (enamel blue for PlamoScale, deep red for GunplaJunkies), one 22px radius, and no card grid.
+- Built the public narrative: large-type hero with device art, light manifesto with word reveal, scroll-drawn runner signature, sticky three-step sequence, large build photography vitrine, editorial feature rows, immersive outlined wordmark, specs strip, and closing CTA.
+- Added local WebP assets with blur placeholders, per-tenant Open Graph images and favicons, host-aware `robots.txt` and `sitemap.xml`, and per-tenant metadata.
+- Added the `apple-design` and `designing-frontend-interfaces` skills under `.agents/skills` with `skills-lock.json`.
+Issues hit:
+- The first visual pass had a faint runner and an invisible immersive wordmark. Increased stroke weight and repositioned the outline after inspecting 1440px and 390px screenshots.
+- The red accent `#e5484d` produced 3.91:1 white-on-red contrast. Replaced it with `#d23b40` at 4.73:1, and darkened the blue to `#2a63f0` at 5.07:1.
+- Lighthouse flagged `aria-label` on a `<p>` and two low-contrast light-section labels. Reworked the word reveal with `sr-only` text and raised the ink alpha to 70 percent.
+Decisions made:
+- Kept the authenticated workbench in the existing Express apps. This frontend owns the public landing and SEO routes; deployment needs a catch-all proxy or a staged tunnel cutover.
+- Used system SF typography instead of a downloaded display face to keep the Apple reference and avoid font payload. Distinctiveness comes from the runner signature, the editorial numbering, and the per-tenant photography.
+- Avoided stock photography and used two founding-builder photos, credited in the page.
+Smoketest: `npm --workspace=@gunpla/premium-web run build` passes. `npm run build`, `npm run test:unit` (202 passing), and `npm run smoketest` pass. Local probes return 200 for `/`, `/?tenant=gunplajunkies`, `/robots.txt`, and `/sitemap.xml` with host-aware content. Lighthouse on both tenants: Performance 98, Accessibility 100, Best Practices 100, SEO 100, LCP 2.3s, CLS 0, TBT 0ms.
+UAT: Open `http://localhost:3002/` and `http://localhost:3002/?tenant=gunplajunkies`, review both at 1440px and 390px, verify anchor navigation, the scroll sequence, the runner draw, the vitrine photo, and the CTAs to `/workbench`. Confirm copy and photography for each community.
+Usage: Heavy -- self-estimated
+
 ## Session -- 2026-10-26 | Goal: SEO Canonical Tags, Robots.txt, Sitemap.xml & Google Search Console Resolution
 Start: 10:45 | End: 11:05 | Duration: 0h 20m
 

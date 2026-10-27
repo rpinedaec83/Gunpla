@@ -779,3 +779,4 @@ Current live state of the project.
 ## Next Focus
 
 - Phase 3 (PVT / Production Identity & Media): Configure production Google OAuth Client ID credentials in Google Cloud Console for 1-click SSO on web frontends, and configure Cloudflare R2 bucket for high-res photo uploads.
+- Premium public frontend: integrate `apps/premium-web` into the Cloudflare Tunnel cutover for `plamoscale.com` and `gunplajunkies.com`. The app owns the public landing and SEO routes today; authenticated routes still live in the existing Express apps and need a catch-all proxy or a staged tunnel split before cutover. See `docs/reference/premium-frontend.md`.
