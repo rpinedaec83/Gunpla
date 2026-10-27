@@ -2,6 +2,78 @@
 
 Completed work belongs here.
 
+## Session -- 2026-10-26 | Goal: Harden the Homeserver Deployment Path
+Start: 20:55 | End: 21:20 | Duration: 0h 25m
+
+### RDT4 -- Production Env Consolidation and Revision-Tracked Deployment | eMOE: 3 CU | aMOE: 4 CU
+What was done:
+- Consolidated `/opt/gunpla/infra/.env` on the application container into a single 0600 file with DB, JWT, Google, Resend, R2, and Gemini keys, using current container values with fallback to the existing env file.
+- Recreated `gunpla-api` with the consolidated env and confirmed the container now receives Google and Resend values that were previously empty.
+- Removed `secrets.md` and a stale `apps/api/.env` from `/opt/gunpla-monorepo`, leaving production secrets only in the root-owned env file.
+- Added `scripts/deploy-homeserver.sh` with rsync excludes, optional service selection, a post-deploy health probe, and a `.deployed-revision` record written on the target.
+- Ran the script end to end: it rebuilt all three images, recreated only the API container, passed the public health check, and recorded commit `a0bfb39`.
+Smoketest: `docker compose --env-file /opt/gunpla/infra/.env config --quiet` reports no missing variables. The API container shows non-zero lengths for `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`, `JWT_SECRET`, and `DATABASE_URL`. `https://api.plamoscale.com/api/v1/health` returns 200, and `.deployed-revision` reports `dirty=false` with the deployed SHA.
+UAT: Sign in with Google, send a transactional email, and upload a photo. Google and Resend should now work. R2 media upload and the Gemini assistant remain disabled because their credentials are empty in every deployment location found.
+Issues hit:
+- The running API had empty values for Google, Resend, R2, and Gemini even though the env file held Google and Resend. It had been started without `--env-file`. The consolidation fixed Google and Resend. R2 and Gemini values do not exist anywhere on the host, so those integrations stay unconfigured.
+Decisions made:
+- Kept the existing JWT secret during consolidation to avoid invalidating live sessions. Rotation belongs to the security task.
+- Left the legacy `/opt/gunpla` tree and its `secrets.md` in place because it is outside the active deployment path. Removing it needs an explicit cleanup decision.
+Lessons learned:
+- A compose deployment without `--env-file` silently runs with empty integrations. The deploy script now always passes the consolidated file.
+Usage: Moderate -- self-estimated
+
+## Session -- 2026-10-26 | Goal: Point the Android Client to the Cloudflare API Endpoint
+Start: 20:45 | End: 20:50 | Duration: 0h 05m
+
+### RDT3 -- Android Default API Endpoint Moved to Cloudflare | eMOE: 1 CU | aMOE: 1 CU
+What was done:
+- Changed `DEFAULT_API_URL` in `SessionManager.kt` from the LAN address to `https://api.plamoscale.com`.
+- Updated the connection hint in `ProfileScreen.kt` and the Android capability note in `status.md`.
+- Recorded the public default and the LAN override in `accounts.md`.
+Decisions made:
+- Kept `usesCleartextTraffic="true"` and the LAN override so device testing against `192.168.1.190:8080` still works, while production traffic uses HTTPS through Cloudflare.
+Smoketest: `grep` confirms `https://api.plamoscale.com` in both Kotlin sources and no LAN address remains as the default. `npm run build` and `npm run test:unit` pass. Android compilation was not run because the Android SDK is not installed in this environment.
+UAT: Install the APK on a device, confirm the profile screen shows `https://api.plamoscale.com`, and complete a sign-in against the public API.
+Usage: Light -- self-estimated
+
+## Session -- 2026-10-26 | Goal: Publish DT32 SEO Release to LXC 190
+Start: 20:15 | End: 20:40 | Duration: 0h 25m
+
+### RDT2 -- Publish DT32 SEO Release to LXC 190 | eMOE: 2 CU | aMOE: 3 CU
+What was done:
+- Verified the public site was stale: `https://plamoscale.com/robots.txt` and `/sitemap.xml` returned the SPA HTML shell, so DT32 was not deployed.
+- Located the live deployment: Proxmox host `192.168.1.200`, container `atum-gunpla` (LXC 190), Compose project `infra` running from `/opt/gunpla-monorepo/infra`.
+- Confirmed `/opt/gunpla-monorepo` is a file copy, not a git clone, and synced the repository over SSH with excludes for `.git`, `node_modules`, `dist`, `build`, `secrets.md`, `.env`, API data, and the Android app.
+- Rebuilt and recreated only `plamoscale-web` and `gunplajunkies-web` with `docker compose up -d --no-deps`, because DT32 changed only `@gunpla/shared` UI shell code and the two web servers. The API, PostgreSQL, and Redis containers were left untouched to preserve their runtime environment.
+Smoketest: Local container probes returned `text/plain` for `/robots.txt`, `application/xml` for `/sitemap.xml`, canonical tags on both roots, and `200` for `/api/v1/health`. Public probes returned `200` for both sites and the API, 14 sitemap URLs, and `noindex, nofollow` on `/workbench`.
+UAT: Browse `https://plamoscale.com` and `https://gunplajunkies.com`, open `/robots.txt` and `/sitemap.xml`, and confirm the text and XML responses. Then request reindexing in Google Search Console.
+Issues hit:
+- Cloudflare served a cached `text/html` response for `https://plamoscale.com/robots.txt` (`cf-cache-status: HIT`, `age: 182`, `max-age: 14400`). The origin returns `text/plain`, and a cache-busting query returns the correct body, so the remaining fix is an edge purge. No Cloudflare API token is available in the repo or on the hosts; the tunnel VM only stores tunnel tokens.
+Decisions made:
+- Deployed only the changed services rather than the full stack, which avoided recreating `gunpla-api` without its R2 and Gemini environment variables, since the legacy env file only holds Google and Resend keys.
+Lessons learned:
+- `/opt/gunpla-monorepo` is an unversioned copy, so every deploy needs an explicit sync step. Tracking the deployed revision, or making the server a git checkout, would remove that ambiguity.
+Usage: Moderate -- self-estimated
+
+## Session -- 2026-10-26 | Goal: Homeserver Binding Consolidation for Proxmox Host 192.168.1.200
+Start: 20:00 | End: 20:10 | Duration: 0h 10m
+
+### RDT1 -- Homeserver Binding Consolidation for Proxmox Host 192.168.1.200 | eMOE: 1 CU | aMOE: 2 CU
+What was done:
+- Recorded the deployment topology in `accounts.md`: Proxmox host `192.168.1.200`, application container `atum-gunpla` (LXC 190) with `10.20.30.190` on the internal Proxmox bridge and `192.168.1.190` on the LAN, Cloudflare Tunnel ingress for the public domains, and direct LAN endpoints for the API, PlamoScale, and GunplaJunkies.
+- Rewrote the live homelab block in `docs/agile/status.md` to separate the Proxmox host, the container interfaces, and the tunnel targets.
+- Removed the duplicated `Reset` and `Notes` sections from `docs/agile/devcycle.md`.
+Issues hit:
+- The first pass assumed `192.168.1.200` was the direct LAN endpoint and rewrote 19 status references plus the Android default. Live probing disproved it: `192.168.1.200:8080`, `:3000`, and `:3001` refuse connections, while `192.168.1.190` returns 200 on all three services. Corrected before the branch was finalized.
+- A stale-address grep also matched ignored Android build artifacts under `apps/mobile-android/app/build/`, which still contain the old address from an earlier local build. Source files are clean.
+Decisions made:
+- `192.168.1.200` is the Proxmox host that runs the tunnel. The container owns the LAN addresses that clients use, so the docs now record both container interfaces and the Android client keeps `http://192.168.1.190:8080` as its LAN default.
+- Left historical `192.168.1.190` references in `retro.md` untouched because that log records what happened at the time.
+Lessons learned:
+- Verify a network binding with a live probe before rewriting documentation. A user-confirmed address can describe the host and not the service endpoint.
+Usage: Moderate -- self-estimated
+
 ## Session -- 2026-10-26 | Goal: SEO Canonical Tags, Robots.txt, Sitemap.xml & Google Search Console Resolution
 Start: 10:45 | End: 11:05 | Duration: 0h 20m
 

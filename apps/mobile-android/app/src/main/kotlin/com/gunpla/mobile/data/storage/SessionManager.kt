@@ -17,7 +17,7 @@ class SessionManager(context: Context) {
         private const val KEY_DISPLAY_NAME = "display_name"
         private const val KEY_TENANT = "tenant_slug"
         private const val KEY_API_URL = "api_base_url"
-        const val DEFAULT_API_URL = "http://192.168.1.190:8080"
+        const val DEFAULT_API_URL = "https://api.plamoscale.com"
     }
 
     var token: String?

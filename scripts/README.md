@@ -10,6 +10,7 @@ Guidelines:
 
 Included scripts:
 - `atlas-validate.ps1` -- read-only validation for the Atlas source manifest or an installed project receipt. Run `pwsh scripts/atlas-validate.ps1 -TargetPath <path> -SourceKit` for kit maintenance or omit `-SourceKit` for an installed project.
+- `deploy-homeserver.sh` -- publish the monorepo to the homeserver container. Syncs the working tree, rebuilds and restarts the selected Docker Compose services, writes `.deployed-revision` on the target, and probes API health. Run `scripts/deploy-homeserver.sh --help`.
 - `dev-local.ps1` -- local offline development and emulation launcher. Checks prerequisites (Node, SWA CLI, Func, Azurite) and starts local SWA proxy with mock Entra ID login. Run `pwsh scripts/dev-local.ps1 -CheckOnly`.
 - `get-azure-prices.ps1` -- live price query tool using public Azure Retail Prices API to estimate current hourly/monthly costs for Atlas stack resources and generate markdown reports. Run `pwsh scripts/get-azure-prices.ps1 -Region eastus -OutputFormat Markdown`.
 - `migrate-layout-v2.ps1` -- optional manual migration from legacy layout (`docs/projects`, `docs/reference/*-patterns`) to v2 layout (`docs/cgr`, `patterns/*-patterns`). Preview with `-WhatIf`, plan with `atlas_update.md`, then run with `-Approved` only after human approval.
