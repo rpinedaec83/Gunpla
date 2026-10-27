@@ -7,7 +7,7 @@ Do not store credentials, keys, tokens, passwords, connection strings, or deploy
 ## Status
 
 - Account binding status: Active
-- Last reviewed: 2026-10-23
+- Last reviewed: 2026-10-26
 - Owner: Roberto Pineda (`x-codec` / `rpineda@x-codec.net`)
 - Notes: Multi-tenant scale modeling ecosystem (`plamoscale.com`, `gunplajunkies.com`, and white-label B2B tenants) hosted on x-codec VPS/Hosting infrastructure with Cloudflare R2/S3 object storage for high-resolution photography.
 
@@ -40,13 +40,19 @@ Do not store credentials, keys, tokens, passwords, connection strings, or deploy
 - Nameservers assigned:
   1. `cruz.ns.cloudflare.com`
   2. `dylan.ns.cloudflare.com`
+- Proxmox host: `192.168.1.200` (homeserver hypervisor)
+- Application container: `atum-gunpla` (LXC 190), reachable at `10.20.30.190` on the internal Proxmox bridge and at `192.168.1.190` on the LAN
 - Routing & Tunnel (`xcodec-lab-tunnel` / `87cb64ac-1164-4153-890f-b6fee81e0327`):
   - `plamoscale.com` (apex) & `www.plamoscale.com` -> LXC 190 (`10.20.30.190:3000`)
   - `gunplajunkies.com` (apex) & `www.gunplajunkies.com` -> LXC 190 (`10.20.30.190:3001`)
   - `api.plamoscale.com` & `api.gunplajunkies.com` -> LXC 190 (`10.20.30.190:8080`)
+- LAN endpoints (direct, bypassing the tunnel):
+  - API: `http://192.168.1.190:8080`
+  - PlamoScale: `http://192.168.1.190:3000`
+  - GunplaJunkies: `http://192.168.1.190:3001`
 - Pages project: Optional edge static caching / DNS proxy
 - Workers service: Optional image resizing / CDN edge caching
-- Deployment environment notes: Both `plamoscale.com` and `gunplajunkies.com` apex and www domains are bound to Cloudflare DNS/Proxy with assigned nameservers `cruz.ns.cloudflare.com` and `dylan.ns.cloudflare.com`. Cloudflare Tunnel ingress rules route all traffic to homelab LXC 190 with Full Strict SSL. Resend DKIM/SPF domain verification is 100% completed and verified (2026-10-23). Both zones will link to Cloudflare R2 bucket (`plamoscale-media-prod` / `plamoscale-media-dev`) for zero-egress high-resolution image delivery.
+- Deployment environment notes: Both `plamoscale.com` and `gunplajunkies.com` apex and www domains are bound to Cloudflare DNS/Proxy with assigned nameservers `cruz.ns.cloudflare.com` and `dylan.ns.cloudflare.com`. Cloudflare Tunnel ingress rules run on Proxmox host `192.168.1.200` and route public traffic to LXC 190 (`10.20.30.190`) with Full Strict SSL. Resend DKIM/SPF domain verification is 100% completed and verified (2026-10-23). Both zones will link to Cloudflare R2 bucket (`plamoscale-media-prod` / `plamoscale-media-dev`) for zero-egress high-resolution image delivery.
 
 ## GitHub
 

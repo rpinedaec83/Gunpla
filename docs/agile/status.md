@@ -765,9 +765,10 @@ Current live state of the project.
 ## Current Constraints
 
 - Production deployment targets `x-codec` VPS/Homelab + PostgreSQL + Cloudflare R2/S3 + Resend.com verified domains.
-- **Homelab & Cloudflare Tunnel Status (2026-10-24):**
-  - Proxmox container `atum-gunpla` (LXC 190, `10.20.30.190` / `192.168.1.190`) running Docker Compose with PostgreSQL 16 (`gunpla-db`), Central API (`gunpla-api`), PlamoScale Web (`plamoscale-web`), and GunplaJunkies Web (`gunplajunkies-web`).
-  - Cloudflare Tunnel (`xcodec-lab-tunnel`) routes all endpoints with Full Strict SSL:
+- **Homelab & Cloudflare Tunnel Status (2026-10-26):**
+  - Proxmox host `192.168.1.200` running application container `atum-gunpla` (LXC 190) with `10.20.30.190` on the internal Proxmox bridge and `192.168.1.190` on the LAN, using Docker Compose for PostgreSQL 16 (`gunpla-db`), Central API (`gunpla-api`), PlamoScale Web (`plamoscale-web`), and GunplaJunkies Web (`gunplajunkies-web`).
+  - LAN endpoints (direct, bypassing the tunnel): API `http://192.168.1.190:8080`, PlamoScale `http://192.168.1.190:3000`, GunplaJunkies `http://192.168.1.190:3001`.
+  - Cloudflare Tunnel (`xcodec-lab-tunnel`) routes all public endpoints with Full Strict SSL:
     - `https://plamoscale.com` & `https://www.plamoscale.com` -> `10.20.30.190:3000` (HTTP/2 200 OK)
     - `https://gunplajunkies.com` & `https://www.gunplajunkies.com` -> `10.20.30.190:3001` (HTTP/2 200 OK)
     - `https://api.plamoscale.com` & `https://api.gunplajunkies.com` -> `10.20.30.190:8080` (HTTP/2 200 OK)
